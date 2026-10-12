@@ -58,7 +58,10 @@ const defaultConfig = {
         groceries: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=800',
         parcels: 'https://z-cdn-media.chatglm.cn/files/3ae72811-047f-45bb-a218-01a2173fc2eb.png',
         furniture: 'https://images.unsplash.com/photo-1600518464441-9154a4dea21b?q=80&w=800',
-        track: 'https://z-cdn-media.chatglm.cn/files/b848b1a4-672d-4af8-9061-d08b344fd863.png'
+        track: 'https://z-cdn-media.chatglm.cn/files/b848b1a4-672d-4af8-9061-d08b344fd863.png',
+        van: 'https://images.unsplash.com/photo-1597007030739-6d2e7172ee5b?q=80&w=800',
+        bakkie: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800',
+        truck: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800'
     },
     takeaways: {
         franchises: [
@@ -107,6 +110,11 @@ app.get('/api/data', async (req, res) => {
         if(!config.siteContent.hasOwnProperty('websiteName')) { config.siteContent.websiteName = "KasiDeliveries"; needsSave = true; }
         if(!config.siteContent.hasOwnProperty('websiteLogo')) { config.siteContent.websiteLogo = null; needsSave = true; }
         
+        // Auto-migrate new vehicle categories
+        if(!config.categories.hasOwnProperty('van')) { config.categories.van = defaultConfig.categories.van; needsSave = true; }
+        if(!config.categories.hasOwnProperty('bakkie')) { config.categories.bakkie = defaultConfig.categories.bakkie; needsSave = true; }
+        if(!config.categories.hasOwnProperty('truck')) { config.categories.truck = defaultConfig.categories.truck; needsSave = true; }
+
         if(needsSave) await pool.query('UPDATE app_state SET data = $1 WHERE id = 1', [JSON.stringify(config)]);
 
         const ordersRes = await pool.query('SELECT ref, type, details, total, date, status FROM orders ORDER BY date DESC');
