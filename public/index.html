@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KasiDeliveries - Your Kasi. Your Stores. Delivered.</title>
+    <title>KasiDeliveries</title>
     <style>
         :root { --forest: #123B2A; --gold: #F5B82E; --white: #FFFFFF; --light-grey: #F2F4F1; --text-dark: #123B2A; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -11,6 +11,8 @@
         
         /* Header & Nav */
         header { background-color: var(--forest); color: var(--white); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .brand-container { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .brand-logo-img { height: 35px; width: auto; object-fit: contain; background: white; padding: 2px; border-radius: 5px; }
         .logo { font-size: 20px; font-weight: bold; color: var(--gold); cursor: pointer; }
         nav { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
         nav a, nav button { color: var(--white); text-decoration: none; background: none; border: none; cursor: pointer; font-size: 14px; transition: color 0.3s; }
@@ -22,10 +24,10 @@
         
         /* Hero Slider */
         .hero-slider { position: relative; border-radius: 10px; overflow: hidden; margin-bottom: 20px; height: 250px; background-color: var(--forest); }
-        .hero-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; color: var(--white); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; opacity: 0; transition: opacity 1s ease-in-out; background-size: contain; background-repeat: no-repeat; background-position: center; }
+        .hero-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; color: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; opacity: 0; transition: opacity 1s ease-in-out; background-size: contain; background-repeat: no-repeat; background-position: center; }
         .hero-slide.active { opacity: 1; }
-        .hero-slide h1 { font-size: 24px; margin-bottom: 10px; z-index: 2; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); background: rgba(18, 59, 42, 0.8); padding: 5px 15px; border-radius: 10px; }
-        .hero-slide p { font-size: 14px; margin-bottom: 20px; z-index: 2; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); background: rgba(18, 59, 42, 0.8); padding: 5px 10px; border-radius: 10px; }
+        .hero-slide h1 { font-size: 24px; margin-bottom: 10px; z-index: 2; color: #000; background: rgba(255,255,255,0.9); padding: 5px 15px; border-radius: 10px; }
+        .hero-slide p { font-size: 14px; margin-bottom: 20px; z-index: 2; color: #000; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 10px; }
         .slider-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 3; }
         .dot { height: 10px; width: 10px; background-color: rgba(255,255,255,0.5); border-radius: 50%; cursor: pointer; }
         .dot.active { background-color: var(--gold); }
@@ -33,7 +35,7 @@
         /* Buttons */
         .btn-gold { background-color: var(--gold); color: var(--forest); border: none; padding: 10px 20px; font-size: 16px; font-weight: bold; border-radius: 20px; cursor: pointer; transition: transform 0.2s; margin: 5px; z-index: 2; }
         .btn-gold:hover { transform: scale(1.05); }
-        .btn-outline { background: rgba(255,255,255,0.1); color: var(--white); border: 1px solid var(--white); padding: 9px 20px; font-size: 16px; border-radius: 20px; cursor: pointer; margin: 5px; z-index: 2; }
+        .btn-outline { background: rgba(255,255,255,0.9); color: #000; border: 1px solid #000; padding: 9px 20px; font-size: 16px; border-radius: 20px; cursor: pointer; margin: 5px; z-index: 2; }
         
         /* Grids & Cards */
         .categories-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 30px; }
@@ -107,6 +109,7 @@
         @media (min-width: 768px) {
             header { padding: 15px 20px; }
             .logo { font-size: 24px; }
+            .brand-logo-img { height: 45px; }
             nav a, nav button, .cart-btn { font-size: 16px; }
             main { padding: 20px; }
             .hero-slider { height: 400px; }
@@ -144,7 +147,10 @@
 </head>
 <body>
     <header>
-        <div class="logo" onclick="navigate('home')">KasiDeliveries</div>
+        <div class="brand-container" onclick="navigate('home')">
+            <div id="brand-logo-container"></div>
+            <div class="logo" id="brand-name">KasiDeliveries</div>
+        </div>
         <nav>
             <a onclick="navigate('track')">Track Order</a>
             <button class="cart-btn" onclick="navigate('cart')">🛒 Cart (<span id="cart-count">0</span>)</button>
@@ -154,12 +160,12 @@
     <main id="app-content"></main>
     <footer>
         <div class="footer-content">
-            <div class="footer-col"><h4>KasiDeliveries</h4><p style="opacity: 0.8; max-width: 300px; margin: 0 auto;">Your Kasi. Your Stores. Delivered. Fast, reliable delivery for food, groceries, parcels, and furniture.</p></div>
+            <div class="footer-col"><h4 id="footer-brand-name">KasiDeliveries</h4><p style="opacity: 0.8; max-width: 300px; margin: 0 auto;">Your Kasi. Your Stores. Delivered. Fast, reliable delivery for food, groceries, parcels, and furniture.</p></div>
             <div class="footer-col"><h4>Company</h4><ul><li><a onclick="navigate('about')">About Us</a></li><li><a onclick="navigate('contact')">Contact Us</a></li></ul></div>
             <div class="footer-col"><h4>Legal</h4><ul><li><a onclick="navigate('terms')">Terms & Conditions</a></li><li><a onclick="navigate('privacy')">Privacy Policy</a></li></ul></div>
             <div class="footer-col"><h4>Admin</h4><ul><li><a onclick="navigate('admin')">Admin Portal</a></li></ul></div>
         </div>
-        <div class="footer-bottom">&copy; 2024 KasiDeliveries. All rights reserved.</div>
+        <div class="footer-bottom">&copy; 2024 <span id="footer-copy-name">KasiDeliveries</span>. All rights reserved.</div>
     </footer>
     <a href="https://wa.me/27123456789" class="wa-float" target="_blank">💬</a>
 
@@ -170,9 +176,28 @@
         async function fetchData() { 
             const res = await fetch('/api/data'); 
             appData = await res.json(); 
-            if(!appData.sliderImages) appData.sliderImages = []; 
+            if(!appData.sliderImages) appData.sliderImages = [];
+            if(!appData.siteContent) appData.siteContent = {};
+            if(!appData.siteContent.websiteName) appData.siteContent.websiteName = "KasiDeliveries";
+            if(!appData.siteContent.websiteLogo) appData.siteContent.websiteLogo = null;
+            updateBranding();
         }
         
+        function updateBranding() {
+            const name = appData.siteContent.websiteName || "KasiDeliveries";
+            const logo = appData.siteContent.websiteLogo;
+            document.title = name + " - Your Stores. Delivered.";
+            document.getElementById('brand-name').innerText = name;
+            document.getElementById('footer-brand-name').innerText = name;
+            document.getElementById('footer-copy-name').innerText = name;
+            const logoContainer = document.getElementById('brand-logo-container');
+            if(logo) {
+                logoContainer.innerHTML = `<img src="${logo}" class="brand-logo-img" alt="Logo">`;
+            } else {
+                logoContainer.innerHTML = '';
+            }
+        }
+
         async function saveConfig() {
             const config = { users: appData.users, siteContent: appData.siteContent, sliderImages: appData.sliderImages, categories: appData.categories, takeaways: appData.takeaways, groceries: appData.groceries };
             await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
@@ -409,7 +434,7 @@
         
         async function checkoutWhatsApp() { 
             const ref = `KD-${Date.now()}`; 
-            let msg = `*NEW ORDER REQUEST — KASIDELIVERIES*\n\n*Order Reference:* ${ref}\n\n*ORDER ITEMS:*\n`; 
+            let msg = `*NEW ORDER REQUEST — ${(appData.siteContent.websiteName || 'KASIDELIVERIES').toUpperCase()}*\n\n*Order Reference:* ${ref}\n\n*ORDER ITEMS:*\n`; 
             const grouped = {}; 
             cart.forEach(item => { if (!grouped[item.store]) grouped[item.store] = []; grouped[item.store].push(item); }); 
             Object.keys(grouped).forEach(store => { 
@@ -429,7 +454,7 @@
         async function submitParcelRequest(type) { 
             event.preventDefault(); 
             const ref = type === 'send' ? `KD-SEND-${Date.now()}` : `KD-COLL-${Date.now()}`; 
-            let msg = `*${type.toUpperCase()} PARCEL REQUEST — KASIDELIVERIES*\n\n*Reference:* ${ref}\n\nI have submitted the form details.\n\nPlease confirm receipt of this request.`; 
+            let msg = `*${type.toUpperCase()} PARCEL REQUEST — ${(appData.siteContent.websiteName || 'KASIDELIVERIES').toUpperCase()}*\n\n*Reference:* ${ref}\n\nI have submitted the form details.\n\nPlease confirm receipt of this request.`; 
             
             const fileInputId = type === 'send' ? 'p_send_files' : 'p_coll_files';
             const imageUrls = await uploadMultipleFiles(fileInputId);
@@ -485,7 +510,7 @@
         function trackOrderWhatsApp() { 
             const orderNum = document.getElementById('track-order-input').value; 
             if(!orderNum) { alert("Please enter your order number"); return; } 
-            const msg = `Hello KasiDeliveries, I would like to track my order. My Order Number is: ${orderNum}`; 
+            const msg = `Hello ${appData.siteContent.websiteName || 'KasiDeliveries'}, I would like to track my order. My Order Number is: ${orderNum}`; 
             window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); 
         }
 
@@ -516,7 +541,7 @@
                 </div>
                 <div class="admin-tabs">
                     <div class="admin-tab ${adminTab === 'dashboard' ? 'active' : ''}" onclick="setAdminTab('dashboard')">Dashboard & Stats</div>
-                    <div class="admin-tab ${adminTab === 'site' ? 'active' : ''}" onclick="setAdminTab('site')">Site Content</div>
+                    <div class="admin-tab ${adminTab === 'site' ? 'active' : ''}" onclick="setAdminTab('site')">Branding & Content</div>
                     <div class="admin-tab ${adminTab === 'users' ? 'active' : ''}" onclick="setAdminTab('users')">User Management</div>
                     <div class="admin-tab ${adminTab === 'images' ? 'active' : ''}" onclick="setAdminTab('images')">Slider & Category Images</div>
                     <div class="admin-tab ${adminTab === 'takeaways' ? 'active' : ''}" onclick="setAdminTab('takeaways')">Takeaways</div>
@@ -558,7 +583,13 @@
 
         function renderAdminSiteContent() {
             let html = '<div class="form-container">';
-            html += '<h3>About Us</h3><textarea id="content_about" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.about + '</textarea>';
+            html += '<h3>Branding</h3><div class="form-group"><label>Website Name (Shows in Header, Footer, Browser Tab)</label><input type="text" id="content_website_name" value="' + appData.siteContent.websiteName + '"></div>';
+            html += '<div class="form-group"><label>Website Logo (Shows in Header)</label><input type="file" id="content_website_logo" accept="image/*">';
+            if(appData.siteContent.websiteLogo) {
+                html += '<div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;"><img src="'+appData.siteContent.websiteLogo+'" style="height: 40px; background: #eee; padding: 2px; border-radius: 5px;"><button type="button" onclick="removeWebsiteLogo()" style="color: red; border: none; background: none; cursor: pointer;">Remove Logo</button></div>';
+            }
+            html += '</div>';
+            html += '<hr style="margin: 20px 0;"><h3>About Us</h3><textarea id="content_about" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.about + '</textarea>';
             html += '<h3>Contact Us</h3><textarea id="content_contact" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.contact + '</textarea>';
             html += '<h3>Terms & Conditions</h3><textarea id="content_terms" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.terms + '</textarea>';
             html += '<h3>Privacy Policy</h3><textarea id="content_privacy" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.privacy + '</textarea>';
@@ -566,13 +597,27 @@
             document.getElementById('admin-content').innerHTML = html;
         }
         
+        async function removeWebsiteLogo() {
+            appData.siteContent.websiteLogo = null;
+            await saveConfig();
+            updateBranding();
+            renderAdminSiteContent();
+        }
+        
         async function saveSiteContent() {
+            appData.siteContent.websiteName = document.getElementById('content_website_name').value;
+            const logoFile = document.getElementById('content_website_logo').files[0];
+            if(logoFile) {
+                appData.siteContent.websiteLogo = await uploadImage(logoFile);
+            }
             appData.siteContent.about = document.getElementById('content_about').value;
             appData.siteContent.contact = document.getElementById('content_contact').value;
             appData.siteContent.terms = document.getElementById('content_terms').value;
             appData.siteContent.privacy = document.getElementById('content_privacy').value;
             await saveConfig();
-            alert('Website content updated successfully!');
+            updateBranding();
+            alert('Branding & Content updated successfully!');
+            renderAdminSiteContent();
         }
 
         function renderAdminUsers() {
