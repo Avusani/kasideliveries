@@ -74,6 +74,8 @@
         .stat-box h3 { color: var(--gold); font-size: 32px; margin-bottom: 5px; }
         .stat-box p { color: var(--forest); font-weight: bold; }
         .text-content { white-space: pre-wrap; line-height: 1.6; font-size: 16px; }
+        .store-logo-img { width: 40px; height: 40px; object-fit: cover; border-radius: 50%; }
+        .item-img { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; margin-right: 15px; }
         @media (max-width: 768px) { nav { gap: 10px; } .hero-slide h1 { font-size: 32px; } .form-row { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -102,8 +104,19 @@
         let cart = [], currentSlide = 0, slideInterval, appData = {}, adminTab = 'dashboard', isAdmin = false;
         const WHATSAPP_NUMBER = "27123456789"; 
 
-        async function fetchData() { const res = await fetch('/api/data'); appData = await res.json(); }
-        async function saveData() { await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(appData) }); }
+        async function fetchData() { const res = await fetch('/api/data'); appData = await res.json(); if(!appData.sliderImages) appData.sliderImages = []; }
+        async function saveConfig() {
+            const config = { users: appData.users, siteContent: appData.siteContent, sliderImages: appData.sliderImages, categories: appData.categories, takeaways: appData.takeaways, groceries: appData.groceries };
+            await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
+        }
+        
+        async function uploadImage(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            return data.url;
+        }
 
         const slides = [
             { title: 'Your Favourite Food, Delivered', text: 'Order from franchises and local restaurants', btnText: 'Order Now', action: "navigate('takeaways')", bg: 'linear-gradient(45deg, #123B2A, #1e5c43)' },
@@ -137,7 +150,11 @@
 
         function initSlider() { currentSlide = 0; showSlide(currentSlide); slideInterval = setInterval(() => { currentSlide = (currentSlide + 1) % slides.length; showSlide(currentSlide); }, 5000); }
         function showSlide(index) {
-            const slidesHtml = slides.map((slide, i) => `<div class="hero-slide ${i === index ? 'active' : ''}" style="background: ${slide.bg};"><h1>${slide.title}</h1><p>${slide.text}</p><button class="btn-gold" onclick="${slide.action}">${slide.btnText}</button><button class="btn-outline" onclick="document.getElementById('categories').scrollIntoView({ behavior: 'smooth' })">Explore Services</button></div>`).join('');
+            const slidesHtml = slides.map((slide, i) => {
+                let bg = slide.bg;
+                if(appData.sliderImages[i]) bg = `url('${appData.sliderImages[i]}')`;
+                return `<div class="hero-slide ${i === index ? 'active' : ''}" style="background: ${bg};"><h1>${slide.title}</h1><p>${slide.text}</p><button class="btn-gold" onclick="${slide.action}">${slide.btnText}</button><button class="btn-outline" onclick="document.getElementById('categories').scrollIntoView({ behavior: 'smooth' })">Explore Services</button></div>`;
+            }).join('');
             const dotsHtml = slides.map((_, i) => `<div class="dot ${i === index ? 'active' : ''}" onclick="changeSlide(${i})"></div>`).join('');
             document.getElementById('hero-container').innerHTML = slidesHtml + `<div class="slider-dots">${dotsHtml}</div>`;
         }
@@ -153,10 +170,10 @@
             </div>`;
         }
         function renderTakeawaysHub() { return `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Takeaways</h2><div class="categories-grid"><div class="category-card" style="background-image: url('${appData.categories.takeaways}');" onclick="navigate('takeaway-list', 'franchises')"><h3>🍗 Franchises</h3><p>Popular fast-food brands.</p></div><div class="category-card" style="background-image: url('https://images.unsplash.com/photo-1565299585323-38d6b0865b47?q=80&w=800');" onclick="navigate('takeaway-list', 'local')"><h3>🍽️ Local Takeaways</h3><p>Independent restaurants and local businesses.</p></div></div>`; }
-        function renderTakeawayList(type) { const stores = appData.takeaways[type] || []; let html = `<span class="back-link" onclick="navigate('takeaways')">← Back to Takeaways</span><h2 style="color: var(--forest); margin-bottom: 20px;">${type === 'franchises' ? 'Franchises' : 'Local Takeaways'}</h2>`; if(stores.length === 0) html += '<p>No stores available yet.</p>'; stores.forEach(store => { html += `<div class="store-item" onclick="navigate('restaurant-menu', '${store.id}')" style="cursor: pointer;"><div class="item-info" style="display: flex; align-items: center; gap: 15px;"><span style="font-size: 30px;">${store.logo}</span><div><h4>${store.name}</h4><p>View menu and place order</p></div></div><span style="color: var(--gold); font-weight: bold;">View Menu →</span></div>`; }); return html; }
-        function renderMenu(storeId) { let store = null, storeType = ''; appData.takeaways.franchises.forEach(s => { if(s.id === storeId) { store = s; storeType = 'franchises'; } }); if(!store) appData.takeaways.local.forEach(s => { if(s.id === storeId) { store = s; storeType = 'local'; } }); if (!store) return '<h2>Store not found</h2>'; let html = `<span class="back-link" onclick="navigate('takeaway-list', '${storeType}')">← Back to Stores</span><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;"><span style="font-size: 40px;">${store.logo}</span><h2 style="color: var(--forest);">${store.name}</h2></div>`; if(store.menu.length === 0) html += '<p>No menu items yet.</p>'; store.menu.forEach(item => { html += `<div class="store-item"><div class="item-info"><h4>${item.name}</h4></div><div style="display: flex; align-items: center;"><span class="item-price">R${item.price.toFixed(2)}</span><button class="add-btn" onclick="addToCart('${item.id}', '${store.name}', '${item.name}', ${item.price})">Add</button></div></div>`; }); return html; }
-        function renderGroceryHub() { let html = `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Grocery Stores</h2>`; if(appData.groceries.length === 0) html += '<p>No stores available yet.</p>'; appData.groceries.forEach(store => { html += `<div class="store-item" onclick="navigate('grocery-menu', '${store.id}')" style="cursor: pointer;"><div class="item-info" style="display: flex; align-items: center; gap: 15px;"><span style="font-size: 30px;">${store.logo}</span><div><h4>${store.name}</h4><p>Browse catalogue and shop</p></div></div><span style="color: var(--gold); font-weight: bold;">Shop Now →</span></div>`; }); return html; }
-        function renderGroceryMenu(storeId) { const store = appData.groceries.find(s => s.id === storeId); if (!store) return '<h2>Store not found</h2>'; let html = `<span class="back-link" onclick="navigate('groceries')">← Back to Stores</span><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;"><span style="font-size: 40px;">${store.logo}</span><h2 style="color: var(--forest);">${store.name} Catalogue</h2></div>`; if(store.menu.length === 0) html += '<p>No products yet.</p>'; store.menu.forEach(item => { html += `<div class="store-item"><div class="item-info"><h4>${item.name}</h4></div><div style="display: flex; align-items: center;"><span class="item-price">R${item.price.toFixed(2)}</span><button class="add-btn" onclick="addToCart('${item.id}', '${store.name}', '${item.name}', ${item.price})">Add</button></div></div>`; }); return html; }
+        function renderTakeawayList(type) { const stores = appData.takeaways[type] || []; let html = `<span class="back-link" onclick="navigate('takeaways')">← Back to Takeaways</span><h2 style="color: var(--forest); margin-bottom: 20px;">${type === 'franchises' ? 'Franchises' : 'Local Takeaways'}</h2>`; if(stores.length === 0) html += '<p>No stores available yet.</p>'; stores.forEach(store => { html += `<div class="store-item" onclick="navigate('restaurant-menu', '${store.id}')" style="cursor: pointer;"><div class="item-info" style="display: flex; align-items: center; gap: 15px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}<div><h4>${store.name}</h4><p>View menu and place order</p></div></div><span style="color: var(--gold); font-weight: bold;">View Menu →</span></div>`; }); return html; }
+        function renderMenu(storeId) { let store = null, storeType = ''; appData.takeaways.franchises.forEach(s => { if(s.id === storeId) { store = s; storeType = 'franchises'; } }); if(!store) appData.takeaways.local.forEach(s => { if(s.id === storeId) { store = s; storeType = 'local'; } }); if (!store) return '<h2>Store not found</h2>'; let html = `<span class="back-link" onclick="navigate('takeaway-list', '${storeType}')">← Back to Stores</span><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest);">${store.name}</h2></div>`; if(store.menu.length === 0) html += '<p>No menu items yet.</p>'; store.menu.forEach(item => { html += `<div class="store-item"><div class="item-info" style="display:flex;align-items:center;"><img src="${item.img || 'https://via.placeholder.com/50'}" class="item-img"><h4>${item.name}</h4></div><div style="display: flex; align-items: center;"><span class="item-price">R${item.price.toFixed(2)}</span><button class="add-btn" onclick="addToCart('${item.id}', '${store.name}', '${item.name}', ${item.price})">Add</button></div></div>`; }); return html; }
+        function renderGroceryHub() { let html = `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Grocery Stores</h2>`; if(appData.groceries.length === 0) html += '<p>No stores available yet.</p>'; appData.groceries.forEach(store => { html += `<div class="store-item" onclick="navigate('grocery-menu', '${store.id}')" style="cursor: pointer;"><div class="item-info" style="display: flex; align-items: center; gap: 15px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}<div><h4>${store.name}</h4><p>Browse catalogue and shop</p></div></div><span style="color: var(--gold); font-weight: bold;">Shop Now →</span></div>`; }); return html; }
+        function renderGroceryMenu(storeId) { const store = appData.groceries.find(s => s.id === storeId); if (!store) return '<h2>Store not found</h2>'; let html = `<span class="back-link" onclick="navigate('groceries')">← Back to Stores</span><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest);">${store.name} Catalogue</h2></div>`; if(store.menu.length === 0) html += '<p>No products yet.</p>'; store.menu.forEach(item => { html += `<div class="store-item"><div class="item-info" style="display:flex;align-items:center;"><img src="${item.img || 'https://via.placeholder.com/50'}" class="item-img"><h4>${item.name}</h4></div><div style="display: flex; align-items: center;"><span class="item-price">R${item.price.toFixed(2)}</span><button class="add-btn" onclick="addToCart('${item.id}', '${store.name}', '${item.name}', ${item.price})">Add</button></div></div>`; }); return html; }
         function renderParcelOptions() { return `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">KasiDeliveries Parcels</h2><p style="text-align: center; margin-bottom: 30px;">What would you like to do?</p><div class="categories-grid"><div class="category-card" style="background-image: url('${appData.categories.parcels}');" onclick="navigate('send-parcel')"><h3>📤 Send a Parcel</h3><p>Send a parcel to someone nearby or far.</p></div><div class="category-card" style="background-image: url('${appData.categories.track}');" onclick="navigate('collect-parcel')"><h3>📥 Collect a Parcel</h3><p>Collect a parcel sent to you or holding for you.</p></div></div>`; }
         function renderSendParcel() { return `<span class="back-link" onclick="navigate('parcels')">← Back to Parcels</span><h2 style="color: var(--forest); margin-bottom: 20px;">Send a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('send')"><div class="form-section"><h3>Sender Details</h3><div class="form-row"><div class="form-group"><label>★ Full Name</label><input type="text" id="p_sender_name" required></div><div class="form-group"><label>★ Mobile Number</label><input type="tel" id="p_sender_phone" required></div></div></div><div class="form-section"><h3>Parcel Details</h3><div class="form-group"><label>★ Description of Contents</label><input type="text" id="p_desc" required></div></div><button type="submit" class="btn-gold" style="width: 100%;">Submit Parcel Request</button></form>`; }
         function renderCollectParcel() { return `<span class="back-link" onclick="navigate('parcels')">← Back to Parcels</span><h2 style="color: var(--forest); margin-bottom: 20px;">Collect a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('collect')"><div class="form-section"><h3>Collector Details</h3><div class="form-group"><label>★ Full Name</label><input type="text" id="p_coll_name" required></div><div class="form-group"><label>★ ID Number</label><input type="text" id="p_coll_id" required></div></div><button type="submit" class="btn-gold" style="width: 100%;">Submit Collection Request</button></form>`; }
@@ -169,9 +186,9 @@
         function removeFromCart(id) { cart = cart.filter(item => item.id !== id); updateCartCount(); navigate('cart'); }
         function updateCartCount() { document.getElementById('cart-count').innerText = cart.reduce((sum, item) => sum + item.qty, 0); }
         
-        async function checkoutWhatsApp() { const ref = `KD-${Date.now()}`; let msg = `*NEW ORDER REQUEST — KASIDELIVERIES*\n\n*Order Reference:* ${ref}\n\n*ORDER ITEMS:*\n`; const grouped = {}; cart.forEach(item => { if (!grouped[item.store]) grouped[item.store] = []; grouped[item.store].push(item); }); Object.keys(grouped).forEach(store => { msg += `\n*${store}*\n`; grouped[store].forEach(item => { msg += `- ${item.name} x ${item.qty}: R${(item.price * item.qty).toFixed(2)}\n`; }); }); const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0); msg += `\n*PRICE SUMMARY*\nProducts Subtotal: R${subtotal.toFixed(2)}\nPlease confirm final delivery fee and total.`; appData.orders.push({ ref: ref, type: 'Food/Grocery Order', details: cart, total: subtotal, date: new Date().toLocaleString(), status: 'Awaiting WhatsApp Confirmation' }); await saveData(); window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); }
-        async function submitParcelRequest(type) { event.preventDefault(); const ref = type === 'send' ? `KD-SEND-${Date.now()}` : `KD-COLL-${Date.now()}`; const msg = `*${type.toUpperCase()} PARCEL REQUEST — KASIDELIVERIES*\n\n*Reference:* ${ref}\n\nI have submitted the form details.\n\nPlease confirm receipt of this request.`; const reqData = type === 'send' ? { name: document.getElementById('p_sender_name').value, phone: document.getElementById('p_sender_phone').value, desc: document.getElementById('p_desc').value } : { name: document.getElementById('p_coll_name').value, id: document.getElementById('p_coll_id').value }; appData.parcelRequests.push({ ref: ref, type: type === 'send' ? 'Send Parcel' : 'Collect Parcel', details: reqData, date: new Date().toLocaleString(), status: 'New Request' }); await saveData(); window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); }
-        async function submitFurnitureRequest(vehicle) { event.preventDefault(); const ref = `KD-FURN-${Date.now()}`; const msg = `*FURNITURE TRANSPORT QUOTATION REQUEST*\n\n*Vehicle Required:* ${vehicle}\n*Reference:* ${ref}\n\nI have submitted the form details. Please confirm receipt and provide a quotation.`; appData.furnitureRequests.push({ ref: ref, vehicle: vehicle, name: document.getElementById('f_name').value, phone: document.getElementById('f_phone').value, from: document.getElementById('f_from').value, to: document.getElementById('f_to').value, date: new Date().toLocaleString(), status: 'Quotation Requested' }); await saveData(); window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); }
+        async function checkoutWhatsApp() { const ref = `KD-${Date.now()}`; let msg = `*NEW ORDER REQUEST — KASIDELIVERIES*\n\n*Order Reference:* ${ref}\n\n*ORDER ITEMS:*\n`; const grouped = {}; cart.forEach(item => { if (!grouped[item.store]) grouped[item.store] = []; grouped[item.store].push(item); }); Object.keys(grouped).forEach(store => { msg += `\n*${store}*\n`; grouped[store].forEach(item => { msg += `- ${item.name} x ${item.qty}: R${(item.price * item.qty).toFixed(2)}\n`; }); }); const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0); msg += `\n*PRICE SUMMARY*\nProducts Subtotal: R${subtotal.toFixed(2)}\nPlease confirm final delivery fee and total.`; const newOrder = { ref: ref, type: 'Food/Grocery Order', details: cart, total: subtotal, date: new Date().toLocaleString(), status: 'Awaiting WhatsApp Confirmation' }; await fetch('/api/order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newOrder) }); appData.orders.push(newOrder); window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); }
+        async function submitParcelRequest(type) { event.preventDefault(); const ref = type === 'send' ? `KD-SEND-${Date.now()}` : `KD-COLL-${Date.now()}`; const msg = `*${type.toUpperCase()} PARCEL REQUEST — KASIDELIVERIES*\n\n*Reference:* ${ref}\n\nI have submitted the form details.\n\nPlease confirm receipt of this request.`; const reqData = type === 'send' ? { name: document.getElementById('p_sender_name').value, phone: document.getElementById('p_sender_phone').value, desc: document.getElementById('p_desc').value } : { name: document.getElementById('p_coll_name').value, id: document.getElementById('p_coll_id').value }; const newParcel = { ref: ref, type: type === 'send' ? 'Send Parcel' : 'Collect Parcel', details: reqData, date: new Date().toLocaleString(), status: 'New Request' }; await fetch('/api/parcel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newParcel) }); appData.parcelRequests.push(newParcel); window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); }
+        async function submitFurnitureRequest(vehicle) { event.preventDefault(); const ref = `KD-FURN-${Date.now()}`; const msg = `*FURNITURE TRANSPORT QUOTATION REQUEST*\n\n*Vehicle Required:* ${vehicle}\n*Reference:* ${ref}\n\nI have submitted the form details. Please confirm receipt and provide a quotation.`; const reqData = { name: document.getElementById('f_name').value, phone: document.getElementById('f_phone').value, from: document.getElementById('f_from').value, to: document.getElementById('f_to').value }; const newFurniture = { ref: ref, vehicle: vehicle, details: reqData, date: new Date().toLocaleString(), status: 'Quotation Requested' }; await fetch('/api/furniture', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newFurniture) }); appData.furnitureRequests.push(newFurniture); window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); }
         function trackOrderWhatsApp() { const orderNum = document.getElementById('track-order-input').value; if(!orderNum) { alert("Please enter your order number"); return; } const msg = `Hello KasiDeliveries, I would like to track my order. My Order Number is: ${orderNum}`; window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); }
 
         // --- ADMIN PORTAL ---
@@ -192,7 +209,7 @@
                     <div class="admin-tab ${adminTab === 'dashboard' ? 'active' : ''}" onclick="setAdminTab('dashboard')">Dashboard & Stats</div>
                     <div class="admin-tab ${adminTab === 'site' ? 'active' : ''}" onclick="setAdminTab('site')">Site Content</div>
                     <div class="admin-tab ${adminTab === 'users' ? 'active' : ''}" onclick="setAdminTab('users')">User Management</div>
-                    <div class="admin-tab ${adminTab === 'images' ? 'active' : ''}" onclick="setAdminTab('images')">Images & Categories</div>
+                    <div class="admin-tab ${adminTab === 'images' ? 'active' : ''}" onclick="setAdminTab('images')">Slider & Category Images</div>
                     <div class="admin-tab ${adminTab === 'takeaways' ? 'active' : ''}" onclick="setAdminTab('takeaways')">Takeaways</div>
                     <div class="admin-tab ${adminTab === 'groceries' ? 'active' : ''}" onclick="setAdminTab('groceries')">Groceries</div>
                 </div>
@@ -236,7 +253,7 @@
             appData.siteContent.contact = document.getElementById('content_contact').value;
             appData.siteContent.terms = document.getElementById('content_terms').value;
             appData.siteContent.privacy = document.getElementById('content_privacy').value;
-            await saveData();
+            await saveConfig();
             alert('Website content updated successfully!');
         }
 
@@ -255,19 +272,120 @@
             html += '</div>';
             document.getElementById('admin-content').innerHTML = html;
         }
-        async function adminAddUser() { const u = document.getElementById('new_user').value; const p = document.getElementById('new_pass').value; if(!u || !p) { alert('Enter username and password'); return; } if(appData.users.length >= 20) { alert('Limit reached'); return; } appData.users.push({ username: u, password: p }); await saveData(); renderAdminUsers(); }
-        async function adminUpdatePass(i) { appData.users[i].password = document.getElementById('pass_'+i).value; await saveData(); alert('Password updated!'); }
-        async function adminDeleteUser(i) { appData.users.splice(i, 1); await saveData(); renderAdminUsers(); }
+        async function adminAddUser() { const u = document.getElementById('new_user').value; const p = document.getElementById('new_pass').value; if(!u || !p) { alert('Enter username and password'); return; } if(appData.users.length >= 20) { alert('Limit reached'); return; } appData.users.push({ username: u, password: p }); await saveConfig(); renderAdminUsers(); }
+        async function adminUpdatePass(i) { appData.users[i].password = document.getElementById('pass_'+i).value; await saveConfig(); alert('Password updated!'); }
+        async function adminDeleteUser(i) { appData.users.splice(i, 1); await saveConfig(); renderAdminUsers(); }
 
-        function renderAdminImages() { const cats = ['takeaways', 'groceries', 'parcels', 'furniture', 'track']; let html = '<div class="form-container"><p style="margin-bottom: 20px;">Upload new images for the homepage category cards:</p>'; cats.forEach(cat => { html += `<div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;"><div style="width: 120px; height: 80px; background-image: url('${appData.categories[cat]}'); background-size: cover; background-position: center; border-radius: 8px; border: 1px solid #ccc;"></div><div><label style="text-transform: capitalize; font-weight: bold; color: var(--forest); font-size: 18px;">${cat}</label><br><input type="file" accept="image/*" onchange="handleImageUpload(event, '${cat}')" style="margin-top: 10px;"></div></div>`; }); html += '</div>'; document.getElementById('admin-content').innerHTML = html; }
-        async function handleImageUpload(event, cat) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = async function(e) { appData.categories[cat] = e.target.result; await saveData(); alert(cat + ' image updated successfully!'); renderAdminImages(); }; reader.readAsDataURL(file); }
-        function renderAdminTakeaways() { let html = '<div class="admin-card"><h4>Add New Takeaway Store</h4><div class="form-row"><div class="form-group"><label>Type</label><select id="t_type"><option value="franchises">Franchise</option><option value="local">Local</option></select></div><div class="form-group"><label>Store Name</label><input type="text" id="t_name"></div><div class="form-group"><label>Logo (Emoji)</label><input type="text" id="t_logo" value="🍔"></div></div><button class="btn-gold" style="width: 100%;" onclick="adminAddTakeaway()">Add Store</button></div>'; html += '<div class="admin-card"><h4>Current Takeaways & Menus</h4>'; ['franchises', 'local'].forEach(type => { html += `<h5 style="color: var(--forest); margin-top: 20px; text-transform: capitalize;">${type}</h5>`; appData.takeaways[type].forEach(store => { html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;"><strong>${store.logo} ${store.name}</strong> <button onclick="adminDeleteStore('takeaway', '${type}', '${store.id}')" style="float: right; color: red; border: none; background: none; cursor: pointer;">Delete Store</button><div style="margin-top: 10px;">`; store.menu.forEach(item => { html += `<div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee;"><span>${item.name} - R${item.price.toFixed(2)}</span><button onclick="adminDeleteMenuItem('takeaway', '${type}', '${store.id}', '${item.id}')" style="color: red; border: none; background: none; cursor: pointer;">Remove</button></div>`; }); html += `<div class="form-row" style="margin-top: 10px;"><input type="text" id="menu_name_${store.id}" placeholder="Item Name"><input type="number" id="menu_price_${store.id}" placeholder="Price (R)"></div><button class="add-btn" style="margin-top: 5px;" onclick="adminAddMenuItem('takeaway', '${type}', '${store.id}')">Add Menu Item</button></div></div>`; }); }); html += '</div>'; document.getElementById('admin-content').innerHTML = html; }
-        async function adminAddTakeaway() { const type = document.getElementById('t_type').value; const name = document.getElementById('t_name').value; const logo = document.getElementById('t_logo').value || '🍽️'; if(!name) { alert('Please enter a store name'); return; } const id = name.toLowerCase().replace(/\s/g, '') + Date.now().toString().slice(-4); appData.takeaways[type].push({ id, name, logo, menu: [] }); await saveData(); renderAdminTakeaways(); }
-        async function adminAddMenuItem(cat, type, storeId) { let store; if(cat === 'takeaway') store = appData.takeaways[type].find(s => s.id === storeId); else store = appData.groceries.find(s => s.id === storeId); const name = document.getElementById(`menu_name_${storeId}`).value; const price = parseFloat(document.getElementById(`menu_price_${storeId}`).value); if(!name || !price) { alert('Enter item name and price'); return; } store.menu.push({ id: Date.now().toString(), name, price }); await saveData(); if(cat === 'takeaway') renderAdminTakeaways(); else renderAdminGroceries(); }
-        async function adminDeleteStore(cat, type, storeId) { if(cat === 'takeaway') appData.takeaways[type] = appData.takeaways[type].filter(s => s.id !== storeId); else appData.groceries = appData.groceries.filter(s => s.id !== storeId); await saveData(); if(cat === 'takeaway') renderAdminTakeaways(); else renderAdminGroceries(); }
-        async function adminDeleteMenuItem(cat, type, storeId, itemId) { let store; if(cat === 'takeaway') store = appData.takeaways[type].find(s => s.id === storeId); else store = appData.groceries.find(s => s.id === storeId); store.menu = store.menu.filter(item => item.id !== itemId); await saveData(); if(cat === 'takeaway') renderAdminTakeaways(); else renderAdminGroceries(); }
-        function renderAdminGroceries() { let html = '<div class="admin-card"><h4>Add New Grocery Store</h4><div class="form-row"><div class="form-group"><label>Store Name</label><input type="text" id="g_name"></div><div class="form-group"><label>Logo (Emoji)</label><input type="text" id="g_logo" value="🛒"></div></div><button class="btn-gold" style="width: 100%;" onclick="adminAddGrocery()">Add Store</button></div>'; html += '<div class="admin-card"><h4>Current Grocery Stores & Catalogues</h4>'; appData.groceries.forEach(store => { html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;"><strong>${store.logo} ${store.name}</strong> <button onclick="adminDeleteStore('grocery', null, '${store.id}')" style="float: right; color: red; border: none; background: none; cursor: pointer;">Delete Store</button><div style="margin-top: 10px;">`; store.menu.forEach(item => { html += `<div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee;"><span>${item.name} - R${item.price.toFixed(2)}</span><button onclick="adminDeleteMenuItem('grocery', null, '${store.id}', '${item.id}')" style="color: red; border: none; background: none; cursor: pointer;">Remove</button></div>`; }); html += `<div class="form-row" style="margin-top: 10px;"><input type="text" id="menu_name_${store.id}" placeholder="Product Name"><input type="number" id="menu_price_${store.id}" placeholder="Price (R)"></div><button class="add-btn" style="margin-top: 5px;" onclick="adminAddMenuItem('grocery', null, '${store.id}')">Add Product</button></div></div>`; }); html += '</div>'; document.getElementById('admin-content').innerHTML = html; }
-        async function adminAddGrocery() { const name = document.getElementById('g_name').value; const logo = document.getElementById('g_logo').value || '🛒'; if(!name) { alert('Please enter a store name'); return; } const id = name.toLowerCase().replace(/\s/g, '') + Date.now().toString().slice(-4); appData.groceries.push({ id, name, logo, menu: [] }); await saveData(); renderAdminGroceries(); }
+        function renderAdminImages() {
+            const cats = ['takeaways', 'groceries', 'parcels', 'furniture', 'track'];
+            let html = '<div class="form-container"><h3>Homepage Slider Images (Max 3)</h3><p style="margin-bottom: 10px;">Upload up to 3 images for the homepage slider. If left empty, default gradients are used.</p>';
+            
+            for(let i=0; i<3; i++) {
+                html += `<div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+                    <div style="width: 120px; height: 80px; background: ${appData.sliderImages[i] ? `url('${appData.sliderImages[i]}')` : 'linear-gradient(45deg, #123B2A, #1e5c43)'}; background-size: cover; background-position: center; border-radius: 8px; border: 1px solid #ccc;"></div>
+                    <div>
+                        <label style="font-weight: bold; color: var(--forest); font-size: 18px;">Slide ${i+1}</label><br>
+                        <input type="file" accept="image/*" onchange="handleSliderUpload(event, ${i})" style="margin-top: 10px;">
+                        ${appData.sliderImages[i] ? `<button onclick="removeSliderImage(${i})" style="color: red; border: none; background: none; cursor: pointer; margin-top: 5px;">Remove Image</button>` : ''}
+                    </div>
+                </div>`;
+            }
+
+            html += '<hr style="margin: 30px 0;"><h3>Category Images</h3><p style="margin-bottom: 10px;">Upload images for the 5 service cards on the homepage.</p>';
+            cats.forEach(cat => {
+                html += `<div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+                    <div style="width: 120px; height: 80px; background-image: url('${appData.categories[cat]}'); background-size: cover; background-position: center; border-radius: 8px; border: 1px solid #ccc;"></div>
+                    <div>
+                        <label style="text-transform: capitalize; font-weight: bold; color: var(--forest); font-size: 18px;">${cat}</label><br>
+                        <input type="file" accept="image/*" onchange="handleImageUpload(event, '${cat}')" style="margin-top: 10px;">
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+            document.getElementById('admin-content').innerHTML = html;
+        }
+        async function handleSliderUpload(event, index) {
+            const file = event.target.files[0]; if (!file) return;
+            const url = await uploadImage(file);
+            if(!appData.sliderImages) appData.sliderImages = [];
+            appData.sliderImages[index] = url;
+            await saveConfig();
+            alert('Slider image updated!');
+            renderAdminImages();
+        }
+        async function removeSliderImage(index) {
+            appData.sliderImages.splice(index, 1);
+            await saveConfig();
+            renderAdminImages();
+        }
+        async function handleImageUpload(event, cat) {
+            const file = event.target.files[0]; if (!file) return;
+            const url = await uploadImage(file);
+            appData.categories[cat] = url;
+            await saveConfig();
+            alert(cat + ' image updated successfully!');
+            renderAdminImages();
+        }
+
+        function renderAdminTakeaways() {
+            let html = '<div class="admin-card"><h4>Add New Takeaway Store</h4><div class="form-row"><div class="form-group"><label>Type</label><select id="t_type"><option value="franchises">Franchise</option><option value="local">Local</option></select></div><div class="form-group"><label>Store Name</label><input type="text" id="t_name"></div><div class="form-group"><label>Logo (Emoji)</label><input type="text" id="t_logo" value="🍔"></div><div class="form-group"><label>Store Logo Image</label><input type="file" id="t_logo_file" accept="image/*"></div></div><button class="btn-gold" style="width: 100%;" onclick="adminAddTakeaway()">Add Store</button></div>';
+            html += '<div class="admin-card"><h4>Current Takeaways & Menus</h4>';
+            ['franchises', 'local'].forEach(type => {
+                html += `<h5 style="color: var(--forest); margin-top: 20px; text-transform: capitalize;">${type}</h5>`;
+                appData.takeaways[type].forEach(store => {
+                    html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;"><strong>${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : store.logo} ${store.name}</strong> <button onclick="adminDeleteStore('takeaway', '${type}', '${store.id}')" style="float: right; color: red; border: none; background: none; cursor: pointer;">Delete Store</button><div style="margin-top: 10px;">`; store.menu.forEach(item => { html += `<div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee;"><span>${item.img ? `<img src="${item.img}" class="item-img">` : ''} ${item.name} - R${item.price.toFixed(2)}</span><button onclick="adminDeleteMenuItem('takeaway', '${type}', '${store.id}', '${item.id}')" style="color: red; border: none; background: none; cursor: pointer;">Remove</button></div>`; }); html += `<div class="form-row" style="margin-top: 10px;"><input type="text" id="menu_name_${store.id}" placeholder="Item Name"><input type="number" id="menu_price_${store.id}" placeholder="Price (R)"></div><div class="form-group" style="margin-top: 10px;"><label>Item Picture</label><input type="file" id="menu_img_${store.id}" accept="image/*"></div><button class="add-btn" style="margin-top: 5px;" onclick="adminAddMenuItem('takeaway', '${type}', '${store.id}')">Add Menu Item</button></div></div>`; }); }); html += '</div>';
+            document.getElementById('admin-content').innerHTML = html;
+        }
+        async function adminAddTakeaway() {
+            const type = document.getElementById('t_type').value;
+            const name = document.getElementById('t_name').value;
+            const logo = document.getElementById('t_logo').value || '🍽️';
+            const logoFile = document.getElementById('t_logo_file').files[0];
+            if(!name) { alert('Please enter a store name'); return; }
+            let logoImg = null;
+            if(logoFile) logoImg = await uploadImage(logoFile);
+            const id = name.toLowerCase().replace(/\s/g, '') + Date.now().toString().slice(-4);
+            appData.takeaways[type].push({ id, name, logo, logoImg, menu: [] });
+            await saveConfig();
+            renderAdminTakeaways();
+        }
+        async function adminAddMenuItem(cat, type, storeId) {
+            let store;
+            if(cat === 'takeaway') store = appData.takeaways[type].find(s => s.id === storeId);
+            else store = appData.groceries.find(s => s.id === storeId);
+            const name = document.getElementById(`menu_name_${storeId}`).value;
+            const price = parseFloat(document.getElementById(`menu_price_${storeId}`).value);
+            const imgFile = document.getElementById(`menu_img_${storeId}`).files[0];
+            if(!name || !price) { alert('Enter item name and price'); return; }
+            let img = null;
+            if(imgFile) img = await uploadImage(imgFile);
+            store.menu.push({ id: Date.now().toString(), name, price, img });
+            await saveConfig();
+            if(cat === 'takeaway') renderAdminTakeaways();
+            else renderAdminGroceries();
+        }
+        async function adminDeleteStore(cat, type, storeId) { if(cat === 'takeaway') appData.takeaways[type] = appData.takeaways[type].filter(s => s.id !== storeId); else appData.groceries = appData.groceries.filter(s => s.id !== storeId); await saveConfig(); if(cat === 'takeaway') renderAdminTakeaways(); else renderAdminGroceries(); }
+        async function adminDeleteMenuItem(cat, type, storeId, itemId) { let store; if(cat === 'takeaway') store = appData.takeaways[type].find(s => s.id === storeId); else store = appData.groceries.find(s => s.id === storeId); store.menu = store.menu.filter(item => item.id !== itemId); await saveConfig(); if(cat === 'takeaway') renderAdminTakeaways(); else renderAdminGroceries(); }
+        function renderAdminGroceries() {
+            let html = '<div class="admin-card"><h4>Add New Grocery Store</h4><div class="form-row"><div class="form-group"><label>Store Name</label><input type="text" id="g_name"></div><div class="form-group"><label>Logo (Emoji)</label><input type="text" id="g_logo" value="🛒"></div><div class="form-group"><label>Store Logo Image</label><input type="file" id="g_logo_file" accept="image/*"></div></div><button class="btn-gold" style="width: 100%;" onclick="adminAddGrocery()">Add Store</button></div>';
+            html += '<div class="admin-card"><h4>Current Grocery Stores & Catalogues</h4>';
+            appData.groceries.forEach(store => {
+                html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;"><strong>${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : store.logo} ${store.name}</strong> <button onclick="adminDeleteStore('grocery', null, '${store.id}')" style="float: right; color: red; border: none; background: none; cursor: pointer;">Delete Store</button><div style="margin-top: 10px;">`; store.menu.forEach(item => { html += `<div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee;"><span>${item.img ? `<img src="${item.img}" class="item-img">` : ''} ${item.name} - R${item.price.toFixed(2)}</span><button onclick="adminDeleteMenuItem('grocery', null, '${store.id}', '${item.id}')" style="color: red; border: none; background: none; cursor: pointer;">Remove</button></div>`; }); html += `<div class="form-row" style="margin-top: 10px;"><input type="text" id="menu_name_${store.id}" placeholder="Product Name"><input type="number" id="menu_price_${store.id}" placeholder="Price (R)"></div><div class="form-group" style="margin-top: 10px;"><label>Product Picture</label><input type="file" id="menu_img_${store.id}" accept="image/*"></div><button class="add-btn" style="margin-top: 5px;" onclick="adminAddMenuItem('grocery', null, '${store.id}')">Add Product</button></div></div>`; });
+            html += '</div>';
+            document.getElementById('admin-content').innerHTML = html;
+        }
+        async function adminAddGrocery() {
+            const name = document.getElementById('g_name').value;
+            const logo = document.getElementById('g_logo').value || '🛒';
+            const logoFile = document.getElementById('g_logo_file').files[0];
+            if(!name) { alert('Please enter a store name'); return; }
+            let logoImg = null;
+            if(logoFile) logoImg = await uploadImage(logoFile);
+            const id = name.toLowerCase().replace(/\s/g, '') + Date.now().toString().slice(-4);
+            appData.groceries.push({ id, name, logo, logoImg, menu: [] });
+            await saveConfig();
+            renderAdminGroceries();
+        }
 
         (async () => { await fetchData(); navigate('home'); })();
     </script>
