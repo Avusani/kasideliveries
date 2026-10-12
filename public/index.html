@@ -146,6 +146,11 @@
         let cart = [], currentSlide = 0, slideInterval, appData = {}, adminTab = 'dashboard', isAdmin = false;
         const WHATSAPP_NUMBER = "27123456789"; 
 
+        // Helper to safely escape strings for HTML attributes (Fixes McDonald's bug)
+        function safeStr(str) {
+            return String(str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
         async function fetchData() { 
             const res = await fetch('/api/data'); 
             appData = await res.json(); 
@@ -260,7 +265,7 @@
             let html = `<span class="back-link" onclick="navigate('takeaways')">← Back to Takeaways</span><h2 style="color: var(--forest); margin-bottom: 20px;">${type === 'franchises' ? 'Franchises' : 'Local Takeaways'}</h2>`; 
             if(stores.length === 0) html += '<p>No stores available yet.</p>'; 
             stores.forEach(store => { 
-                html += `<div class="store-item" onclick="navigate('restaurant-menu', '${store.id}')" style="cursor: pointer;">
+                html += `<div class="store-item" onclick="navigate('restaurant-menu', '${safeStr(store.id)}')" style="cursor: pointer;">
                     <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
                         ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
                         <div><h4>${store.name}</h4><p>View menu and place order</p></div>
@@ -300,7 +305,7 @@
                 </div>
                 <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
                     <div class="item-price">${oldPriceHtml} R${parseFloat(price).toFixed(2)}</div>
-                    <button class="add-btn" onclick="addToCart('${item.id}', '${storeName}', '${item.name}', ${price}, '${item.size || ''}', '${item.options || ''}')">Add</button>
+                    <button class="add-btn" onclick="addToCart('${safeStr(item.id)}', '${safeStr(storeName)}', '${safeStr(item.name)}', ${price}, '${safeStr(item.size || '')}', '${safeStr(item.options || '')}')">Add</button>
                 </div>
             </div>`;
         }
@@ -311,7 +316,7 @@
             if(!store) appData.takeaways.local.forEach(s => { if(s.id === storeId) { store = s; storeType = 'local'; } }); 
             if (!store) return '<h2>Store not found</h2>'; 
             
-            let html = `<span class="back-link" onclick="navigate('takeaway-list', '${storeType}')">← Back to Stores</span><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest);">${store.name}</h2></div>`; 
+            let html = `<span class="back-link" onclick="navigate('takeaway-list', '${safeStr(storeType)}')">← Back to Stores</span><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest);">${store.name}</h2></div>`; 
             
             if(store.menu.length === 0) return html + '<p>No menu items yet.</p>';
 
@@ -341,7 +346,7 @@
             let html = `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Grocery Stores</h2>`; 
             if(appData.groceries.length === 0) html += '<p>No stores available yet.</p>'; 
             appData.groceries.forEach(store => { 
-                html += `<div class="store-item" onclick="navigate('grocery-menu', '${store.id}')" style="cursor: pointer;">
+                html += `<div class="store-item" onclick="navigate('grocery-menu', '${safeStr(store.id)}')" style="cursor: pointer;">
                     <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
                         ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
                         <div><h4>${store.name}</h4><p>Browse catalogue and shop</p></div>
@@ -439,7 +444,7 @@
             stores.forEach(store => { 
                 html += `<div class="cart-store-header">📍 ${store}</div>`; 
                 grouped[store].forEach(item => { 
-                    html += `<div class="cart-item"><div><strong>${item.name}</strong> x ${item.qty} <button onclick="removeFromCart('${item.id}', '${item.name}')" style="color: red; border: none; background: none; cursor: pointer; margin-left: 10px;">✖</button></div><div>R${(item.price * item.qty).toFixed(2)}</div></div>`; 
+                    html += `<div class="cart-item"><div><strong>${item.name}</strong> x ${item.qty} <button onclick="removeFromCart('${safeStr(item.id)}', '${safeStr(item.name)}')" style="color: red; border: none; background: none; cursor: pointer; margin-left: 10px;">✖</button></div><div>R${(item.price * item.qty).toFixed(2)}</div></div>`; 
                 }); 
             }); 
             html += `<div class="cart-summary"><p>Products Subtotal: R${subtotal.toFixed(2)}</p><p>Additional-Store Fees: R${additionalStoreFee.toFixed(2)}</p><p class="total">Estimated Total: R${total.toFixed(2)}</p><p style="font-size: 12px; color: #666;">* Delivery fee will be confirmed on WhatsApp.</p><div class="trust-badge"><span>🔒</span> Trusted & Secure WhatsApp Checkout</div><button class="wa-btn" onclick="checkoutWhatsApp()">Checkout via WhatsApp</button></div>`; 
@@ -782,12 +787,12 @@
                 appData.takeaways[type].forEach(store => {
                     html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;">
                         <strong>${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : store.logo} ${store.name}</strong> 
-                        <button onclick="adminDeleteStore('takeaway', '${type}', '${store.id}')" style="float: right; color: red; border: none; background: none; cursor: pointer;">Delete Store</button>
+                        <button onclick="adminDeleteStore('takeaway', '${safeStr(type)}', '${safeStr(store.id)}')" style="float: right; color: red; border: none; background: none; cursor: pointer;">Delete Store</button>
                         
                         <div style="margin-top: 15px; background: #e8f5e9; padding: 10px; border-radius: 5px;">
                             <strong style="color: var(--forest);">Bulk Upload Menu (CSV)</strong><br>
                             <small>Columns: Category, Name, Size, Flavor, Price, OnSale(true/false), SalePrice, Options(e.g. Meal|30,Just Burger|0)</small>
-                            <input type="file" accept=".csv" onchange="handleBulkUpload(event, 'takeaway', '${type}', '${store.id}')" style="margin-top: 5px; font-size: 12px;">
+                            <input type="file" accept=".csv" onchange="handleBulkUpload(event, 'takeaway', '${safeStr(type)}', '${safeStr(store.id)}')" style="margin-top: 5px; font-size: 12px;">
                         </div>
 
                         <div style="margin-top: 10px;">`; 
@@ -798,7 +803,7 @@
                             noImgItems.forEach(item => {
                                 html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px;">
                                     <span>${item.name}</span>
-                                    <input type="file" accept="image/*" onchange="uploadItemImg(event, 'takeaway', '${type}', '${store.id}', '${item.id}')">
+                                    <input type="file" accept="image/*" onchange="uploadItemImg(event, 'takeaway', '${safeStr(type)}', '${safeStr(store.id)}', '${safeStr(item.id)}')">
                                 </div>`;
                             });
                             html += '</div>';
@@ -817,8 +822,8 @@
                                     <input type="checkbox" id="i_onsale_${item.id}" ${item.onSale ? 'checked' : ''}>
                                     <label for="i_onsale_${item.id}" style="font-size: 12px;">On Sale</label>
                                 </div>
-                                <button class="add-btn" onclick="adminUpdateMenuItem('takeaway', '${type}', '${store.id}', '${item.id}')" style="padding: 5px; font-size: 12px;">Save</button>
-                                <button onclick="adminDeleteMenuItem('takeaway', '${type}', '${store.id}', '${item.id}')" style="color: red; border: none; background: none; cursor: pointer; font-size: 12px;">Delete</button>
+                                <button class="add-btn" onclick="adminUpdateMenuItem('takeaway', '${safeStr(type)}', '${safeStr(store.id)}', '${safeStr(item.id)}')" style="padding: 5px; font-size: 12px;">Save</button>
+                                <button onclick="adminDeleteMenuItem('takeaway', '${safeStr(type)}', '${safeStr(store.id)}', '${safeStr(item.id)}')" style="color: red; border: none; background: none; cursor: pointer; font-size: 12px;">Delete</button>
                             </div>`; 
                         }); 
                         
@@ -827,7 +832,7 @@
                             <input type="text" id="menu_size_${store.id}" placeholder="Size" style="padding: 5px; font-size: 12px;">
                             <input type="number" id="menu_price_${store.id}" placeholder="Price" style="padding: 5px; font-size: 12px;">
                         </div>
-                        <button class="add-btn" style="margin-top: 5px; padding: 5px; font-size: 12px;" onclick="adminAddMenuItem('takeaway', '${type}', '${store.id}')">Add Item Manually</button>
+                        <button class="add-btn" style="margin-top: 5px; padding: 5px; font-size: 12px;" onclick="adminAddMenuItem('takeaway', '${safeStr(type)}', '${safeStr(store.id)}')">Add Item Manually</button>
                     </div></div>`; 
                 }); 
             }); 
@@ -849,7 +854,7 @@
                     results.data.forEach(row => {
                         if(row.Name) {
                             store.menu.push({
-                                id: 'm' + Date.now() + Math.random().toString(36).substr(2, 5),
+                                id: 'm' + Date.now() + Math.floor(Math.random() * 100000),
                                 name: row.Name,
                                 category: row.Category || 'General',
                                 size: row.Size || '',
@@ -894,7 +899,8 @@
             if(!name) { alert('Please enter a store name'); return; }
             let logoImg = null;
             if(logoFile) logoImg = await uploadImage(logoFile);
-            const id = name.toLowerCase().replace(/\s/g, '') + Date.now().toString().slice(-4);
+            // FIX: Removed special characters from ID to prevent HTML click bugs
+            const id = name.toLowerCase().replace(/[^a-z0-9]/g, '') + Date.now().toString().slice(-4);
             appData.takeaways[type].push({ id, name, logo, logoImg, menu: [] });
             await saveConfig();
             renderAdminTakeaways();
@@ -966,12 +972,12 @@
             appData.groceries.forEach(store => {
                 html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;">
                     <strong>${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : store.logo} ${store.name}</strong> 
-                    <button onclick="adminDeleteStore('grocery', null, '${store.id}')" style="float: right; color: red; border: none; background: none; cursor: pointer;">Delete Store</button>
+                    <button onclick="adminDeleteStore('grocery', null, '${safeStr(store.id)}')" style="float: right; color: red; border: none; background: none; cursor: pointer;">Delete Store</button>
                     
                     <div style="margin-top: 15px; background: #e8f5e9; padding: 10px; border-radius: 5px;">
                         <strong style="color: var(--forest);">Bulk Upload Products (CSV)</strong><br>
                         <small>Columns: Category, Name, Size, Flavor, Price, OnSale(true/false), SalePrice, Options</small>
-                        <input type="file" accept=".csv" onchange="handleBulkUpload(event, 'grocery', null, '${store.id}')" style="margin-top: 5px; font-size: 12px;">
+                        <input type="file" accept=".csv" onchange="handleBulkUpload(event, 'grocery', null, '${safeStr(store.id)}')" style="margin-top: 5px; font-size: 12px;">
                     </div>
 
                     <div style="margin-top: 10px;">`; 
@@ -982,7 +988,7 @@
                         noImgItems.forEach(item => {
                             html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px;">
                                 <span>${item.name}</span>
-                                <input type="file" accept="image/*" onchange="uploadItemImg(event, 'grocery', null, '${store.id}', '${item.id}')">
+                                <input type="file" accept="image/*" onchange="uploadItemImg(event, 'grocery', null, '${safeStr(store.id)}', '${safeStr(item.id)}')">
                             </div>`;
                         });
                         html += '</div>';
@@ -1001,8 +1007,8 @@
                                 <input type="checkbox" id="i_onsale_${item.id}" ${item.onSale ? 'checked' : ''}>
                                 <label for="i_onsale_${item.id}" style="font-size: 12px;">On Sale</label>
                             </div>
-                            <button class="add-btn" onclick="adminUpdateMenuItem('grocery', null, '${store.id}', '${item.id}')" style="padding: 5px; font-size: 12px;">Save</button>
-                            <button onclick="adminDeleteMenuItem('grocery', null, '${store.id}', '${item.id}')" style="color: red; border: none; background: none; cursor: pointer; font-size: 12px;">Delete</button>
+                            <button class="add-btn" onclick="adminUpdateMenuItem('grocery', null, '${safeStr(store.id)}', '${safeStr(item.id)}')" style="padding: 5px; font-size: 12px;">Save</button>
+                            <button onclick="adminDeleteMenuItem('grocery', null, '${safeStr(store.id)}', '${safeStr(item.id)}')" style="color: red; border: none; background: none; cursor: pointer; font-size: 12px;">Delete</button>
                         </div>`; 
                     }); 
                     
@@ -1011,7 +1017,7 @@
                         <input type="text" id="menu_size_${store.id}" placeholder="Size" style="padding: 5px; font-size: 12px;">
                         <input type="number" id="menu_price_${store.id}" placeholder="Price" style="padding: 5px; font-size: 12px;">
                     </div>
-                    <button class="add-btn" style="margin-top: 5px; padding: 5px; font-size: 12px;" onclick="adminAddMenuItem('grocery', null, '${store.id}')">Add Product Manually</button>
+                    <button class="add-btn" style="margin-top: 5px; padding: 5px; font-size: 12px;" onclick="adminAddMenuItem('grocery', null, '${safeStr(store.id)}')">Add Product Manually</button>
                 </div></div>`; 
             });
             html += '</div>';
@@ -1025,7 +1031,8 @@
             if(!name) { alert('Please enter a store name'); return; }
             let logoImg = null;
             if(logoFile) logoImg = await uploadImage(logoFile);
-            const id = name.toLowerCase().replace(/\s/g, '') + Date.now().toString().slice(-4);
+            // FIX: Removed special characters from ID to prevent HTML click bugs
+            const id = name.toLowerCase().replace(/[^a-z0-9]/g, '') + Date.now().toString().slice(-4);
             appData.groceries.push({ id, name, logo, logoImg, menu: [] });
             await saveConfig();
             renderAdminGroceries();
