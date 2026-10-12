@@ -21,19 +21,14 @@ const pool = new Pool({
 const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 
-// Create uploads folder if it doesn't exist
 if (!fs.existsSync(UPLOADS_DIR)) {
     fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
-// Serve the uploaded images permanently
 app.use('/uploads', express.static(UPLOADS_DIR));
 
-// Configure Multer for file uploads
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, UPLOADS_DIR);
-    },
+    destination: function (req, file, cb) { cb(null, UPLOADS_DIR); },
     filename: function (req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, uniqueSuffix + path.extname(file.originalname));
@@ -41,7 +36,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// API: Handle File Uploads
 app.post('/api/upload', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     res.json({ url: `/uploads/${req.file.filename}` });
@@ -51,12 +45,14 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 const defaultConfig = {
     users: [{ username: 'admin', password: 'admin123' }],
     siteContent: {
+        websiteName: "KasiDeliveries",
+        websiteLogo: null,
         about: "KasiDeliveries is your trusted local delivery partner. We connect you with your favourite food, groceries, and transport services.",
         contact: "WhatsApp: 0712345678\nEmail: support@kasideliveries.co.za",
         terms: "By using KasiDeliveries, you agree to our terms of service. Prices are estimates and confirmed on WhatsApp.",
         privacy: "We respect your privacy. Your personal details are only used for delivery purposes and are never shared with third parties."
     },
-    sliderImages: [], // Up to 3 images
+    sliderImages: [], 
     categories: {
         takeaways: 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800',
         groceries: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=800',
@@ -99,17 +95,18 @@ async function initDB() {
     }
 }
 
-// API: Get all data
 app.get('/api/data', async (req, res) => {
     try {
         const configRes = await pool.query('SELECT data FROM app_state WHERE id = 1');
         let config = configRes.rows[0].data;
         
-        // Auto-migrate missing fields
         let needsSave = false;
         for(let key in defaultConfig) {
             if(!config.hasOwnProperty(key)) { config[key] = defaultConfig[key]; needsSave = true; }
         }
+        if(!config.siteContent.hasOwnProperty('websiteName')) { config.siteContent.websiteName = "KasiDeliveries"; needsSave = true; }
+        if(!config.siteContent.hasOwnProperty('websiteLogo')) { config.siteContent.websiteLogo = null; needsSave = true; }
+        
         if(needsSave) await pool.query('UPDATE app_state SET data = $1 WHERE id = 1', [JSON.stringify(config)]);
 
         const ordersRes = await pool.query('SELECT ref, type, details, total, date, status FROM orders ORDER BY date DESC');
@@ -128,7 +125,6 @@ app.get('/api/data', async (req, res) => {
     }
 });
 
-// API: Save configuration
 app.post('/api/config', async (req, res) => {
     try {
         await pool.query('UPDATE app_state SET data = $1 WHERE id = 1', [JSON.stringify(req.body)]);
@@ -139,7 +135,6 @@ app.post('/api/config', async (req, res) => {
     }
 });
 
-// API: Save Order
 app.post('/api/order', async (req, res) => {
     const { ref, type, details, total, date, status } = req.body;
     try {
@@ -149,7 +144,6 @@ app.post('/api/order', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed to save order' }); }
 });
 
-// API: Save Parcel Request
 app.post('/api/parcel', async (req, res) => {
     const { ref, type, details, date, status } = req.body;
     try {
@@ -159,7 +153,6 @@ app.post('/api/parcel', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed to save parcel' }); }
 });
 
-// API: Save Furniture Request
 app.post('/api/furniture', async (req, res) => {
     const { ref, vehicle, details, date, status } = req.body;
     try {
