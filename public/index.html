@@ -24,7 +24,7 @@
         
         /* Hero Slider */
         .hero-slider { position: relative; border-radius: 10px; overflow: hidden; margin-bottom: 20px; height: 250px; background-color: var(--forest); }
-        .hero-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; color: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; opacity: 0; transition: opacity 1s ease-in-out; background-size: contain; background-repeat: no-repeat; background-position: center; }
+        .hero-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; color: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; opacity: 0; transition: opacity 1s ease-in-out; background-size: cover; background-repeat: no-repeat; background-position: center; }
         .hero-slide.active { opacity: 1; }
         .hero-slide h1 { font-size: 24px; margin-bottom: 10px; z-index: 2; color: #000; background: rgba(255,255,255,0.9); padding: 5px 15px; border-radius: 10px; }
         .hero-slide p { font-size: 14px; margin-bottom: 20px; z-index: 2; color: #000; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 10px; }
@@ -39,7 +39,7 @@
         
         /* Grids & Cards */
         .categories-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 30px; }
-        .category-card { position: relative; min-height: 180px; border-radius: 10px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; padding: 15px; color: var(--white); background-color: var(--forest); background-size: contain; background-repeat: no-repeat; background-position: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: transform 0.3s; border: 1px solid #ccc; }
+        .category-card { position: relative; min-height: 180px; border-radius: 10px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; padding: 15px; color: var(--white); background-color: var(--forest); background-size: cover; background-repeat: no-repeat; background-position: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: transform 0.3s; border: 1px solid #ccc; }
         .category-card:hover { transform: translateY(-5px); }
         .category-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to top, rgba(18, 59, 42, 0.9) 20%, rgba(18, 59, 42, 0.4) 60%, transparent 100%); z-index: 1; }
         .category-card h3, .category-card p { position: relative; z-index: 2; }
@@ -180,6 +180,9 @@
             if(!appData.siteContent) appData.siteContent = {};
             if(!appData.siteContent.websiteName) appData.siteContent.websiteName = "KasiDeliveries";
             if(!appData.siteContent.websiteLogo) appData.siteContent.websiteLogo = null;
+            if(!appData.categories.van) appData.categories.van = 'https://images.unsplash.com/photo-1597007030739-6d2e7172ee5b?q=80&w=800';
+            if(!appData.categories.bakkie) appData.categories.bakkie = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
+            if(!appData.categories.truck) appData.categories.truck = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
             updateBranding();
         }
         
@@ -261,7 +264,7 @@
             const slidesHtml = slides.map((slide, i) => {
                 let bg = slide.bg;
                 if(appData.sliderImages && appData.sliderImages[i]) bg = `url('${appData.sliderImages[i]}')`;
-                return `<div class="hero-slide ${i === index ? 'active' : ''}" style="background: ${bg}; background-size: contain; background-repeat: no-repeat; background-position: center;"><h1>${slide.title}</h1><p>${slide.text}</p><button class="btn-gold" onclick="${slide.action}">${slide.btnText}</button><button class="btn-outline" onclick="document.getElementById('categories').scrollIntoView({ behavior: 'smooth' })">Explore Services</button></div>`;
+                return `<div class="hero-slide ${i === index ? 'active' : ''}" style="background: ${bg}; background-size: cover; background-repeat: no-repeat; background-position: center;"><h1>${slide.title}</h1><p>${slide.text}</p><button class="btn-gold" onclick="${slide.action}">${slide.btnText}</button><button class="btn-outline" onclick="document.getElementById('categories').scrollIntoView({ behavior: 'smooth' })">Explore Services</button></div>`;
             }).join('');
             const dotsHtml = slides.map((_, i) => `<div class="dot ${i === index ? 'active' : ''}" onclick="changeSlide(${i})"></div>`).join('');
             document.getElementById('hero-container').innerHTML = slidesHtml + `<div class="slider-dots">${dotsHtml}</div>`;
@@ -270,18 +273,18 @@
 
         function renderHome() {
             return `<div id="hero-container" class="hero-slider"></div><h2 style="color: var(--forest); text-align: center; margin-bottom: 20px;">Our Services</h2><div class="categories-grid" id="categories">
-                <div class="category-card" style="background-image: url('${appData.categories.takeaways}'); background-size: contain; background-repeat: no-repeat; background-position: center;" onclick="navigate('takeaways')"><h3>🍔 Takeaways</h3><p>Order from franchises and local restaurants.</p></div>
-                <div class="category-card" style="background-image: url('${appData.categories.groceries}'); background-size: contain; background-repeat: no-repeat; background-position: center;" onclick="navigate('groceries')"><h3>🛒 Groceries</h3><p>Shop from different grocery stores.</p></div>
-                <div class="category-card" style="background-image: url('${appData.categories.parcels}'); background-size: contain; background-repeat: no-repeat; background-position: center;" onclick="navigate('parcels')"><h3>📦 Parcels</h3><p>Send a parcel or arrange a collection.</p></div>
-                <div class="category-card" style="background-image: url('${appData.categories.furniture}'); background-size: contain; background-repeat: no-repeat; background-position: center;" onclick="navigate('furniture')"><h3>🛋️ Furniture Transport</h3><p>Move furniture and household items.</p></div>
-                <div class="category-card" style="background-image: url('${appData.categories.track}'); background-size: contain; background-repeat: no-repeat; background-position: center;" onclick="navigate('track')"><h3>📍 Track My Order</h3><p>Check your order status.</p></div>
+                <div class="category-card" style="background-image: url('${appData.categories.takeaways}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('takeaways')"><h3>🍔 Takeaways</h3><p>Order from franchises and local restaurants.</p></div>
+                <div class="category-card" style="background-image: url('${appData.categories.groceries}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('groceries')"><h3>🛒 Groceries</h3><p>Shop from different grocery stores.</p></div>
+                <div class="category-card" style="background-image: url('${appData.categories.parcels}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('parcels')"><h3>📦 Parcels</h3><p>Send a parcel or arrange a collection.</p></div>
+                <div class="category-card" style="background-image: url('${appData.categories.furniture}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('furniture')"><h3>🛋️ Furniture Transport</h3><p>Move furniture and household items.</p></div>
+                <div class="category-card" style="background-image: url('${appData.categories.track}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('track')"><h3>📍 Track My Order</h3><p>Check your order status.</p></div>
             </div>`;
         }
         
         function renderTakeawaysHub() { 
             return `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Takeaways</h2><div class="categories-grid">
-                <div class="category-card" style="background-image: url('${appData.categories.takeaways}'); background-size: contain; background-repeat: no-repeat; background-position: center;" onclick="navigate('takeaway-list', 'franchises')"><h3>🍗 Franchises</h3><p>Popular fast-food brands.</p></div>
-                <div class="category-card" style="background-image: url('https://images.unsplash.com/photo-1565299585323-38d6b0865b47?q=80&w=800'); background-size: contain; background-repeat: no-repeat; background-position: center;" onclick="navigate('takeaway-list', 'local')"><h3>🍽️ Local Takeaways</h3><p>Independent restaurants and local businesses.</p></div>
+                <div class="category-card" style="background-image: url('${appData.categories.takeaways}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('takeaway-list', 'franchises')"><h3>🍗 Franchises</h3><p>Popular fast-food brands.</p></div>
+                <div class="category-card" style="background-image: url('https://images.unsplash.com/photo-1565299585323-38d6b0865b47?q=80&w=800'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('takeaway-list', 'local')"><h3>🍽️ Local Takeaways</h3><p>Independent restaurants and local businesses.</p></div>
             </div>`; 
         }
         
@@ -360,8 +363,8 @@
         
         function renderParcelOptions() { 
             return `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">KasiDeliveries Parcels</h2><p style="text-align: center; margin-bottom: 30px;">What would you like to do?</p><div class="categories-grid">
-                <div class="category-card" style="background-image: url('${appData.categories.parcels}'); background-size: contain; background-repeat: no-repeat; background-position: center;" onclick="navigate('send-parcel')"><h3>📤 Send a Parcel</h3><p>Send a parcel to someone nearby or far.</p></div>
-                <div class="category-card" style="background-image: url('${appData.categories.track}'); background-size: contain; background-repeat: no-repeat; background-position: center;" onclick="navigate('collect-parcel')"><h3>📥 Collect a Parcel</h3><p>Collect a parcel sent to you or holding for you.</p></div>
+                <div class="category-card" style="background-image: url('${appData.categories.parcels}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('send-parcel')"><h3>📤 Send a Parcel</h3><p>Send a parcel to someone nearby or far.</p></div>
+                <div class="category-card" style="background-image: url('${appData.categories.track}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('collect-parcel')"><h3>📥 Collect a Parcel</h3><p>Collect a parcel sent to you or holding for you.</p></div>
             </div>`; 
         }
         
@@ -375,9 +378,9 @@
         
         function renderFurnitureHub() { 
             return `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Furniture Transport</h2><p style="text-align: center; margin-bottom: 30px;">Select the type of vehicle you need for your move:</p><div class="categories-grid">
-                <div class="category-card" style="background-image: url('https://images.unsplash.com/photo-1597007030739-6d2e7172ee5b?q=80&w=800'); background-size: contain; background-repeat: no-repeat; background-position: center;" onclick="navigate('furniture-form', 'Van')"><h3>🚐 Van</h3><p>For small moves (1-2 items)</p></div>
-                <div class="category-card" style="background-image: url('https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800'); background-size: contain; background-repeat: no-repeat; background-position: center;" onclick="navigate('furniture-form', 'Bakkie')"><h3>🛻 Bakkie</h3><p>For medium loads (beds, fridges)</p></div>
-                <div class="category-card" style="background-image: url('https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800'); background-size: contain; background-repeat: no-repeat; background-position: center;" onclick="navigate('furniture-form', 'Truck')"><h3>🚚 Truck</h3><p>For full household removals</p></div>
+                <div class="category-card" style="background-image: url('${appData.categories.van}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('furniture-form', 'Van')"><h3>🚐 Van</h3><p>For small moves (1-2 items)</p></div>
+                <div class="category-card" style="background-image: url('${appData.categories.bakkie}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('furniture-form', 'Bakkie')"><h3>🛻 Bakkie</h3><p>For medium loads (beds, fridges)</p></div>
+                <div class="category-card" style="background-image: url('${appData.categories.truck}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('furniture-form', 'Truck')"><h3>🚚 Truck</h3><p>For full household removals</p></div>
             </div>`; 
         }
         
@@ -660,12 +663,12 @@
         }
 
         function renderAdminImages() {
-            const cats = ['takeaways', 'groceries', 'parcels', 'furniture', 'track'];
+            const cats = ['takeaways', 'groceries', 'parcels', 'furniture', 'track', 'van', 'bakkie', 'truck'];
             let html = '<div class="form-container"><h3>Homepage Slider Images (Max 3)</h3><p style="margin-bottom: 10px;">Upload up to 3 images for the homepage slider. If left empty, default gradients are used.</p>';
             
             for(let i=0; i<3; i++) {
                 html += `<div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
-                    <div style="width: 120px; height: 80px; background: ${appData.sliderImages[i] ? `url('${appData.sliderImages[i]}')` : 'linear-gradient(45deg, #123B2A, #1e5c43)'}; background-size: contain; background-repeat: no-repeat; background-position: center; border-radius: 8px; border: 1px solid #ccc;"></div>
+                    <div style="width: 120px; height: 80px; background: ${appData.sliderImages[i] ? `url('${appData.sliderImages[i]}')` : 'linear-gradient(45deg, #123B2A, #1e5c43)'}; background-size: cover; background-repeat: no-repeat; background-position: center; border-radius: 8px; border: 1px solid #ccc;"></div>
                     <div>
                         <label style="font-weight: bold; color: var(--forest); font-size: 18px;">Slide ${i+1}</label><br>
                         <input type="file" accept="image/*" onchange="handleSliderUpload(event, ${i})" style="margin-top: 10px;">
@@ -677,7 +680,7 @@
             html += '<hr style="margin: 30px 0;"><h3>Category Images</h3><p style="margin-bottom: 10px;">Upload images for the 5 service cards on the homepage.</p>';
             cats.forEach(cat => {
                 html += `<div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
-                    <div style="width: 120px; height: 80px; background-image: url('${appData.categories[cat]}'); background-size: contain; background-repeat: no-repeat; background-position: center; border-radius: 8px; border: 1px solid #ccc;"></div>
+                    <div style="width: 120px; height: 80px; background-image: url('${appData.categories[cat]}'); background-size: cover; background-repeat: no-repeat; background-position: center; border-radius: 8px; border: 1px solid #ccc;"></div>
                     <div>
                         <label style="text-transform: capitalize; font-weight: bold; color: var(--forest); font-size: 18px;">${cat}</label><br>
                         <input type="file" accept="image/*" onchange="handleImageUpload(event, '${cat}')" style="margin-top: 10px;">
