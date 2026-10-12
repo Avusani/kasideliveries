@@ -98,6 +98,9 @@
         .sale-banner { color: red; font-weight: bold; margin-top: 20px; border-bottom: 2px solid red; padding-bottom: 5px; font-size: 18px; }
         .old-price { text-decoration: line-through; color: #999; font-size: 12px; margin-right: 5px; }
         
+        .upload-box { background: #f8f9fa; border: 2px dashed #ccc; padding: 15px; border-radius: 8px; text-align: center; margin-top: 10px; }
+        .admin-item-grid { display: grid; grid-template-columns: 1fr; gap: 5px; padding: 10px 0; border-bottom: 1px solid #eee; }
+        
         @media (min-width: 768px) {
             header { padding: 15px 20px; } .logo { font-size: 24px; } .brand-logo-img { height: 45px; }
             nav a, nav button, .cart-btn { font-size: 16px; } main { padding: 20px; }
@@ -111,6 +114,7 @@
             .wa-btn { padding: 15px 30px; font-size: 20px; }
             footer { padding: 40px 20px; } .footer-content { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); text-align: left; gap: 30px; }
             .admin-card { padding: 20px; } .stat-box { display: inline-block; margin-right: 10px; min-width: 150px; }
+            .admin-item-grid { grid-template-columns: 1fr 1fr 1fr; }
         }
     </style>
 </head>
@@ -152,6 +156,8 @@
             if(!appData.categories.van) appData.categories.van = 'https://images.unsplash.com/photo-1597007030739-6d2e7172ee5b?q=80&w=800';
             if(!appData.categories.bakkie) appData.categories.bakkie = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
             if(!appData.categories.truck) appData.categories.truck = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
+            if(!appData.categories.send_parcel) appData.categories.send_parcel = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800';
+            if(!appData.categories.collect_parcel) appData.categories.collect_parcel = 'https://images.unsplash.com/photo-1597306622489-5c80aa3c55e3?q=80&w=800';
             updateBranding();
         }
         
@@ -265,7 +271,6 @@
             return html; 
         }
         
-        // Reusable function to render menu rows (with categories and sales)
         function renderItemRow(item, storeName) {
             let price = item.onSale && item.salePrice ? item.salePrice : item.price;
             let oldPriceHtml = item.onSale && item.salePrice ? `<span class="old-price">R${item.price.toFixed(2)}</span>` : '';
@@ -310,7 +315,6 @@
             
             if(store.menu.length === 0) return html + '<p>No menu items yet.</p>';
 
-            // Group by Category and extract Sales
             const grouped = {};
             const onSaleItems = [];
             store.menu.forEach(item => {
@@ -379,17 +383,26 @@
         
         function renderParcelOptions() { 
             return `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">KasiDeliveries Parcels</h2><p style="text-align: center; margin-bottom: 30px;">What would you like to do?</p><div class="categories-grid">
-                <div class="category-card" style="background-image: url('${appData.categories.parcels}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('send-parcel')"><h3>📤 Send a Parcel</h3><p>Send a parcel to someone nearby or far.</p></div>
-                <div class="category-card" style="background-image: url('${appData.categories.track}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('collect-parcel')"><h3>📥 Collect a Parcel</h3><p>Collect a parcel sent to you or holding for you.</p></div>
+                <div class="category-card" style="background-image: url('${appData.categories.send_parcel}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('send-parcel')"><h3>📤 Send a Parcel</h3><p>Send a parcel to someone nearby or far.</p></div>
+                <div class="category-card" style="background-image: url('${appData.categories.collect_parcel}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('collect-parcel')"><h3>📥 Collect a Parcel</h3><p>Collect a parcel sent to you or holding for you.</p></div>
             </div>`; 
         }
         
         function renderSendParcel() { 
-            return `<span class="back-link" onclick="navigate('parcels')">← Back to Parcels</span><h2 style="color: var(--forest); margin-bottom: 20px;">Send a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('send')"><div class="form-section"><h3>Sender Details</h3><div class="form-row"><div class="form-group"><label>★ Full Name</label><input type="text" id="p_sender_name" required></div><div class="form-group"><label>★ Mobile Number</label><input type="tel" id="p_sender_phone" required></div></div></div><div class="form-section"><h3>Parcel Details</h3><div class="form-group"><label>★ Description of Contents</label><input type="text" id="p_desc" required></div><div class="form-group"><label>Upload Pictures (Max 5)</label><input type="file" id="p_send_files" accept="image/*" multiple></div></div><button type="submit" class="btn-gold" style="width: 100%;">Submit Parcel Request</button></form>`; 
+            return `<span class="back-link" onclick="navigate('parcels')">← Back to Parcels</span><h2 style="color: var(--forest); margin-bottom: 20px;">Send a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('send')">
+                <div class="form-section"><h3>Sender Details</h3><div class="form-row"><div class="form-group"><label>★ Full Name</label><input type="text" id="p_sender_name" required></div><div class="form-group"><label>★ Mobile Number</label><input type="tel" id="p_sender_phone" required></div></div></div>
+                <div class="form-section"><h3>Parcel Details</h3><div class="form-group"><label>★ Description of Contents</label><input type="text" id="p_desc" required></div></div>
+                <div class="form-section"><h3>Parcel Pictures (Max 5)</h3><div class="upload-box"><input type="file" id="p_send_files" accept="image/*" capture="environment" multiple><small style="color:#666; display:block; margin-top:5px;">Take a photo or select from gallery.</small></div></div>
+                <button type="submit" class="btn-gold" style="width: 100%;">Submit Parcel Request</button>
+            </form>`; 
         }
         
         function renderCollectParcel() { 
-            return `<span class="back-link" onclick="navigate('parcels')">← Back to Parcels</span><h2 style="color: var(--forest); margin-bottom: 20px;">Collect a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('collect')"><div class="form-section"><h3>Collector Details</h3><div class="form-group"><label>★ Full Name</label><input type="text" id="p_coll_name" required></div><div class="form-group"><label>★ ID Number</label><input type="text" id="p_coll_id" required></div></div><div class="form-section"><h3>Parcel Pictures (Optional)</h3><div class="form-group"><label>Upload Pictures (Max 5)</label><input type="file" id="p_coll_files" accept="image/*" multiple></div></div><button type="submit" class="btn-gold" style="width: 100%;">Submit Collection Request</button></form>`; 
+            return `<span class="back-link" onclick="navigate('parcels')">← Back to Parcels</span><h2 style="color: var(--forest); margin-bottom: 20px;">Collect a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('collect')">
+                <div class="form-section"><h3>Collector Details</h3><div class="form-group"><label>★ Full Name</label><input type="text" id="p_coll_name" required></div><div class="form-group"><label>★ ID Number</label><input type="text" id="p_coll_id" required></div></div>
+                <div class="form-section"><h3>Parcel Pictures (Max 5)</h3><div class="upload-box"><input type="file" id="p_coll_files" accept="image/*" capture="environment" multiple><small style="color:#666; display:block; margin-top:5px;">Take a photo or select from gallery.</small></div></div>
+                <button type="submit" class="btn-gold" style="width: 100%;">Submit Collection Request</button>
+            </form>`; 
         }
         
         function renderFurnitureHub() { 
@@ -405,7 +418,7 @@
                 <div class="form-section"><h3>Personal Details</h3><div class="form-group"><label>★ Full Name & Surname</label><input type="text" id="f_name" required></div><div class="form-group"><label>★ Mobile Number</label><input type="tel" id="f_phone" required></div></div>
                 <div class="form-section"><h3>Move Details</h3><div class="form-group"><label>★ Moving From (Address)</label><input type="text" id="f_from" required></div><div class="form-group"><label>★ Moving To (Address)</label><input type="text" id="f_to" required></div></div>
                 <div class="form-section"><h3>Furniture Details</h3><div class="form-row"><div class="form-group"><label>★ How many items?</label><input type="number" id="f_item_count" min="1" required></div></div><div class="form-group"><label>★ What are the items?</label><textarea id="f_item_names" placeholder="e.g. 1 double bed, 2 couches, 1 fridge" required></textarea></div></div>
-                <div class="form-section"><h3>Furniture Pictures</h3><div class="form-group"><label>Upload Pictures of Items</label><input type="file" id="f_files" accept="image/*" multiple></div></div>
+                <div class="form-section"><h3>Furniture Pictures</h3><div class="upload-box"><input type="file" id="f_files" accept="image/*" capture="environment" multiple><small style="color:#666; display:block; margin-top:5px;">Take a photo or select from gallery.</small></div></div>
                 <button type="submit" class="btn-gold" style="width: 100%;">Submit Quotation Request</button>
             </form>`; 
         }
@@ -426,14 +439,14 @@
             stores.forEach(store => { 
                 html += `<div class="cart-store-header">📍 ${store}</div>`; 
                 grouped[store].forEach(item => { 
-                    html += `<div class="cart-item"><div><strong>${item.name}</strong> ${item.size ? '<small>('+item.size+')</small>' : ''} x ${item.qty} <button onclick="removeFromCart('${item.id}', '${item.size || ''}', '${item.name}')" style="color: red; border: none; background: none; cursor: pointer; margin-left: 10px;">✖</button></div><div>R${(item.price * item.qty).toFixed(2)}</div></div>`; 
+                    html += `<div class="cart-item"><div><strong>${item.name}</strong> x ${item.qty} <button onclick="removeFromCart('${item.id}', '${item.name}')" style="color: red; border: none; background: none; cursor: pointer; margin-left: 10px;">✖</button></div><div>R${(item.price * item.qty).toFixed(2)}</div></div>`; 
                 }); 
             }); 
             html += `<div class="cart-summary"><p>Products Subtotal: R${subtotal.toFixed(2)}</p><p>Additional-Store Fees: R${additionalStoreFee.toFixed(2)}</p><p class="total">Estimated Total: R${total.toFixed(2)}</p><p style="font-size: 12px; color: #666;">* Delivery fee will be confirmed on WhatsApp.</p><div class="trust-badge"><span>🔒</span> Trusted & Secure WhatsApp Checkout</div><button class="wa-btn" onclick="checkoutWhatsApp()">Checkout via WhatsApp</button></div>`; 
             return html + `</div>`; 
         }
 
-        function addToCart(itemId, storeName, basePrice, size, optionsStr) {
+        function addToCart(itemId, storeName, baseName, basePrice, size, optionsStr) {
             const qtyInput = document.getElementById(`qty_${itemId}`);
             const qty = parseInt(qtyInput.value) || 1;
             
@@ -449,18 +462,18 @@
             }
             
             const finalPrice = basePrice + extraPrice;
-            const cartName = storeName; // used for grouping
+            const fullName = baseName + (optionText ? ` (${optionText})` : '') + (size ? ` ${size}` : '');
             const uniqueId = itemId + (optionText ? '_'+optionText : '');
 
             const existing = cart.find(item => item.id === uniqueId && item.store === storeName); 
             if (existing) existing.qty += qty; 
-            else cart.push({ id: uniqueId, store: storeName, name: name + (optionText ? ` (${optionText})` : '') + (size ? ` ${size}` : ''), price: finalPrice, qty: qty }); 
+            else cart.push({ id: uniqueId, store: storeName, name: fullName, price: finalPrice, qty: qty }); 
             
             updateCartCount(); 
-            alert(`${name} ${optionText ? '('+optionText+')' : ''} x ${qty} added to cart!`); 
+            alert(`${fullName} x ${qty} added to cart!`); 
         }
         
-        function removeFromCart(id, size, name) { 
+        function removeFromCart(id, name) { 
             cart = cart.filter(item => !(item.id === id && item.name === name)); 
             updateCartCount(); 
             navigate('cart'); 
@@ -698,7 +711,7 @@
         }
 
         function renderAdminImages() {
-            const cats = ['takeaways', 'groceries', 'parcels', 'furniture', 'track', 'van', 'bakkie', 'truck'];
+            const cats = ['takeaways', 'groceries', 'parcels', 'furniture', 'track', 'van', 'bakkie', 'truck', 'send_parcel', 'collect_parcel'];
             let html = '<div class="form-container"><h3>Homepage Slider Images (Max 3)</h3><p style="margin-bottom: 10px;">Upload up to 3 images for the homepage slider. If left empty, default gradients are used.</p>';
             
             for(let i=0; i<3; i++) {
@@ -712,12 +725,12 @@
                 </div>`;
             }
 
-            html += '<hr style="margin: 30px 0;"><h3>Category Images</h3><p style="margin-bottom: 10px;">Upload images for the 5 service cards on the homepage.</p>';
+            html += '<hr style="margin: 30px 0;"><h3>Category & Service Images</h3><p style="margin-bottom: 10px;">Upload images for the service cards on the homepage and parcels page.</p>';
             cats.forEach(cat => {
                 html += `<div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
                     <div style="width: 120px; height: 80px; background-image: url('${appData.categories[cat]}'); background-size: cover; background-repeat: no-repeat; background-position: center; border-radius: 8px; border: 1px solid #ccc;"></div>
                     <div>
-                        <label style="text-transform: capitalize; font-weight: bold; color: var(--forest); font-size: 18px;">${cat}</label><br>
+                        <label style="text-transform: capitalize; font-weight: bold; color: var(--forest); font-size: 18px;">${cat.replace('_', ' ')}</label><br>
                         <input type="file" accept="image/*" onchange="handleImageUpload(event, '${cat}')" style="margin-top: 10px;">
                     </div>
                 </div>`;
@@ -749,7 +762,7 @@
             const url = await uploadImage(file);
             appData.categories[cat] = url;
             await saveConfig();
-            alert(cat + ' image updated successfully!');
+            alert(cat.replace('_', ' ') + ' image updated successfully!');
             renderAdminImages();
         }
 
@@ -792,7 +805,7 @@
                         }
 
                         store.menu.forEach(item => { 
-                            html += `<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; padding: 10px 0; border-bottom: 1px solid #eee;">
+                            html += `<div class="admin-item-grid">
                                 <input type="text" value="${item.name}" id="i_name_${item.id}" placeholder="Name" style="padding: 5px; font-size: 12px;">
                                 <input type="text" value="${item.category || ''}" id="i_cat_${item.id}" placeholder="Category" style="padding: 5px; font-size: 12px;">
                                 <input type="text" value="${item.size || ''}" id="i_size_${item.id}" placeholder="Size" style="padding: 5px; font-size: 12px;">
@@ -809,7 +822,7 @@
                             </div>`; 
                         }); 
                         
-                        html += `<div class="form-row" style="margin-top: 10px; grid-template-columns: 1fr 1fr 1fr; gap: 5px;">
+                        html += `<div class="form-row" style="margin-top: 10px;">
                             <input type="text" id="menu_name_${store.id}" placeholder="Item Name" style="padding: 5px; font-size: 12px;">
                             <input type="text" id="menu_size_${store.id}" placeholder="Size" style="padding: 5px; font-size: 12px;">
                             <input type="number" id="menu_price_${store.id}" placeholder="Price" style="padding: 5px; font-size: 12px;">
@@ -976,7 +989,7 @@
                     }
 
                     store.menu.forEach(item => { 
-                        html += `<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; padding: 10px 0; border-bottom: 1px solid #eee;">
+                        html += `<div class="admin-item-grid">
                             <input type="text" value="${item.name}" id="i_name_${item.id}" placeholder="Name" style="padding: 5px; font-size: 12px;">
                             <input type="text" value="${item.category || ''}" id="i_cat_${item.id}" placeholder="Category" style="padding: 5px; font-size: 12px;">
                             <input type="text" value="${item.size || ''}" id="i_size_${item.id}" placeholder="Size" style="padding: 5px; font-size: 12px;">
@@ -993,7 +1006,7 @@
                         </div>`; 
                     }); 
                     
-                    html += `<div class="form-row" style="margin-top: 10px; grid-template-columns: 1fr 1fr 1fr; gap: 5px;">
+                    html += `<div class="form-row" style="margin-top: 10px;">
                         <input type="text" id="menu_name_${store.id}" placeholder="Product Name" style="padding: 5px; font-size: 12px;">
                         <input type="text" id="menu_size_${store.id}" placeholder="Size" style="padding: 5px; font-size: 12px;">
                         <input type="number" id="menu_price_${store.id}" placeholder="Price" style="padding: 5px; font-size: 12px;">
