@@ -5,12 +5,19 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware to parse JSON and URL-encoded data (for large images)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Serve static files from the "public" folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-const DB_FILE = path.join(__dirname, 'database.json');
+// --- PERMANENT DATABASE STORAGE ---
+// If running on Railway, it uses the permanent Volume (/data). If running locally, it uses your project folder.
+const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
+const DB_FILE = path.join(DATA_DIR, 'database.json');
 
+// Default Database Structure
 const defaultData = {
     users: [{ username: 'admin', password: 'admin123' }],
     siteContent: {
@@ -44,15 +51,32 @@ const defaultData = {
     furnitureRequests: []
 };
 
+// Initialize DB file if it doesn't exist
 if (!fs.existsSync(DB_FILE)) {
     fs.writeFileSync(DB_FILE, JSON.stringify(defaultData, null, 2));
 }
 
+// API: Get all data (Auto-migrates old database files)
 app.get('/api/data', (req, res) => {
-    const data = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+    let data = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+    let needsSave = false;
+    
+    // Automatically add missing fields to old databases
+    for(let key in defaultData) {
+        if(!data.hasOwnProperty(key)) {
+            data[key] = defaultData[key];
+            needsSave = true;
+        }
+    }
+    
+    if(needsSave) {
+        fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+    }
+    
     res.json(data);
 });
 
+// API: Save all data
 app.post('/api/data', (req, res) => {
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(req.body, null, 2));
@@ -62,6 +86,7 @@ app.post('/api/data', (req, res) => {
     }
 });
 
+// Catch-all route to serve index.html for frontend routing
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
