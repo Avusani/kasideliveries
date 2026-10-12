@@ -61,7 +61,9 @@ const defaultConfig = {
         track: 'https://z-cdn-media.chatglm.cn/files/b848b1a4-672d-4af8-9061-d08b344fd863.png',
         van: 'https://images.unsplash.com/photo-1597007030739-6d2e7172ee5b?q=80&w=800',
         bakkie: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800',
-        truck: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800'
+        truck: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800',
+        send_parcel: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800',
+        collect_parcel: 'https://images.unsplash.com/photo-1597306622489-5c80aa3c55e3?q=80&w=800'
     },
     takeaways: {
         franchises: [
@@ -110,10 +112,12 @@ app.get('/api/data', async (req, res) => {
         if(!config.siteContent.hasOwnProperty('websiteName')) { config.siteContent.websiteName = "KasiDeliveries"; needsSave = true; }
         if(!config.siteContent.hasOwnProperty('websiteLogo')) { config.siteContent.websiteLogo = null; needsSave = true; }
         
-        // Auto-migrate new vehicle categories
+        // Auto-migrate new categories
         if(!config.categories.hasOwnProperty('van')) { config.categories.van = defaultConfig.categories.van; needsSave = true; }
         if(!config.categories.hasOwnProperty('bakkie')) { config.categories.bakkie = defaultConfig.categories.bakkie; needsSave = true; }
         if(!config.categories.hasOwnProperty('truck')) { config.categories.truck = defaultConfig.categories.truck; needsSave = true; }
+        if(!config.categories.hasOwnProperty('send_parcel')) { config.categories.send_parcel = defaultConfig.categories.send_parcel; needsSave = true; }
+        if(!config.categories.hasOwnProperty('collect_parcel')) { config.categories.collect_parcel = defaultConfig.categories.collect_parcel; needsSave = true; }
 
         if(needsSave) await pool.query('UPDATE app_state SET data = $1 WHERE id = 1', [JSON.stringify(config)]);
 
