@@ -104,7 +104,12 @@
         let cart = [], currentSlide = 0, slideInterval, appData = {}, adminTab = 'dashboard', isAdmin = false;
         const WHATSAPP_NUMBER = "27123456789"; 
 
-        async function fetchData() { const res = await fetch('/api/data'); appData = await res.json(); if(!appData.sliderImages) appData.sliderImages = []; }
+        async function fetchData() { 
+            const res = await fetch('/api/data'); 
+            appData = await res.json(); 
+            if(!appData.sliderImages) appData.sliderImages = []; 
+        }
+        
         async function saveConfig() {
             const config = { users: appData.users, siteContent: appData.siteContent, sliderImages: appData.sliderImages, categories: appData.categories, takeaways: appData.takeaways, groceries: appData.groceries };
             await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
@@ -148,11 +153,19 @@
             window.scrollTo(0, 0);
         }
 
-        function initSlider() { currentSlide = 0; showSlide(currentSlide); slideInterval = setInterval(() => { currentSlide = (currentSlide + 1) % slides.length; showSlide(currentSlide); }, 5000); }
+        function initSlider() { 
+            currentSlide = 0; 
+            showSlide(currentSlide); 
+            slideInterval = setInterval(() => { 
+                currentSlide = (currentSlide + 1) % slides.length; 
+                showSlide(currentSlide); 
+            }, 5000); 
+        }
+        
         function showSlide(index) {
             const slidesHtml = slides.map((slide, i) => {
                 let bg = slide.bg;
-                if(appData.sliderImages[i]) bg = `url('${appData.sliderImages[i]}')`;
+                if(appData.sliderImages && appData.sliderImages[i]) bg = `url('${appData.sliderImages[i]}')`;
                 return `<div class="hero-slide ${i === index ? 'active' : ''}" style="background: ${bg};"><h1>${slide.title}</h1><p>${slide.text}</p><button class="btn-gold" onclick="${slide.action}">${slide.btnText}</button><button class="btn-outline" onclick="document.getElementById('categories').scrollIntoView({ behavior: 'smooth' })">Explore Services</button></div>`;
             }).join('');
             const dotsHtml = slides.map((_, i) => `<div class="dot ${i === index ? 'active' : ''}" onclick="changeSlide(${i})"></div>`).join('');
@@ -169,31 +182,217 @@
                 <div class="category-card" style="background-image: url('${appData.categories.track}');" onclick="navigate('track')"><h3>📍 Track My Order</h3><p>Check your order status.</p></div>
             </div>`;
         }
-        function renderTakeawaysHub() { return `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Takeaways</h2><div class="categories-grid"><div class="category-card" style="background-image: url('${appData.categories.takeaways}');" onclick="navigate('takeaway-list', 'franchises')"><h3>🍗 Franchises</h3><p>Popular fast-food brands.</p></div><div class="category-card" style="background-image: url('https://images.unsplash.com/photo-1565299585323-38d6b0865b47?q=80&w=800');" onclick="navigate('takeaway-list', 'local')"><h3>🍽️ Local Takeaways</h3><p>Independent restaurants and local businesses.</p></div></div>`; }
-        function renderTakeawayList(type) { const stores = appData.takeaways[type] || []; let html = `<span class="back-link" onclick="navigate('takeaways')">← Back to Takeaways</span><h2 style="color: var(--forest); margin-bottom: 20px;">${type === 'franchises' ? 'Franchises' : 'Local Takeaways'}</h2>`; if(stores.length === 0) html += '<p>No stores available yet.</p>'; stores.forEach(store => { html += `<div class="store-item" onclick="navigate('restaurant-menu', '${store.id}')" style="cursor: pointer;"><div class="item-info" style="display: flex; align-items: center; gap: 15px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}<div><h4>${store.name}</h4><p>View menu and place order</p></div></div><span style="color: var(--gold); font-weight: bold;">View Menu →</span></div>`; }); return html; }
-        function renderMenu(storeId) { let store = null, storeType = ''; appData.takeaways.franchises.forEach(s => { if(s.id === storeId) { store = s; storeType = 'franchises'; } }); if(!store) appData.takeaways.local.forEach(s => { if(s.id === storeId) { store = s; storeType = 'local'; } }); if (!store) return '<h2>Store not found</h2>'; let html = `<span class="back-link" onclick="navigate('takeaway-list', '${storeType}')">← Back to Stores</span><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest);">${store.name}</h2></div>`; if(store.menu.length === 0) html += '<p>No menu items yet.</p>'; store.menu.forEach(item => { html += `<div class="store-item"><div class="item-info" style="display:flex;align-items:center;"><img src="${item.img || 'https://via.placeholder.com/50'}" class="item-img"><h4>${item.name}</h4></div><div style="display: flex; align-items: center;"><span class="item-price">R${item.price.toFixed(2)}</span><button class="add-btn" onclick="addToCart('${item.id}', '${store.name}', '${item.name}', ${item.price})">Add</button></div></div>`; }); return html; }
-        function renderGroceryHub() { let html = `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Grocery Stores</h2>`; if(appData.groceries.length === 0) html += '<p>No stores available yet.</p>'; appData.groceries.forEach(store => { html += `<div class="store-item" onclick="navigate('grocery-menu', '${store.id}')" style="cursor: pointer;"><div class="item-info" style="display: flex; align-items: center; gap: 15px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}<div><h4>${store.name}</h4><p>Browse catalogue and shop</p></div></div><span style="color: var(--gold); font-weight: bold;">Shop Now →</span></div>`; }); return html; }
-        function renderGroceryMenu(storeId) { const store = appData.groceries.find(s => s.id === storeId); if (!store) return '<h2>Store not found</h2>'; let html = `<span class="back-link" onclick="navigate('groceries')">← Back to Stores</span><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest);">${store.name} Catalogue</h2></div>`; if(store.menu.length === 0) html += '<p>No products yet.</p>'; store.menu.forEach(item => { html += `<div class="store-item"><div class="item-info" style="display:flex;align-items:center;"><img src="${item.img || 'https://via.placeholder.com/50'}" class="item-img"><h4>${item.name}</h4></div><div style="display: flex; align-items: center;"><span class="item-price">R${item.price.toFixed(2)}</span><button class="add-btn" onclick="addToCart('${item.id}', '${store.name}', '${item.name}', ${item.price})">Add</button></div></div>`; }); return html; }
-        function renderParcelOptions() { return `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">KasiDeliveries Parcels</h2><p style="text-align: center; margin-bottom: 30px;">What would you like to do?</p><div class="categories-grid"><div class="category-card" style="background-image: url('${appData.categories.parcels}');" onclick="navigate('send-parcel')"><h3>📤 Send a Parcel</h3><p>Send a parcel to someone nearby or far.</p></div><div class="category-card" style="background-image: url('${appData.categories.track}');" onclick="navigate('collect-parcel')"><h3>📥 Collect a Parcel</h3><p>Collect a parcel sent to you or holding for you.</p></div></div>`; }
-        function renderSendParcel() { return `<span class="back-link" onclick="navigate('parcels')">← Back to Parcels</span><h2 style="color: var(--forest); margin-bottom: 20px;">Send a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('send')"><div class="form-section"><h3>Sender Details</h3><div class="form-row"><div class="form-group"><label>★ Full Name</label><input type="text" id="p_sender_name" required></div><div class="form-group"><label>★ Mobile Number</label><input type="tel" id="p_sender_phone" required></div></div></div><div class="form-section"><h3>Parcel Details</h3><div class="form-group"><label>★ Description of Contents</label><input type="text" id="p_desc" required></div></div><button type="submit" class="btn-gold" style="width: 100%;">Submit Parcel Request</button></form>`; }
-        function renderCollectParcel() { return `<span class="back-link" onclick="navigate('parcels')">← Back to Parcels</span><h2 style="color: var(--forest); margin-bottom: 20px;">Collect a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('collect')"><div class="form-section"><h3>Collector Details</h3><div class="form-group"><label>★ Full Name</label><input type="text" id="p_coll_name" required></div><div class="form-group"><label>★ ID Number</label><input type="text" id="p_coll_id" required></div></div><button type="submit" class="btn-gold" style="width: 100%;">Submit Collection Request</button></form>`; }
-        function renderFurnitureHub() { return `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Furniture Transport</h2><p style="text-align: center; margin-bottom: 30px;">Select the type of vehicle you need for your move:</p><div class="categories-grid"><div class="category-card" style="background-image: url('https://images.unsplash.com/photo-1597007030739-6d2e7172ee5b?q=80&w=800');" onclick="navigate('furniture-form', 'Van')"><h3>🚐 Van</h3><p>For small moves (1-2 items)</p></div><div class="category-card" style="background-image: url('https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800');" onclick="navigate('furniture-form', 'Bakkie')"><h3>🛻 Bakkie</h3><p>For medium loads (beds, fridges)</p></div><div class="category-card" style="background-image: url('https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800');" onclick="navigate('furniture-form', 'Truck')"><h3>🚚 Truck</h3><p>For full household removals</p></div></div>`; }
-        function renderFurnitureForm(vehicle) { return `<span class="back-link" onclick="navigate('furniture')">← Back to Vehicle Selection</span><h2 style="color: var(--forest); margin-bottom: 20px;">${vehicle} Quotation Request</h2><form class="form-container" onsubmit="submitFurnitureRequest('${vehicle}')"><div class="form-section"><h3>Personal Details</h3><div class="form-group"><label>★ Full Name & Surname</label><input type="text" id="f_name" required></div><div class="form-group"><label>★ Mobile Number</label><input type="tel" id="f_phone" required></div></div><div class="form-section"><h3>Move Details</h3><div class="form-group"><label>★ Moving From (Address)</label><input type="text" id="f_from" required></div><div class="form-group"><label>★ Moving To (Address)</label><input type="text" id="f_to" required></div></div><button type="submit" class="btn-gold" style="width: 100%;">Submit Quotation Request</button></form>`; }
-        function renderTrackOrder() { return `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px; text-align: center;">Track My Driver</h2><div class="form-container" style="max-width: 500px; text-align: center;"><p style="margin-bottom: 20px;">May we have your Order Number?</p><div class="form-group"><input type="text" id="track-order-input" placeholder="e.g. KD-123456789" style="text-align: center; font-size: 18px; padding: 15px;"></div><button class="btn-gold" style="width: 100%; padding: 15px;" onclick="trackOrderWhatsApp()">Track on WhatsApp</button></div>`; }
-        function renderCart() { if (cart.length === 0) return `<h2 style="color: var(--forest); text-align: center; margin-top: 50px;">Your cart is empty</h2>`; const grouped = {}; cart.forEach(item => { if (!grouped[item.store]) grouped[item.store] = []; grouped[item.store].push(item); }); const stores = Object.keys(grouped); const additionalStoreFee = stores.length > 1 ? (stores.length - 1) * 10 : 0; const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0); const total = subtotal + additionalStoreFee; let html = `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Shopping Cart</h2><div class="cart-container">`; stores.forEach(store => { html += `<div class="cart-store-header">📍 ${store}</div>`; grouped[store].forEach(item => { html += `<div class="cart-item"><div><strong>${item.name}</strong> x ${item.qty} <button onclick="removeFromCart('${item.id}')" style="color: red; border: none; background: none; cursor: pointer; margin-left: 10px;">✖</button></div><div>R${(item.price * item.qty).toFixed(2)}</div></div>`; }); }); html += `<div class="cart-summary"><p>Products Subtotal: R${subtotal.toFixed(2)}</p><p>Additional-Store Fees: R${additionalStoreFee.toFixed(2)}</p><p class="total">Estimated Total: R${total.toFixed(2)}</p><p style="font-size: 12px; color: #666;">* Delivery fee will be confirmed on WhatsApp.</p><div class="trust-badge"><span>🔒</span> Trusted & Secure WhatsApp Checkout</div><button class="wa-btn" onclick="checkoutWhatsApp()">Checkout via WhatsApp</button></div>`; return html + `</div>`; }
-
-        function addToCart(id, store, name, price) { const existing = cart.find(item => item.id === id); if (existing) existing.qty++; else cart.push({ id, store, name, price, qty: 1 }); updateCartCount(); alert(`${name} added to cart!`); }
-        function removeFromCart(id) { cart = cart.filter(item => item.id !== id); updateCartCount(); navigate('cart'); }
-        function updateCartCount() { document.getElementById('cart-count').innerText = cart.reduce((sum, item) => sum + item.qty, 0); }
         
-        async function checkoutWhatsApp() { const ref = `KD-${Date.now()}`; let msg = `*NEW ORDER REQUEST — KASIDELIVERIES*\n\n*Order Reference:* ${ref}\n\n*ORDER ITEMS:*\n`; const grouped = {}; cart.forEach(item => { if (!grouped[item.store]) grouped[item.store] = []; grouped[item.store].push(item); }); Object.keys(grouped).forEach(store => { msg += `\n*${store}*\n`; grouped[store].forEach(item => { msg += `- ${item.name} x ${item.qty}: R${(item.price * item.qty).toFixed(2)}\n`; }); }); const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0); msg += `\n*PRICE SUMMARY*\nProducts Subtotal: R${subtotal.toFixed(2)}\nPlease confirm final delivery fee and total.`; const newOrder = { ref: ref, type: 'Food/Grocery Order', details: cart, total: subtotal, date: new Date().toLocaleString(), status: 'Awaiting WhatsApp Confirmation' }; await fetch('/api/order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newOrder) }); appData.orders.push(newOrder); window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); }
-        async function submitParcelRequest(type) { event.preventDefault(); const ref = type === 'send' ? `KD-SEND-${Date.now()}` : `KD-COLL-${Date.now()}`; const msg = `*${type.toUpperCase()} PARCEL REQUEST — KASIDELIVERIES*\n\n*Reference:* ${ref}\n\nI have submitted the form details.\n\nPlease confirm receipt of this request.`; const reqData = type === 'send' ? { name: document.getElementById('p_sender_name').value, phone: document.getElementById('p_sender_phone').value, desc: document.getElementById('p_desc').value } : { name: document.getElementById('p_coll_name').value, id: document.getElementById('p_coll_id').value }; const newParcel = { ref: ref, type: type === 'send' ? 'Send Parcel' : 'Collect Parcel', details: reqData, date: new Date().toLocaleString(), status: 'New Request' }; await fetch('/api/parcel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newParcel) }); appData.parcelRequests.push(newParcel); window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); }
-        async function submitFurnitureRequest(vehicle) { event.preventDefault(); const ref = `KD-FURN-${Date.now()}`; const msg = `*FURNITURE TRANSPORT QUOTATION REQUEST*\n\n*Vehicle Required:* ${vehicle}\n*Reference:* ${ref}\n\nI have submitted the form details. Please confirm receipt and provide a quotation.`; const reqData = { name: document.getElementById('f_name').value, phone: document.getElementById('f_phone').value, from: document.getElementById('f_from').value, to: document.getElementById('f_to').value }; const newFurniture = { ref: ref, vehicle: vehicle, details: reqData, date: new Date().toLocaleString(), status: 'Quotation Requested' }; await fetch('/api/furniture', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newFurniture) }); appData.furnitureRequests.push(newFurniture); window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); }
-        function trackOrderWhatsApp() { const orderNum = document.getElementById('track-order-input').value; if(!orderNum) { alert("Please enter your order number"); return; } const msg = `Hello KasiDeliveries, I would like to track my order. My Order Number is: ${orderNum}`; window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); }
+        function renderTakeawaysHub() { 
+            return `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Takeaways</h2><div class="categories-grid">
+                <div class="category-card" style="background-image: url('${appData.categories.takeaways}');" onclick="navigate('takeaway-list', 'franchises')"><h3>🍗 Franchises</h3><p>Popular fast-food brands.</p></div>
+                <div class="category-card" style="background-image: url('https://images.unsplash.com/photo-1565299585323-38d6b0865b47?q=80&w=800');" onclick="navigate('takeaway-list', 'local')"><h3>🍽️ Local Takeaways</h3><p>Independent restaurants and local businesses.</p></div>
+            </div>`; 
+        }
+        
+        function renderTakeawayList(type) { 
+            const stores = appData.takeaways[type] || []; 
+            let html = `<span class="back-link" onclick="navigate('takeaways')">← Back to Takeaways</span><h2 style="color: var(--forest); margin-bottom: 20px;">${type === 'franchises' ? 'Franchises' : 'Local Takeaways'}</h2>`; 
+            if(stores.length === 0) html += '<p>No stores available yet.</p>'; 
+            stores.forEach(store => { 
+                html += `<div class="store-item" onclick="navigate('restaurant-menu', '${store.id}')" style="cursor: pointer;">
+                    <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
+                        ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
+                        <div><h4>${store.name}</h4><p>View menu and place order</p></div>
+                    </div>
+                    <span style="color: var(--gold); font-weight: bold;">View Menu →</span>
+                </div>`; 
+            }); 
+            return html; 
+        }
+        
+        function renderMenu(storeId) { 
+            let store = null, storeType = ''; 
+            appData.takeaways.franchises.forEach(s => { if(s.id === storeId) { store = s; storeType = 'franchises'; } }); 
+            if(!store) appData.takeaways.local.forEach(s => { if(s.id === storeId) { store = s; storeType = 'local'; } }); 
+            if (!store) return '<h2>Store not found</h2>'; 
+            let html = `<span class="back-link" onclick="navigate('takeaway-list', '${storeType}')">← Back to Stores</span><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest);">${store.name}</h2></div>`; 
+            if(store.menu.length === 0) html += '<p>No menu items yet.</p>'; 
+            store.menu.forEach(item => { 
+                html += `<div class="store-item">
+                    <div class="item-info" style="display:flex;align-items:center;">
+                        <img src="${item.img || 'https://via.placeholder.com/50'}" class="item-img">
+                        <h4>${item.name}</h4>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <span class="item-price">R${item.price.toFixed(2)}</span>
+                        <button class="add-btn" onclick="addToCart('${item.id}', '${store.name}', '${item.name}', ${item.price})">Add</button>
+                    </div>
+                </div>`; 
+            }); 
+            return html; 
+        }
+        
+        function renderGroceryHub() { 
+            let html = `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Grocery Stores</h2>`; 
+            if(appData.groceries.length === 0) html += '<p>No stores available yet.</p>'; 
+            appData.groceries.forEach(store => { 
+                html += `<div class="store-item" onclick="navigate('grocery-menu', '${store.id}')" style="cursor: pointer;">
+                    <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
+                        ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
+                        <div><h4>${store.name}</h4><p>Browse catalogue and shop</p></div>
+                    </div>
+                    <span style="color: var(--gold); font-weight: bold;">Shop Now →</span>
+                </div>`; 
+            }); 
+            return html; 
+        }
+        
+        function renderGroceryMenu(storeId) { 
+            const store = appData.groceries.find(s => s.id === storeId); 
+            if (!store) return '<h2>Store not found</h2>'; 
+            let html = `<span class="back-link" onclick="navigate('groceries')">← Back to Stores</span><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest);">${store.name} Catalogue</h2></div>`; 
+            if(store.menu.length === 0) html += '<p>No products yet.</p>'; 
+            store.menu.forEach(item => { 
+                html += `<div class="store-item">
+                    <div class="item-info" style="display:flex;align-items:center;">
+                        <img src="${item.img || 'https://via.placeholder.com/50'}" class="item-img">
+                        <h4>${item.name}</h4>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <span class="item-price">R${item.price.toFixed(2)}</span>
+                        <button class="add-btn" onclick="addToCart('${item.id}', '${store.name}', '${item.name}', ${item.price})">Add</button>
+                    </div>
+                </div>`; 
+            }); 
+            return html; 
+        }
+        
+        function renderParcelOptions() { 
+            return `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">KasiDeliveries Parcels</h2><p style="text-align: center; margin-bottom: 30px;">What would you like to do?</p><div class="categories-grid">
+                <div class="category-card" style="background-image: url('${appData.categories.parcels}');" onclick="navigate('send-parcel')"><h3>📤 Send a Parcel</h3><p>Send a parcel to someone nearby or far.</p></div>
+                <div class="category-card" style="background-image: url('${appData.categories.track}');" onclick="navigate('collect-parcel')"><h3>📥 Collect a Parcel</h3><p>Collect a parcel sent to you or holding for you.</p></div>
+            </div>`; 
+        }
+        
+        function renderSendParcel() { 
+            return `<span class="back-link" onclick="navigate('parcels')">← Back to Parcels</span><h2 style="color: var(--forest); margin-bottom: 20px;">Send a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('send')"><div class="form-section"><h3>Sender Details</h3><div class="form-row"><div class="form-group"><label>★ Full Name</label><input type="text" id="p_sender_name" required></div><div class="form-group"><label>★ Mobile Number</label><input type="tel" id="p_sender_phone" required></div></div></div><div class="form-section"><h3>Parcel Details</h3><div class="form-group"><label>★ Description of Contents</label><input type="text" id="p_desc" required></div></div><button type="submit" class="btn-gold" style="width: 100%;">Submit Parcel Request</button></form>`; 
+        }
+        
+        function renderCollectParcel() { 
+            return `<span class="back-link" onclick="navigate('parcels')">← Back to Parcels</span><h2 style="color: var(--forest); margin-bottom: 20px;">Collect a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('collect')"><div class="form-section"><h3>Collector Details</h3><div class="form-group"><label>★ Full Name</label><input type="text" id="p_coll_name" required></div><div class="form-group"><label>★ ID Number</label><input type="text" id="p_coll_id" required></div></div><button type="submit" class="btn-gold" style="width: 100%;">Submit Collection Request</button></form>`; 
+        }
+        
+        function renderFurnitureHub() { 
+            return `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Furniture Transport</h2><p style="text-align: center; margin-bottom: 30px;">Select the type of vehicle you need for your move:</p><div class="categories-grid">
+                <div class="category-card" style="background-image: url('https://images.unsplash.com/photo-1597007030739-6d2e7172ee5b?q=80&w=800');" onclick="navigate('furniture-form', 'Van')"><h3>🚐 Van</h3><p>For small moves (1-2 items)</p></div>
+                <div class="category-card" style="background-image: url('https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800');" onclick="navigate('furniture-form', 'Bakkie')"><h3>🛻 Bakkie</h3><p>For medium loads (beds, fridges)</p></div>
+                <div class="category-card" style="background-image: url('https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800');" onclick="navigate('furniture-form', 'Truck')"><h3>🚚 Truck</h3><p>For full household removals</p></div>
+            </div>`; 
+        }
+        
+        function renderFurnitureForm(vehicle) { 
+            return `<span class="back-link" onclick="navigate('furniture')">← Back to Vehicle Selection</span><h2 style="color: var(--forest); margin-bottom: 20px;">${vehicle} Quotation Request</h2><form class="form-container" onsubmit="submitFurnitureRequest('${vehicle}')"><div class="form-section"><h3>Personal Details</h3><div class="form-group"><label>★ Full Name & Surname</label><input type="text" id="f_name" required></div><div class="form-group"><label>★ Mobile Number</label><input type="tel" id="f_phone" required></div></div><div class="form-section"><h3>Move Details</h3><div class="form-group"><label>★ Moving From (Address)</label><input type="text" id="f_from" required></div><div class="form-group"><label>★ Moving To (Address)</label><input type="text" id="f_to" required></div></div><button type="submit" class="btn-gold" style="width: 100%;">Submit Quotation Request</button></form>`; 
+        }
+        
+        function renderTrackOrder() { 
+            return `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px; text-align: center;">Track My Driver</h2><div class="form-container" style="max-width: 500px; text-align: center;"><p style="margin-bottom: 20px;">May we have your Order Number?</p><div class="form-group"><input type="text" id="track-order-input" placeholder="e.g. KD-123456789" style="text-align: center; font-size: 18px; padding: 15px;"></div><button class="btn-gold" style="width: 100%; padding: 15px;" onclick="trackOrderWhatsApp()">Track on WhatsApp</button></div>`; 
+        }
+        
+        function renderCart() { 
+            if (cart.length === 0) return `<h2 style="color: var(--forest); text-align: center; margin-top: 50px;">Your cart is empty</h2>`; 
+            const grouped = {}; 
+            cart.forEach(item => { if (!grouped[item.store]) grouped[item.store] = []; grouped[item.store].push(item); }); 
+            const stores = Object.keys(grouped); 
+            const additionalStoreFee = stores.length > 1 ? (stores.length - 1) * 10 : 0; 
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0); 
+            const total = subtotal + additionalStoreFee; 
+            let html = `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Shopping Cart</h2><div class="cart-container">`; 
+            stores.forEach(store => { 
+                html += `<div class="cart-store-header">📍 ${store}</div>`; 
+                grouped[store].forEach(item => { 
+                    html += `<div class="cart-item"><div><strong>${item.name}</strong> x ${item.qty} <button onclick="removeFromCart('${item.id}')" style="color: red; border: none; background: none; cursor: pointer; margin-left: 10px;">✖</button></div><div>R${(item.price * item.qty).toFixed(2)}</div></div>`; 
+                }); 
+            }); 
+            html += `<div class="cart-summary"><p>Products Subtotal: R${subtotal.toFixed(2)}</p><p>Additional-Store Fees: R${additionalStoreFee.toFixed(2)}</p><p class="total">Estimated Total: R${total.toFixed(2)}</p><p style="font-size: 12px; color: #666;">* Delivery fee will be confirmed on WhatsApp.</p><div class="trust-badge"><span>🔒</span> Trusted & Secure WhatsApp Checkout</div><button class="wa-btn" onclick="checkoutWhatsApp()">Checkout via WhatsApp</button></div>`; 
+            return html + `</div>`; 
+        }
+
+        function addToCart(id, store, name, price) { 
+            const existing = cart.find(item => item.id === id); 
+            if (existing) existing.qty++; 
+            else cart.push({ id, store, name, price, qty: 1 }); 
+            updateCartCount(); 
+            alert(`${name} added to cart!`); 
+        }
+        
+        function removeFromCart(id) { 
+            cart = cart.filter(item => item.id !== id); 
+            updateCartCount(); 
+            navigate('cart'); 
+        }
+        
+        function updateCartCount() { 
+            document.getElementById('cart-count').innerText = cart.reduce((sum, item) => sum + item.qty, 0); 
+        }
+        
+        async function checkoutWhatsApp() { 
+            const ref = `KD-${Date.now()}`; 
+            let msg = `*NEW ORDER REQUEST — KASIDELIVERIES*\n\n*Order Reference:* ${ref}\n\n*ORDER ITEMS:*\n`; 
+            const grouped = {}; 
+            cart.forEach(item => { if (!grouped[item.store]) grouped[item.store] = []; grouped[item.store].push(item); }); 
+            Object.keys(grouped).forEach(store => { 
+                msg += `\n*${store}*\n`; 
+                grouped[store].forEach(item => { 
+                    msg += `- ${item.name} x ${item.qty}: R${(item.price * item.qty).toFixed(2)}\n`; 
+                }); 
+            }); 
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0); 
+            msg += `\n*PRICE SUMMARY*\nProducts Subtotal: R${subtotal.toFixed(2)}\nPlease confirm final delivery fee and total.`; 
+            const newOrder = { ref: ref, type: 'Food/Grocery Order', details: cart, total: subtotal, date: new Date().toLocaleString(), status: 'Awaiting WhatsApp Confirmation' }; 
+            await fetch('/api/order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newOrder) }); 
+            appData.orders.push(newOrder); 
+            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); 
+        }
+        
+        async function submitParcelRequest(type) { 
+            event.preventDefault(); 
+            const ref = type === 'send' ? `KD-SEND-${Date.now()}` : `KD-COLL-${Date.now()}`; 
+            const msg = `*${type.toUpperCase()} PARCEL REQUEST — KASIDELIVERIES*\n\n*Reference:* ${ref}\n\nI have submitted the form details.\n\nPlease confirm receipt of this request.`; 
+            const reqData = type === 'send' ? { name: document.getElementById('p_sender_name').value, phone: document.getElementById('p_sender_phone').value, desc: document.getElementById('p_desc').value } : { name: document.getElementById('p_coll_name').value, id: document.getElementById('p_coll_id').value }; 
+            const newParcel = { ref: ref, type: type === 'send' ? 'Send Parcel' : 'Collect Parcel', details: reqData, date: new Date().toLocaleString(), status: 'New Request' }; 
+            await fetch('/api/parcel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newParcel) }); 
+            appData.parcelRequests.push(newParcel); 
+            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); 
+        }
+        
+        async function submitFurnitureRequest(vehicle) { 
+            event.preventDefault(); 
+            const ref = `KD-FURN-${Date.now()}`; 
+            const msg = `*FURNITURE TRANSPORT QUOTATION REQUEST*\n\n*Vehicle Required:* ${vehicle}\n*Reference:* ${ref}\n\nI have submitted the form details. Please confirm receipt and provide a quotation.`; 
+            const reqData = { name: document.getElementById('f_name').value, phone: document.getElementById('f_phone').value, from: document.getElementById('f_from').value, to: document.getElementById('f_to').value }; 
+            const newFurniture = { ref: ref, vehicle: vehicle, details: reqData, date: new Date().toLocaleString(), status: 'Quotation Requested' }; 
+            await fetch('/api/furniture', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newFurniture) }); 
+            appData.furnitureRequests.push(newFurniture); 
+            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); 
+        }
+        
+        function trackOrderWhatsApp() { 
+            const orderNum = document.getElementById('track-order-input').value; 
+            if(!orderNum) { alert("Please enter your order number"); return; } 
+            const msg = `Hello KasiDeliveries, I would like to track my order. My Order Number is: ${orderNum}`; 
+            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); 
+        }
 
         // --- ADMIN PORTAL ---
-        function renderAdminLogin() { return `<div class="form-container" style="max-width: 400px; margin-top: 50px;"><h2 style="color: var(--forest); text-align: center; margin-bottom: 20px;">Admin Login</h2><form onsubmit="handleLogin(event)"><div class="form-group"><label>Username</label><input type="text" id="login_user" required></div><div class="form-group"><label>Password</label><input type="password" id="login_pass" required></div><button type="submit" class="btn-gold" style="width: 100%;">Login</button></form></div>`; }
-        function handleLogin(e) { e.preventDefault(); const u = document.getElementById('login_user').value; const p = document.getElementById('login_pass').value; const user = appData.users.find(x => x.username === u && x.password === p); if(user) { isAdmin = true; navigate('admin'); } else { alert('Invalid credentials'); } }
+        function renderAdminLogin() { 
+            return `<div class="form-container" style="max-width: 400px; margin-top: 50px;"><h2 style="color: var(--forest); text-align: center; margin-bottom: 20px;">Admin Login</h2><form onsubmit="handleLogin(event)"><div class="form-group"><label>Username</label><input type="text" id="login_user" required></div><div class="form-group"><label>Password</label><input type="password" id="login_pass" required></div><button type="submit" class="btn-gold" style="width: 100%;">Login</button></form></div>`; 
+        }
+        
+        function handleLogin(e) { 
+            e.preventDefault(); 
+            const u = document.getElementById('login_user').value; 
+            const p = document.getElementById('login_pass').value; 
+            const user = appData.users.find(x => x.username === u && x.password === p); 
+            if(user) { isAdmin = true; navigate('admin'); } 
+            else { alert('Invalid credentials'); } 
+        }
+        
         function adminLogout() { isAdmin = false; navigate('home'); }
 
         function renderAdmin() {
@@ -215,9 +414,17 @@
                 </div>
                 <div id="admin-content"></div>
             `;
-            setTimeout(() => { if (adminTab === 'dashboard') renderAdminDashboard(); else if (adminTab === 'site') renderAdminSiteContent(); else if (adminTab === 'users') renderAdminUsers(); else if (adminTab === 'images') renderAdminImages(); else if (adminTab === 'takeaways') renderAdminTakeaways(); else if (adminTab === 'groceries') renderAdminGroceries(); }, 50);
+            setTimeout(() => { 
+                if (adminTab === 'dashboard') renderAdminDashboard(); 
+                else if (adminTab === 'site') renderAdminSiteContent(); 
+                else if (adminTab === 'users') renderAdminUsers(); 
+                else if (adminTab === 'images') renderAdminImages(); 
+                else if (adminTab === 'takeaways') renderAdminTakeaways(); 
+                else if (adminTab === 'groceries') renderAdminGroceries(); 
+            }, 50);
             return content;
         }
+        
         function setAdminTab(tab) { adminTab = tab; navigate('admin'); }
 
         function renderAdminDashboard() {
@@ -248,6 +455,7 @@
             html += '<button class="btn-gold" onclick="saveSiteContent()">Save Content</button></div>';
             document.getElementById('admin-content').innerHTML = html;
         }
+        
         async function saveSiteContent() {
             appData.siteContent.about = document.getElementById('content_about').value;
             appData.siteContent.contact = document.getElementById('content_contact').value;
@@ -259,7 +467,8 @@
 
         function renderAdminUsers() {
             let html = '<div class="admin-card"><h4>Add New User (Max 20)</h4>';
-            if(appData.users.length >= 20) { html += '<p>User limit reached (20).</p>'; } else {
+            if(appData.users.length >= 20) { html += '<p>User limit reached (20).</p>'; } 
+            else {
                 html += `<div class="form-row"><div class="form-group"><label>Username</label><input type="text" id="new_user"></div><div class="form-group"><label>Password</label><input type="text" id="new_pass"></div></div><button class="btn-gold" style="width: 100%;" onclick="adminAddUser()">Add User</button>`;
             }
             html += '</div><div class="admin-card"><h4>Current Users</h4>';
@@ -272,9 +481,28 @@
             html += '</div>';
             document.getElementById('admin-content').innerHTML = html;
         }
-        async function adminAddUser() { const u = document.getElementById('new_user').value; const p = document.getElementById('new_pass').value; if(!u || !p) { alert('Enter username and password'); return; } if(appData.users.length >= 20) { alert('Limit reached'); return; } appData.users.push({ username: u, password: p }); await saveConfig(); renderAdminUsers(); }
-        async function adminUpdatePass(i) { appData.users[i].password = document.getElementById('pass_'+i).value; await saveConfig(); alert('Password updated!'); }
-        async function adminDeleteUser(i) { appData.users.splice(i, 1); await saveConfig(); renderAdminUsers(); }
+        
+        async function adminAddUser() { 
+            const u = document.getElementById('new_user').value; 
+            const p = document.getElementById('new_pass').value; 
+            if(!u || !p) { alert('Enter username and password'); return; } 
+            if(appData.users.length >= 20) { alert('Limit reached'); return; } 
+            appData.users.push({ username: u, password: p }); 
+            await saveConfig(); 
+            renderAdminUsers(); 
+        }
+        
+        async function adminUpdatePass(i) { 
+            appData.users[i].password = document.getElementById('pass_'+i).value; 
+            await saveConfig(); 
+            alert('Password updated!'); 
+        }
+        
+        async function adminDeleteUser(i) { 
+            appData.users.splice(i, 1); 
+            await saveConfig(); 
+            renderAdminUsers(); 
+        }
 
         function renderAdminImages() {
             const cats = ['takeaways', 'groceries', 'parcels', 'furniture', 'track'];
@@ -304,8 +532,10 @@
             html += '</div>';
             document.getElementById('admin-content').innerHTML = html;
         }
+        
         async function handleSliderUpload(event, index) {
-            const file = event.target.files[0]; if (!file) return;
+            const file = event.target.files[0]; 
+            if (!file) return;
             const url = await uploadImage(file);
             if(!appData.sliderImages) appData.sliderImages = [];
             appData.sliderImages[index] = url;
@@ -313,13 +543,16 @@
             alert('Slider image updated!');
             renderAdminImages();
         }
+        
         async function removeSliderImage(index) {
             appData.sliderImages.splice(index, 1);
             await saveConfig();
             renderAdminImages();
         }
+        
         async function handleImageUpload(event, cat) {
-            const file = event.target.files[0]; if (!file) return;
+            const file = event.target.files[0]; 
+            if (!file) return;
             const url = await uploadImage(file);
             appData.categories[cat] = url;
             await saveConfig();
@@ -333,9 +566,29 @@
             ['franchises', 'local'].forEach(type => {
                 html += `<h5 style="color: var(--forest); margin-top: 20px; text-transform: capitalize;">${type}</h5>`;
                 appData.takeaways[type].forEach(store => {
-                    html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;"><strong>${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : store.logo} ${store.name}</strong> <button onclick="adminDeleteStore('takeaway', '${type}', '${store.id}')" style="float: right; color: red; border: none; background: none; cursor: pointer;">Delete Store</button><div style="margin-top: 10px;">`; store.menu.forEach(item => { html += `<div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee;"><span>${item.img ? `<img src="${item.img}" class="item-img">` : ''} ${item.name} - R${item.price.toFixed(2)}</span><button onclick="adminDeleteMenuItem('takeaway', '${type}', '${store.id}', '${item.id}')" style="color: red; border: none; background: none; cursor: pointer;">Remove</button></div>`; }); html += `<div class="form-row" style="margin-top: 10px;"><input type="text" id="menu_name_${store.id}" placeholder="Item Name"><input type="number" id="menu_price_${store.id}" placeholder="Price (R)"></div><div class="form-group" style="margin-top: 10px;"><label>Item Picture</label><input type="file" id="menu_img_${store.id}" accept="image/*"></div><button class="add-btn" style="margin-top: 5px;" onclick="adminAddMenuItem('takeaway', '${type}', '${store.id}')">Add Menu Item</button></div></div>`; }); }); html += '</div>';
+                    html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;">
+                        <strong>${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : store.logo} ${store.name}</strong> 
+                        <button onclick="adminDeleteStore('takeaway', '${type}', '${store.id}')" style="float: right; color: red; border: none; background: none; cursor: pointer;">Delete Store</button>
+                        <div style="margin-top: 10px;">`; 
+                        store.menu.forEach(item => { 
+                            html += `<div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee;">
+                                <span>${item.img ? `<img src="${item.img}" class="item-img">` : ''} ${item.name} - R${item.price.toFixed(2)}</span>
+                                <button onclick="adminDeleteMenuItem('takeaway', '${type}', '${store.id}', '${item.id}')" style="color: red; border: none; background: none; cursor: pointer;">Remove</button>
+                            </div>`; 
+                        }); 
+                        html += `<div class="form-row" style="margin-top: 10px;">
+                            <input type="text" id="menu_name_${store.id}" placeholder="Item Name">
+                            <input type="number" id="menu_price_${store.id}" placeholder="Price (R)">
+                        </div>
+                        <div class="form-group" style="margin-top: 10px;"><label>Item Picture</label><input type="file" id="menu_img_${store.id}" accept="image/*"></div>
+                        <button class="add-btn" style="margin-top: 5px;" onclick="adminAddMenuItem('takeaway', '${type}', '${store.id}')">Add Menu Item</button>
+                    </div></div>`; 
+                }); 
+            }); 
+            html += '</div>';
             document.getElementById('admin-content').innerHTML = html;
         }
+        
         async function adminAddTakeaway() {
             const type = document.getElementById('t_type').value;
             const name = document.getElementById('t_name').value;
@@ -349,6 +602,7 @@
             await saveConfig();
             renderAdminTakeaways();
         }
+        
         async function adminAddMenuItem(cat, type, storeId) {
             let store;
             if(cat === 'takeaway') store = appData.takeaways[type].find(s => s.id === storeId);
@@ -364,16 +618,51 @@
             if(cat === 'takeaway') renderAdminTakeaways();
             else renderAdminGroceries();
         }
-        async function adminDeleteStore(cat, type, storeId) { if(cat === 'takeaway') appData.takeaways[type] = appData.takeaways[type].filter(s => s.id !== storeId); else appData.groceries = appData.groceries.filter(s => s.id !== storeId); await saveConfig(); if(cat === 'takeaway') renderAdminTakeaways(); else renderAdminGroceries(); }
-        async function adminDeleteMenuItem(cat, type, storeId, itemId) { let store; if(cat === 'takeaway') store = appData.takeaways[type].find(s => s.id === storeId); else store = appData.groceries.find(s => s.id === storeId); store.menu = store.menu.filter(item => item.id !== itemId); await saveConfig(); if(cat === 'takeaway') renderAdminTakeaways(); else renderAdminGroceries(); }
+        
+        async function adminDeleteStore(cat, type, storeId) { 
+            if(cat === 'takeaway') appData.takeaways[type] = appData.takeaways[type].filter(s => s.id !== storeId); 
+            else appData.groceries = appData.groceries.filter(s => s.id !== storeId); 
+            await saveConfig(); 
+            if(cat === 'takeaway') renderAdminTakeaways(); 
+            else renderAdminGroceries(); 
+        }
+        
+        async function adminDeleteMenuItem(cat, type, storeId, itemId) { 
+            let store; 
+            if(cat === 'takeaway') store = appData.takeaways[type].find(s => s.id === storeId); 
+            else store = appData.groceries.find(s => s.id === storeId); 
+            store.menu = store.menu.filter(item => item.id !== itemId); 
+            await saveConfig(); 
+            if(cat === 'takeaway') renderAdminTakeaways(); 
+            else renderAdminGroceries(); 
+        }
+        
         function renderAdminGroceries() {
             let html = '<div class="admin-card"><h4>Add New Grocery Store</h4><div class="form-row"><div class="form-group"><label>Store Name</label><input type="text" id="g_name"></div><div class="form-group"><label>Logo (Emoji)</label><input type="text" id="g_logo" value="🛒"></div><div class="form-group"><label>Store Logo Image</label><input type="file" id="g_logo_file" accept="image/*"></div></div><button class="btn-gold" style="width: 100%;" onclick="adminAddGrocery()">Add Store</button></div>';
             html += '<div class="admin-card"><h4>Current Grocery Stores & Catalogues</h4>';
             appData.groceries.forEach(store => {
-                html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;"><strong>${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : store.logo} ${store.name}</strong> <button onclick="adminDeleteStore('grocery', null, '${store.id}')" style="float: right; color: red; border: none; background: none; cursor: pointer;">Delete Store</button><div style="margin-top: 10px;">`; store.menu.forEach(item => { html += `<div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee;"><span>${item.img ? `<img src="${item.img}" class="item-img">` : ''} ${item.name} - R${item.price.toFixed(2)}</span><button onclick="adminDeleteMenuItem('grocery', null, '${store.id}', '${item.id}')" style="color: red; border: none; background: none; cursor: pointer;">Remove</button></div>`; }); html += `<div class="form-row" style="margin-top: 10px;"><input type="text" id="menu_name_${store.id}" placeholder="Product Name"><input type="number" id="menu_price_${store.id}" placeholder="Price (R)"></div><div class="form-group" style="margin-top: 10px;"><label>Product Picture</label><input type="file" id="menu_img_${store.id}" accept="image/*"></div><button class="add-btn" style="margin-top: 5px;" onclick="adminAddMenuItem('grocery', null, '${store.id}')">Add Product</button></div></div>`; });
+                html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;">
+                    <strong>${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : store.logo} ${store.name}</strong> 
+                    <button onclick="adminDeleteStore('grocery', null, '${store.id}')" style="float: right; color: red; border: none; background: none; cursor: pointer;">Delete Store</button>
+                    <div style="margin-top: 10px;">`; 
+                    store.menu.forEach(item => { 
+                        html += `<div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee;">
+                            <span>${item.img ? `<img src="${item.img}" class="item-img">` : ''} ${item.name} - R${item.price.toFixed(2)}</span>
+                            <button onclick="adminDeleteMenuItem('grocery', null, '${store.id}', '${item.id}')" style="color: red; border: none; background: none; cursor: pointer;">Remove</button>
+                        </div>`; 
+                    }); 
+                    html += `<div class="form-row" style="margin-top: 10px;">
+                        <input type="text" id="menu_name_${store.id}" placeholder="Product Name">
+                        <input type="number" id="menu_price_${store.id}" placeholder="Price (R)">
+                    </div>
+                    <div class="form-group" style="margin-top: 10px;"><label>Product Picture</label><input type="file" id="menu_img_${store.id}" accept="image/*"></div>
+                    <button class="add-btn" style="margin-top: 5px;" onclick="adminAddMenuItem('grocery', null, '${store.id}')">Add Product</button>
+                </div></div>`; 
+            });
             html += '</div>';
             document.getElementById('admin-content').innerHTML = html;
         }
+        
         async function adminAddGrocery() {
             const name = document.getElementById('g_name').value;
             const logo = document.getElementById('g_logo').value || '🛒';
