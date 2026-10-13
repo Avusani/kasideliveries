@@ -962,21 +962,21 @@
             }
             const file = fileInput.files[0];
             
+            if (!file.name.endsWith('.csv')) {
+                alert("Error: The selected file is not a .csv file. Please save your Excel sheet as a CSV file first.");
+                return;
+            }
+
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
-                delimiter: "", // Auto-detect delimiter (comma, pipe, semicolon)
-                transformHeader: function(h) {
-                    if(!h) return 'unknown';
-                    // Aggressively clean headers: remove BOM, numbers, pipes, spaces
-                    return String(h).replace(/^\uFEFF/, '')
-                                    .replace(/^[0-9]+\s*\|?\s*/, '') 
-                                    .replace(/\|/g, '')             
-                                    .replace(/\s+/g, '')            
-                                    .toLowerCase();
-                },
                 complete: async function(results) {
                     try {
+                        if (!results || !results.data) {
+                            alert("Could not read data from CSV.");
+                            return;
+                        }
+                        
                         let store;
                         if(cat === 'takeaway') {
                             store = appData.takeaways[type][storeIndex];
@@ -991,51 +991,49 @@
                         if(!store.menu) store.menu = [];
 
                         let importedCount = 0;
-                        if(results.data && results.data.length > 0) {
-                            results.data.forEach(row => {
-                                let cleanedRow = {};
-                                Object.keys(row).forEach(k => {
-                                    let val = String(row[k] || '');
-                                    // Aggressively clean data: remove leading "1 | " from values
-                                    val = val.replace(/^[0-9]+\s*\|\s*/, '').trim();
-                                    val = val.replace(/^\uFEFF/, '').trim();
-                                    cleanedRow[k] = val;
-                                });
-                                
-                                const name = cleanedRow.name || cleanedRow.item || cleanedRow.product || cleanedRow.description;
-                                if(name && name !== 'Name' && name !== '') {
-                                    const priceStr = cleanedRow.price || cleanedRow.cost || '0';
-                                    // Extract only numbers and decimals for price
-                                    const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
-                                    
-                                    store.menu.push({
-                                        id: 'm' + Date.now() + Math.floor(Math.random() * 100000),
-                                        name: name,
-                                        category: cleanedRow.category || cleanedRow.cat || 'General',
-                                        size: cleanedRow.size || cleanedRow.weight || cleanedRow.volume || '',
-                                        flavor: cleanedRow.flavor || cleanedRow.type || cleanedRow.variant || '',
-                                        options: cleanedRow.options || cleanedRow.extras || '',
-                                        price: price,
-                                        onSale: String(cleanedRow.onsale || cleanedRow.sale).toLowerCase() === 'true',
-                                        salePrice: parseFloat((cleanedRow.saleprice || cleanedRow.specialprice || '0').replace(/[^0-9.]/g, '')) || 0,
-                                        img: null
-                                    });
-                                    importedCount++;
-                                }
+                        results.data.forEach(row => {
+                            let cleanedRow = {};
+                            Object.keys(row).forEach(k => {
+                                // Aggressively clean headers: remove BOM, numbers, pipes, spaces
+                                let cleanKey = String(k).replace(/^\uFEFF/, '').replace(/^[0-9]+\s*\|?\s*/, '').replace(/\|/g, '').replace(/\s+/g, '').toLowerCase();
+                                // Aggressively clean data: remove leading "1 | " from values
+                                let val = String(row[k] || '').replace(/^[0-9]+\s*\|\s*/, '').trim().replace(/^\uFEFF/, '').trim();
+                                cleanedRow[cleanKey] = val;
                             });
-                        }
+                            
+                            const name = cleanedRow.name || cleanedRow.item || cleanedRow.product || cleanedRow.description;
+                            if(name && name.toLowerCase() !== 'name') {
+                                const priceStr = cleanedRow.price || cleanedRow.cost || '0';
+                                // Extract only numbers and decimals for price
+                                const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
+                                
+                                store.menu.push({
+                                    id: 'm' + Date.now() + Math.floor(Math.random() * 100000),
+                                    name: name,
+                                    category: cleanedRow.category || cleanedRow.cat || 'General',
+                                    size: cleanedRow.size || cleanedRow.weight || cleanedRow.volume || '',
+                                    flavor: cleanedRow.flavor || cleanedRow.type || cleanedRow.variant || '',
+                                    options: cleanedRow.options || cleanedRow.extras || '',
+                                    price: price,
+                                    onSale: String(cleanedRow.onsale || cleanedRow.sale).toLowerCase() === 'true',
+                                    salePrice: parseFloat((cleanedRow.saleprice || cleanedRow.specialprice || '0').replace(/[^0-9.]/g, '')) || 0,
+                                    img: null
+                                });
+                                importedCount++;
+                            }
+                        });
                         
                         await saveConfig();
                         alert(importedCount + ' products imported successfully! They have been added to the list below.');
                         if(cat === 'takeaway') renderAdminTakeaways();
                         else renderAdminGroceries();
                     } catch(e) {
-                        alert("An error occurred during import: " + e.message);
+                        alert("Error processing file: " + e.message + "\n\nPlease make sure your CSV uses commas and has headers.");
                         console.error(e);
                     }
                 },
                 error: function(err) {
-                    alert("Error reading CSV file: " + err.message);
+                    alert("Error reading file: " + err.message);
                 }
             });
         }
