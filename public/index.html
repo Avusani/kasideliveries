@@ -69,6 +69,7 @@
         .wa-btn { background-color: #25D366; color: white; border: none; padding: 15px; font-size: 18px; border-radius: 30px; cursor: pointer; margin-top: 15px; width: 100%; font-weight: bold; }
         
         .wa-float { position: fixed; bottom: 15px; right: 15px; background-color: #25D366; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 99; text-decoration: none; }
+        .call-float { position: fixed; bottom: 75px; right: 15px; background-color: var(--forest); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 99; text-decoration: none; }
         .back-link { display: inline-block; margin-bottom: 15px; color: var(--forest); font-weight: bold; cursor: pointer; text-decoration: underline; font-size: 14px; }
         
         footer { background-color: var(--forest); color: var(--white); padding: 30px 15px; margin-top: 30px; }
@@ -137,11 +138,12 @@
             <div id="brand-logo-container"></div>
             <div class="logo" id="brand-name">KasiDeliveries</div>
         </div>
-        <nav>
+        <nav id="main-nav">
             <input type="text" id="search-input" placeholder="Search items/stores..." onkeyup="handleSearch(event)">
             <a onclick="navigate('track')">Track Order</a>
             <button class="cart-btn" onclick="navigate('cart')">🛒 Cart (<span id="cart-count">0</span>)</button>
-            <a href="https://wa.me/27123456789" target="_blank">WhatsApp Support</a>
+            <a id="nav-whatsapp" href="#" target="_blank">WhatsApp Support</a>
+            <a id="nav-call" href="#">Call Us</a>
         </nav>
     </header>
     <main id="app-content"></main>
@@ -154,13 +156,13 @@
         </div>
         <div class="footer-bottom">&copy; 2024 <span id="footer-copy-name">KasiDeliveries</span>. All rights reserved.</div>
     </footer>
-    <a href="https://wa.me/27123456789" class="wa-float" target="_blank">💬</a>
+    <a id="float-whatsapp" href="#" class="wa-float" target="_blank">💬</a>
+    <a id="float-call" href="#" class="call-float">📞</a>
 
     <script>
         let cart = [], currentSlide = 0, slideInterval, appData = {}, adminTab = 'dashboard', isAdmin = false, adminStoreView = null;
         let publicItemLimit = 50, adminItemLimit = 50;
         let activeMenuStoreId = null, activeMenuStoreType = null, activeMenuCategory = null;
-        const WHATSAPP_NUMBER = "27123456789"; 
 
         function safeStr(str) {
             return String(str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
@@ -176,11 +178,20 @@
             if(!appData.siteContent) appData.siteContent = {};
             if(!appData.siteContent.websiteName) appData.siteContent.websiteName = "KasiDeliveries";
             if(!appData.siteContent.websiteLogo) appData.siteContent.websiteLogo = null;
+            if(!appData.siteContent.whatsappNumber) appData.siteContent.whatsappNumber = "27843689501";
+            if(!appData.siteContent.callNumber) appData.siteContent.callNumber = "0613642449";
+            if(!appData.siteContent.email) appData.siteContent.email = "support@kasideliveries.co.za";
+            
             if(!appData.categories.van) appData.categories.van = 'https://images.unsplash.com/photo-1597007030739-6d2e7172ee5b?q=80&w=800';
             if(!appData.categories.bakkie) appData.categories.bakkie = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
             if(!appData.categories.truck) appData.categories.truck = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
             if(!appData.categories.send_parcel) appData.categories.send_parcel = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800';
             if(!appData.categories.collect_parcel) appData.categories.collect_parcel = 'https://images.unsplash.com/photo-1597306622489-5c80aa3c55e3?q=80&w=800';
+            
+            appData.takeaways.franchises.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
+            appData.takeaways.local.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
+            appData.groceries.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
+
             updateBranding();
         }
         
@@ -194,6 +205,13 @@
             const logoContainer = document.getElementById('brand-logo-container');
             if(logo) logoContainer.innerHTML = `<img src="${logo}" class="brand-logo-img" alt="Logo">`;
             else logoContainer.innerHTML = '';
+            
+            const waNum = appData.siteContent.whatsappNumber;
+            const callNum = appData.siteContent.callNumber;
+            document.getElementById('nav-whatsapp').href = `https://wa.me/${waNum}`;
+            document.getElementById('nav-call').href = `tel:${callNum}`;
+            document.getElementById('float-whatsapp').href = `https://wa.me/${waNum}`;
+            document.getElementById('float-call').href = `tel:${callNum}`;
         }
 
         async function saveConfig() {
@@ -309,7 +327,10 @@
                 html += `<div class="store-item ${!isOnline ? 'store-status-offline' : ''}" onclick="${isOnline ? `navigate('restaurant-menu', '${safeStr(store.id)}')` : ''}" style="cursor: ${isOnline ? 'pointer' : 'not-allowed'};">
                     <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
                         ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
-                        <div><h4>${store.name}</h4><p>${isOnline ? 'View menu and place order' : 'Currently Offline'}</p></div>
+                        <div>
+                            <h4>${store.name}</h4>
+                            <p>${isOnline ? '⏱️ ' + (store.eta || '30-45') + ' mins | 🛵 R' + (store.fee || '15.00') : 'Currently Offline'}</p>
+                        </div>
                     </div>
                     <span style="color: ${isOnline ? 'var(--gold)' : '#999'}; font-weight: bold;">${isOnline ? 'View Menu →' : 'Offline'}</span>
                 </div>`; 
@@ -338,7 +359,7 @@
             let backLink = storeType === 'takeaway' ? `navigate('takeaway-list', '${type}')` : `navigate('groceries')`;
             
             let html = `<span class="back-link" onclick="${backLink}">← Back to Stores</span>`;
-            html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest);">${store.name}</h2></div>`; 
+            html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<div><h2 style="color: var(--forest); margin:0;">${store.name}</h2><p style="color:#666; font-size:14px;">⏱️ ${store.eta || '45'} mins | 🛵 R${store.fee || '20.00'}</p></div></div>`; 
             
             if(store.menu.length === 0) return html + '<p>No categories available yet.</p>';
 
@@ -347,7 +368,8 @@
             html += '<div class="categories-grid">';
             cats.forEach(cat => {
                 const itemCount = store.menu.filter(m => (m.category || 'General') === cat).length;
-                html += `<div class="category-card" onclick="navigate('${storeType === 'takeaway' ? 'restaurant-menu-items' : 'grocery-menu-items'}', '${safeStr(cat)}')" style="background-image: url('https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800');">
+                const catImg = store.categoryImages && store.categoryImages[cat] ? store.categoryImages[cat] : 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800'; // default food image
+                html += `<div class="category-card" style="background-image: url('${catImg}');" onclick="navigate('${storeType === 'takeaway' ? 'restaurant-menu-items' : 'grocery-menu-items'}', '${safeStr(cat)}')">
                     <h3>${cat}</h3>
                     <p>${itemCount} items</p>
                 </div>`;
@@ -402,7 +424,7 @@
             let backLink = storeType === 'takeaway' ? `navigate('restaurant-menu', '${storeId}')` : `navigate('grocery-menu', '${storeId}')`;
             
             let html = `<span class="back-link" onclick="${backLink}">← Back to Categories</span>`;
-            html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest);">${store.name}</h2></div>`; 
+            html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name}</h2></div>`; 
 
             const filteredItems = store.menu.filter(item => (item.category || 'General') === categoryName);
             if(filteredItems.length === 0) return html + '<p>No items in this category yet.</p>';
@@ -441,7 +463,10 @@
                 html += `<div class="store-item ${!isOnline ? 'store-status-offline' : ''}" onclick="${isOnline ? `navigate('grocery-menu', '${safeStr(store.id)}')` : ''}" style="cursor: ${isOnline ? 'pointer' : 'not-allowed'};">
                     <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
                         ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
-                        <div><h4>${store.name}</h4><p>${isOnline ? 'Browse catalogue and shop' : 'Currently Offline'}</p></div>
+                        <div>
+                            <h4>${store.name}</h4>
+                            <p>${isOnline ? '⏱️ ' + (store.eta || '60-90') + ' mins | 🛵 R' + (store.fee || '25.00') : 'Currently Offline'}</p>
+                        </div>
                     </div>
                     <span style="color: ${isOnline ? 'var(--gold)' : '#999'}; font-weight: bold;">${isOnline ? 'Shop Now →' : 'Offline'}</span>
                 </div>`; 
@@ -601,6 +626,7 @@
         }
         
         async function checkoutWhatsApp() { 
+            const waNum = appData.siteContent.whatsappNumber || "27843689501";
             const ref = `KD-${Date.now()}`; 
             let msg = `*NEW ORDER REQUEST — ${(appData.siteContent.websiteName || 'KASIDELIVERIES').toUpperCase()}*\n\n*Order Reference:* ${ref}\n\n*ORDER ITEMS:*\n`; 
             const grouped = {}; 
@@ -616,11 +642,12 @@
             const newOrder = { ref: ref, type: 'Food/Grocery Order', details: cart, total: subtotal, date: new Date().toLocaleString(), status: 'Awaiting WhatsApp Confirmation' }; 
             await fetch('/api/order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newOrder) }); 
             appData.orders.push(newOrder); 
-            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); 
+            window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank'); 
         }
         
         async function submitParcelRequest(type) { 
             event.preventDefault(); 
+            const waNum = appData.siteContent.whatsappNumber || "27843689501";
             const ref = type === 'send' ? `KD-SEND-${Date.now()}` : `KD-COLL-${Date.now()}`; 
             let msg = `*${type.toUpperCase()} PARCEL REQUEST — ${(appData.siteContent.websiteName || 'KASIDELIVERIES').toUpperCase()}*\n\n*Reference:* ${ref}\n\nI have submitted the form details.\n\nPlease confirm receipt of this request.`; 
             
@@ -644,11 +671,12 @@
             const newParcel = { ref: ref, type: type === 'send' ? 'Send Parcel' : 'Collect Parcel', details: reqData, date: new Date().toLocaleString(), status: 'New Request' }; 
             await fetch('/api/parcel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newParcel) }); 
             appData.parcelRequests.push(newParcel); 
-            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); 
+            window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank'); 
         }
         
         async function submitFurnitureRequest(vehicle) { 
             event.preventDefault(); 
+            const waNum = appData.siteContent.whatsappNumber || "27843689501";
             const ref = `KD-FURN-${Date.now()}`; 
             let msg = `*FURNITURE TRANSPORT QUOTATION REQUEST*\n\n*Vehicle Required:* ${vehicle}\n*Reference:* ${ref}\n`; 
             
@@ -672,14 +700,15 @@
             const newFurniture = { ref: ref, vehicle: vehicle, details: reqData, date: new Date().toLocaleString(), status: 'Quotation Requested' }; 
             await fetch('/api/furniture', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newFurniture) }); 
             appData.furnitureRequests.push(newFurniture); 
-            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); 
+            window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank'); 
         }
         
         function trackOrderWhatsApp() { 
+            const waNum = appData.siteContent.whatsappNumber || "27843689501";
             const orderNum = document.getElementById('track-order-input').value; 
             if(!orderNum) { alert("Please enter your order number"); return; } 
             const msg = `Hello ${appData.siteContent.websiteName || 'KasiDeliveries'}, I would like to track my order. My Order Number is: ${orderNum}`; 
-            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank'); 
+            window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank'); 
         }
 
         // --- ADMIN PORTAL ---
@@ -751,16 +780,23 @@
 
         function renderAdminSiteContent() {
             let html = '<div class="form-container">';
-            html += '<h3>Branding</h3><div class="form-group"><label>Website Name (Shows in Header, Footer, Browser Tab)</label><input type="text" id="content_website_name" value="' + appData.siteContent.websiteName + '"></div>';
+            html += '<h3>Branding & Contact</h3>';
+            html += '<div class="form-group"><label>Website Name (Shows in Header, Footer, Browser Tab)</label><input type="text" id="content_website_name" value="' + appData.siteContent.websiteName + '"></div>';
             html += '<div class="form-group"><label>Website Logo (Shows in Header)</label><input type="file" id="content_website_logo" accept="image/*">';
             if(appData.siteContent.websiteLogo) {
                 html += '<div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;"><img src="'+appData.siteContent.websiteLogo+'" style="height: 40px; background: #eee; padding: 2px; border-radius: 5px;"><button type="button" class="btn-delete" onclick="removeWebsiteLogo()">Remove Logo</button></div>';
             }
             html += '</div>';
-            html += '<hr style="margin: 20px 0;"><h3>About Us</h3><textarea id="content_about" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.about + '</textarea>';
-            html += '<h3>Contact Us</h3><textarea id="content_contact" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.contact + '</textarea>';
-            html += '<h3>Terms & Conditions</h3><textarea id="content_terms" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.terms + '</textarea>';
-            html += '<h3>Privacy Policy</h3><textarea id="content_privacy" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.privacy + '</textarea>';
+            html += '<div class="form-row" style="margin-top:15px;">';
+            html += '<div class="form-group"><label>WhatsApp Number (e.g. 27843689501)</label><input type="text" id="content_whatsapp" value="' + appData.siteContent.whatsappNumber + '"></div>';
+            html += '<div class="form-group"><label>Call Number (e.g. 0613642449)</label><input type="text" id="content_call" value="' + appData.siteContent.callNumber + '"></div>';
+            html += '</div>';
+            html += '<div class="form-group"><label>Email Address</label><input type="email" id="content_email" value="' + appData.siteContent.email + '"></div>';
+            html += '<hr style="margin: 20px 0;"><h3>Public Content</h3>';
+            html += '<div class="form-group"><label>About Us</label><textarea id="content_about" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.about + '</textarea></div>';
+            html += '<div class="form-group"><label>Contact Us (Text format)</label><textarea id="content_contact" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.contact + '</textarea></div>';
+            html += '<div class="form-group"><label>Terms & Conditions</label><textarea id="content_terms" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.terms + '</textarea></div>';
+            html += '<div class="form-group"><label>Privacy Policy</label><textarea id="content_privacy" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.privacy + '</textarea></div>';
             html += '<button class="btn-gold" onclick="saveSiteContent()">Save Content</button></div>';
             document.getElementById('admin-content').innerHTML = html;
         }
@@ -774,6 +810,9 @@
         
         async function saveSiteContent() {
             appData.siteContent.websiteName = document.getElementById('content_website_name').value;
+            appData.siteContent.whatsappNumber = document.getElementById('content_whatsapp').value;
+            appData.siteContent.callNumber = document.getElementById('content_call').value;
+            appData.siteContent.email = document.getElementById('content_email').value;
             const logoFile = document.getElementById('content_website_logo').files[0];
             if(logoFile) {
                 appData.siteContent.websiteLogo = await uploadImage(logoFile);
@@ -843,7 +882,7 @@
                 </div>`;
             }
 
-            html += '<hr style="margin: 30px 0;"><h3>Category & Service Images</h3><p style="margin-bottom: 10px;">Upload images for the service cards on the homepage and parcels page.</p>';
+            html += '<hr style="margin: 30px 0;"><h3>Homepage Category & Service Images</h3><p style="margin-bottom: 10px;">Upload images for the service cards on the homepage and parcels page.</p>';
             html += cats.map(cat => 
                 `<div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
                     <div style="width: 120px; height: 80px; background-image: url('${appData.categories[cat]}'); background-size: cover; background-repeat: no-repeat; background-position: center; border-radius: 8px; border: 1px solid #ccc;"></div>
@@ -895,6 +934,10 @@
                 <div class="form-group"><label>Type</label><select id="t_type"><option value="franchises">Franchise</option><option value="local">Local</option></select></div>
                 <div class="form-group"><label>Store Name</label><input type="text" id="t_name"></div>
                 <div class="form-group"><label>Logo (Emoji - Optional)</label><input type="text" id="t_logo" value="🍔"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Delivery Fee (R)</label><input type="number" id="t_fee" value="15.00"></div>
+                <div class="form-group"><label>ETA (mins)</label><input type="text" id="t_eta" value="30-45"></div>
             </div>`;
             html += `<div class="form-group" style="margin-top: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px dashed #ccc;"><label style="font-size: 18px; color: var(--forest);">Upload Store Logo Image (e.g. KFC Logo)</label><input type="file" id="t_logo_file" accept="image/*" style="margin-top: 10px;"></div>`;
             html += `<button class="btn-gold" style="width: 100%; margin-top: 15px;" onclick="adminAddTakeaway()">Add Store</button></div>`;
@@ -912,7 +955,7 @@
                     return `<div class="store-item">
                         <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
                             ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
-                            <div><h4>${store.name}</h4><p>${isOnline ? 'Online' : 'Offline'} | ${store.menu.length} Items</p></div>
+                            <div><h4>${store.name}</h4><p>${isOnline ? 'Online' : 'Offline'} | ${store.menu.length} Items | 🛵 R${store.fee || '0'}</p></div>
                         </div>
                         <div style="display:flex; gap: 5px; flex-wrap: wrap;">
                             <button class="${isOnline ? 'btn-online' : 'btn-offline'}" onclick="adminToggleStoreStatus('takeaway', '${type}', ${storeIndex})">
@@ -928,14 +971,62 @@
             document.getElementById('admin-content').innerHTML = html;
         }
 
+        function renderAdminStoreHeader(store, type, storeIndex, backLinkAction, titleSuffix) {
+            let html = `<span class="back-link" onclick="${backLinkAction}">← Back to Stores</span>`;
+            html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name} ${titleSuffix}</h2></div>`;
+            return html;
+        }
+
+        function renderAdminCategoryImages(store, cat, type, storeIndex) {
+            let html = '<div class="admin-card"><h4>Category Images</h4><small>Upload a picture for each category. It will show when customers view the store categories.</small><div style="margin-top:10px;">';
+            const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
+            if (cats.length === 0) {
+                html += '<p>No categories found. Add items first.</p>';
+            } else {
+                cats.forEach(c => {
+                    const currentImg = store.categoryImages && store.categoryImages[c] ? store.categoryImages[c] : null;
+                    html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px; background:#fff; padding: 5px; border-radius: 4px; flex-wrap: wrap; gap: 10px;">
+                        <span style="font-weight:bold; color:var(--forest);">${c}</span>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            ${currentImg ? `<img src="${currentImg}" style="width: 40px; height: 40px; object-fit:cover; border-radius:4px;">` : ''}
+                            <label class="add-btn" style="cursor:pointer; padding:5px 8px; font-size:12px; background:#eee; color:#333;">
+                                ${currentImg ? 'Change' : 'Upload'} Pic
+                                <input type="file" accept="image/*" onchange="adminUploadCatImg(event, '${cat}', '${type}', ${storeIndex}, '${safeStr(c)}')" style="display:none;">
+                            </label>
+                        </div>
+                    </div>`;
+                });
+            }
+            html += '</div></div>';
+            return html;
+        }
+
+        async function adminUploadCatImg(event, cat, type, storeIndex, categoryName) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const url = await uploadImage(file);
+            let store;
+            if(cat === 'takeaway') store = appData.takeaways[type][storeIndex];
+            else store = appData.groceries[storeIndex];
+            
+            if(!store.categoryImages) store.categoryImages = {};
+            store.categoryImages[categoryName] = url;
+            await saveConfig();
+            
+            if(cat === 'takeaway') renderAdminTakeawayMenu();
+            else renderAdminGroceryMenu();
+        }
+
         function renderAdminTakeawayMenu() {
             const parts = adminStoreView.split('_'); // ['takeaway', 'franchises', '0']
             const type = parts[1];
             const storeIndex = parseInt(parts[2]);
             const store = appData.takeaways[type][storeIndex];
             
-            let html = `<span class="back-link" onclick="adminViewStore(null)">← Back to Stores</span>`;
-            html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name} Menu</h2></div>`;
+            let html = renderAdminStoreHeader(store, 'takeaway', type, storeIndex, "adminViewStore(null)", "Menu");
+            
+            // Category Images Section
+            html += renderAdminCategoryImages(store, 'takeaway', type, storeIndex);
             
             html += `<div class="admin-card">
                 <div style="background: #e8f5e9; padding: 10px; border-radius: 5px;">
@@ -1037,6 +1128,10 @@
             html += `<div class="form-row">
                 <div class="form-group"><label>Store Name</label><input type="text" id="g_name"></div>
                 <div class="form-group"><label>Logo (Emoji - Optional)</label><input type="text" id="g_logo" value="🛒"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Delivery Fee (R)</label><input type="number" id="g_fee" value="25.00"></div>
+                <div class="form-group"><label>ETA (mins)</label><input type="text" id="g_eta" value="60-90"></div>
             </div>`;
             html += `<div class="form-group" style="margin-top: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px dashed #ccc;"><label style="font-size: 18px; color: var(--forest);">Upload Store Logo Image</label><input type="file" id="g_logo_file" accept="image/*" style="margin-top: 10px;"></div>`;
             html += `<button class="btn-gold" style="width: 100%; margin-top: 15px;" onclick="adminAddGrocery()">Add Store</button></div>`;
@@ -1052,7 +1147,7 @@
                 return `<div class="store-item">
                     <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
                         ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
-                        <div><h4>${store.name}</h4><p>${isOnline ? 'Online' : 'Offline'} | ${store.menu.length} Items</p></div>
+                        <div><h4>${store.name}</h4><p>${isOnline ? 'Online' : 'Offline'} | ${store.menu.length} Items | 🛵 R${store.fee || '0'}</p></div>
                     </div>
                     <div style="display:flex; gap: 5px; flex-wrap: wrap;">
                         <button class="${isOnline ? 'btn-online' : 'btn-offline'}" onclick="adminToggleStoreStatus('grocery', null, ${storeIndex})">
@@ -1071,8 +1166,10 @@
             const storeIndex = parseInt(adminStoreView.split('_')[1]);
             const store = appData.groceries[storeIndex];
             
-            let html = `<span class="back-link" onclick="adminViewStore(null)">← Back to Stores</span>`;
-            html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name} Catalogue</h2></div>`;
+            let html = renderAdminStoreHeader(store, 'grocery', null, storeIndex, "adminViewStore(null)", "Catalogue");
+            
+            // Category Images Section
+            html += renderAdminCategoryImages(store, 'grocery', null, storeIndex);
             
             html += `<div class="admin-card">
                 <div style="background: #e8f5e9; padding: 10px; border-radius: 5px;">
@@ -1320,12 +1417,14 @@
             const type = document.getElementById('t_type').value;
             const name = document.getElementById('t_name').value;
             const logo = document.getElementById('t_logo').value || '🍽️';
+            const fee = document.getElementById('t_fee').value || '15.00';
+            const eta = document.getElementById('t_eta').value || '30-45';
             const logoFile = document.getElementById('t_logo_file').files[0];
             if(!name) { alert('Please enter a store name'); return; }
             let logoImg = null;
             if(logoFile) logoImg = await uploadImage(logoFile);
             const id = cleanId(name) + Date.now().toString().slice(-4);
-            appData.takeaways[type].push({ id, name, logo, logoImg, menu: [], isOnline: true });
+            appData.takeaways[type].push({ id, name, logo, logoImg, menu: [], isOnline: true, fee, eta, categoryImages: {} });
             await saveConfig();
             renderAdminTakeaways();
         }
@@ -1406,6 +1505,9 @@
             if(cat === 'takeaway') store = appData.takeaways[type][storeIndex];
             else store = appData.groceries[storeIndex];
             store.menu = store.menu.filter(item => (item.category || 'General') !== categoryName);
+            if(store.categoryImages && store.categoryImages[categoryName]) {
+                delete store.categoryImages[categoryName];
+            }
             await saveConfig();
             if(cat === 'takeaway') renderAdminTakeawayMenu();
             else renderAdminGroceryMenu();
@@ -1425,12 +1527,14 @@
         async function adminAddGrocery() {
             const name = document.getElementById('g_name').value;
             const logo = document.getElementById('g_logo').value || '🛒';
+            const fee = document.getElementById('g_fee').value || '25.00';
+            const eta = document.getElementById('g_eta').value || '60-90';
             const logoFile = document.getElementById('g_logo_file').files[0];
             if(!name) { alert('Please enter a store name'); return; }
             let logoImg = null;
             if(logoFile) logoImg = await uploadImage(logoFile);
             const id = cleanId(name) + Date.now().toString().slice(-4);
-            appData.groceries.push({ id, name, logo, logoImg, menu: [], isOnline: true });
+            appData.groceries.push({ id, name, logo, logoImg, menu: [], isOnline: true, fee, eta, categoryImages: {} });
             await saveConfig();
             renderAdminGroceries();
         }
