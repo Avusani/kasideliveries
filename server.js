@@ -47,7 +47,7 @@ const defaultConfig = {
     siteContent: {
         websiteName: "KasiDeliveries",
         websiteLogo: null,
-        whatsappNumber: "27843689501", // Formatted for wa.me links
+        whatsappNumber: "27843689501", 
         callNumber: "0613642449",
         email: "support@kasideliveries.co.za",
         about: "KasiDeliveries is your trusted local delivery partner. We connect you with your favourite food, groceries, and transport services.",
@@ -112,6 +112,8 @@ app.get('/api/data', async (req, res) => {
         for(let key in defaultConfig) {
             if(!config.hasOwnProperty(key)) { config[key] = defaultConfig[key]; needsSave = true; }
         }
+        if(!config.siteContent.hasOwnProperty('websiteName')) { config.siteContent.websiteName = "KasiDeliveries"; needsSave = true; }
+        if(!config.siteContent.hasOwnProperty('websiteLogo')) { config.siteContent.websiteLogo = null; needsSave = true; }
         if(!config.siteContent.hasOwnProperty('whatsappNumber')) { config.siteContent.whatsappNumber = "27843689501"; needsSave = true; }
         if(!config.siteContent.hasOwnProperty('callNumber')) { config.siteContent.callNumber = "0613642449"; needsSave = true; }
         if(!config.siteContent.hasOwnProperty('email')) { config.siteContent.email = "support@kasideliveries.co.za"; needsSave = true; }
@@ -123,10 +125,10 @@ app.get('/api/data', async (req, res) => {
         if(!config.categories.hasOwnProperty('send_parcel')) { config.categories.send_parcel = defaultConfig.categories.send_parcel; needsSave = true; }
         if(!config.categories.hasOwnProperty('collect_parcel')) { config.categories.collect_parcel = defaultConfig.categories.collect_parcel; needsSave = true; }
 
-        // Auto-migrate categoryImages for existing stores
-        appData.takeaways.franchises.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
-        appData.takeaways.local.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
-        appData.groceries.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
+        // FIX: Used 'config' instead of 'appData' to prevent server crash
+        config.takeaways.franchises.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
+        config.takeaways.local.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
+        config.groceries.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
 
         if(needsSave) await pool.query('UPDATE app_state SET data = $1 WHERE id = 1', [JSON.stringify(config)]);
 
