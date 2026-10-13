@@ -47,8 +47,11 @@ const defaultConfig = {
     siteContent: {
         websiteName: "KasiDeliveries",
         websiteLogo: null,
+        whatsappNumber: "27843689501", // Formatted for wa.me links
+        callNumber: "0613642449",
+        email: "support@kasideliveries.co.za",
         about: "KasiDeliveries is your trusted local delivery partner. We connect you with your favourite food, groceries, and transport services.",
-        contact: "WhatsApp: 0712345678\nEmail: support@kasideliveries.co.za",
+        contact: "WhatsApp: 0843689501\nCall: 0613642449\nEmail: support@kasideliveries.co.za",
         terms: "By using KasiDeliveries, you agree to our terms of service. Prices are estimates and confirmed on WhatsApp.",
         privacy: "We respect your privacy. Your personal details are only used for delivery purposes and are never shared with third parties."
     },
@@ -67,16 +70,16 @@ const defaultConfig = {
     },
     takeaways: {
         franchises: [
-            { id: 'kfc', name: 'KFC', logo: '🍗', logoImg: null, menu: [{ id: 'k1', name: 'Family Meal', price: 180, img: null }, { id: 'k2', name: 'Zinger Wings (6)', price: 65, img: null }]},
-            { id: 'deb', name: 'Debonairs', logo: '🍕', logoImg: null, menu: [{ id: 'd1', name: 'Large Margherita', price: 120, img: null }, { id: 'd2', name: 'Triple Decker', price: 150, img: null }]}
+            { id: 'kfc', name: 'KFC', logo: '🍗', logoImg: null, categoryImages: {}, menu: [{ id: 'k1', name: 'Family Meal', price: 180, img: null }, { id: 'k2', name: 'Zinger Wings (6)', price: 65, img: null }]},
+            { id: 'deb', name: 'Debonairs', logo: '🍕', logoImg: null, categoryImages: {}, menu: [{ id: 'd1', name: 'Large Margherita', price: 120, img: null }, { id: 'd2', name: 'Triple Decker', price: 150, img: null }]}
         ],
         local: [
-            { id: 'kasigrill', name: 'Kasi Grill', logo: '🔥', logoImg: null, menu: [{ id: 'kg1', name: 'Kota & Chips', price: 45, img: null }, { id: 'kg2', name: 'Russian & Chips', price: 35, img: null }]}
+            { id: 'kasigrill', name: 'Kasi Grill', logo: '🔥', logoImg: null, categoryImages: {}, menu: [{ id: 'kg1', name: 'Kota & Chips', price: 45, img: null }, { id: 'kg2', name: 'Russian & Chips', price: 35, img: null }]}
         ]
     },
     groceries: [
-        { id: 'shoprite', name: 'Shoprite', logo: '🛒', logoImg: null, menu: [{ id: 's1', name: 'Milk 2L', price: 35, img: null }, { id: 's2', name: 'Bread', price: 15, img: null }]},
-        { id: 'mamaspaza', name: 'Mama Spaza', logo: '🏪', logoImg: null, menu: [{ id: 'ms1', name: 'Cold Drink 2L', price: 20, img: null }]}
+        { id: 'shoprite', name: 'Shoprite', logo: '🛒', logoImg: null, categoryImages: {}, menu: [{ id: 's1', name: 'Milk 2L', price: 35, img: null }, { id: 's2', name: 'Bread', price: 15, img: null }]},
+        { id: 'mamaspaza', name: 'Mama Spaza', logo: '🏪', logoImg: null, categoryImages: {}, menu: [{ id: 'ms1', name: 'Cold Drink 2L', price: 20, img: null }]}
     ]
 };
 
@@ -109,8 +112,9 @@ app.get('/api/data', async (req, res) => {
         for(let key in defaultConfig) {
             if(!config.hasOwnProperty(key)) { config[key] = defaultConfig[key]; needsSave = true; }
         }
-        if(!config.siteContent.hasOwnProperty('websiteName')) { config.siteContent.websiteName = "KasiDeliveries"; needsSave = true; }
-        if(!config.siteContent.hasOwnProperty('websiteLogo')) { config.siteContent.websiteLogo = null; needsSave = true; }
+        if(!config.siteContent.hasOwnProperty('whatsappNumber')) { config.siteContent.whatsappNumber = "27843689501"; needsSave = true; }
+        if(!config.siteContent.hasOwnProperty('callNumber')) { config.siteContent.callNumber = "0613642449"; needsSave = true; }
+        if(!config.siteContent.hasOwnProperty('email')) { config.siteContent.email = "support@kasideliveries.co.za"; needsSave = true; }
         
         // Auto-migrate new categories
         if(!config.categories.hasOwnProperty('van')) { config.categories.van = defaultConfig.categories.van; needsSave = true; }
@@ -118,6 +122,11 @@ app.get('/api/data', async (req, res) => {
         if(!config.categories.hasOwnProperty('truck')) { config.categories.truck = defaultConfig.categories.truck; needsSave = true; }
         if(!config.categories.hasOwnProperty('send_parcel')) { config.categories.send_parcel = defaultConfig.categories.send_parcel; needsSave = true; }
         if(!config.categories.hasOwnProperty('collect_parcel')) { config.categories.collect_parcel = defaultConfig.categories.collect_parcel; needsSave = true; }
+
+        // Auto-migrate categoryImages for existing stores
+        appData.takeaways.franchises.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
+        appData.takeaways.local.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
+        appData.groceries.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
 
         if(needsSave) await pool.query('UPDATE app_state SET data = $1 WHERE id = 1', [JSON.stringify(config)]);
 
