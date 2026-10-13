@@ -50,7 +50,6 @@
         .item-price { font-weight: bold; color: var(--forest); font-size: 14px; text-align: right; margin-top: 5px; }
         .add-btn { background-color: var(--gold); color: var(--forest); border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; }
         
-        /* Quantity Selector */
         .qty-selector { display: flex; align-items: center; gap: 8px; background: #f2f4f1; padding: 4px; border-radius: 20px; }
         .qty-btn { background: var(--gold); color: var(--forest); border: none; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .qty-display { font-weight: bold; color: var(--forest); min-width: 25px; text-align: center; }
@@ -73,8 +72,6 @@
         .total { font-size: 24px; font-weight: bold; color: var(--forest); border-top: 2px solid var(--forest); padding-top: 10px; }
         .wa-btn { background-color: #25D366; color: white; border: none; padding: 15px; font-size: 18px; border-radius: 30px; cursor: pointer; margin-top: 15px; width: 100%; font-weight: bold; }
         
-        .wa-float { position: fixed; bottom: 15px; right: 15px; background-color: #25D366; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 99; text-decoration: none; }
-        .call-float { position: fixed; bottom: 75px; right: 15px; background-color: var(--forest); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 99; text-decoration: none; }
         .back-link { display: inline-block; margin-bottom: 15px; color: var(--forest); font-weight: bold; cursor: pointer; text-decoration: underline; font-size: 14px; }
         
         footer { background-color: var(--forest); color: var(--white); padding: 30px 15px; margin-top: 30px; }
@@ -84,6 +81,13 @@
         .footer-col ul li { margin-bottom: 8px; }
         .footer-col ul li a { color: var(--white); text-decoration: none; cursor: pointer; opacity: 0.8; transition: opacity 0.3s; font-size: 14px; }
         .footer-col ul li a:hover { opacity: 1; color: var(--gold); }
+        
+        .footer-contact-btns { text-align: center; margin: 25px 0; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+        .footer-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 25px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px; transition: transform 0.2s; }
+        .footer-btn:hover { transform: scale(1.05); }
+        .footer-wa { background: #25D366; color: white; }
+        .footer-call { background: rgba(255,255,255,0.1); color: white; border: 2px solid var(--gold); }
+        
         .footer-bottom { text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 12px; opacity: 0.7; }
         
         .trust-badge { display: flex; align-items: center; gap: 10px; background: #e8f5e9; padding: 8px; border-radius: 8px; margin-top: 15px; color: #2e7d32; font-weight: 600; font-size: 12px; justify-content: center; }
@@ -158,10 +162,14 @@
             <div class="footer-col"><h4>Legal</h4><ul><li><a onclick="navigate('terms')">Terms & Conditions</a></li><li><a onclick="navigate('privacy')">Privacy Policy</a></li></ul></div>
             <div class="footer-col"><h4>Admin</h4><ul><li><a onclick="navigate('admin')">Admin Portal</a></li></ul></div>
         </div>
+        
+        <div class="footer-contact-btns">
+            <a id="footer-whatsapp" href="#" target="_blank" class="footer-btn footer-wa">💬 WhatsApp Support</a>
+            <a id="footer-call" href="#" class="footer-btn footer-call">📞 Call Us</a>
+        </div>
+
         <div class="footer-bottom">&copy; 2024 <span id="footer-copy-name">KasiDeliveries</span>. All rights reserved.</div>
     </footer>
-    <a id="float-whatsapp" href="#" class="wa-float" target="_blank">💬</a>
-    <a id="float-call" href="#" class="call-float">📞</a>
 
     <script>
         let cart = [], currentSlide = 0, slideInterval, appData = {}, adminTab = 'dashboard', isAdmin = false, adminStoreView = null;
@@ -214,8 +222,8 @@
             const callNum = appData.siteContent.callNumber;
             document.getElementById('nav-whatsapp').href = `https://wa.me/${waNum}`;
             document.getElementById('nav-call').href = `tel:${callNum}`;
-            document.getElementById('float-whatsapp').href = `https://wa.me/${waNum}`;
-            document.getElementById('float-call').href = `tel:${callNum}`;
+            document.getElementById('footer-whatsapp').href = `https://wa.me/${waNum}`;
+            document.getElementById('footer-call').href = `tel:${callNum}`;
         }
 
         async function saveConfig() {
@@ -705,7 +713,6 @@
             return html;
         }
 
-        // --- CART LOGIC ---
         function addItemToCart(itemId, storeName, baseName, basePrice, size) {
             if (cart.length > 0 && cart[0].store !== storeName) {
                 if (!confirm(`Your cart contains items from ${cart[0].store}. Do you want to clear your cart and add items from ${storeName}?`)) return;
@@ -734,7 +741,6 @@
             }
             
             updateCartCount(); 
-            // Re-render list to show quantity controls
             const app = document.getElementById('app-content');
             app.innerHTML = renderStoreItems(activeMenuStoreType, activeMenuStoreId, activeMenuCategory);
         }
@@ -748,7 +754,6 @@
                 }
             }
             updateCartCount();
-            // Check if we are on the cart page or the menu page
             const app = document.getElementById('app-content');
             if (activeMenuStoreId && activeMenuCategory) {
                 app.innerHTML = renderStoreItems(activeMenuStoreType, activeMenuStoreId, activeMenuCategory);
