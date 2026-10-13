@@ -167,15 +167,6 @@
             return String(id || '').replace(/[^a-zA-Z0-9]/g, '');
         }
 
-        function getCSVVal(row, keys) {
-            if(!row) return '';
-            for(let key of keys) {
-                let foundKey = Object.keys(row).find(k => k.trim().replace(/^\uFEFF/, '').toLowerCase() === key.trim().toLowerCase());
-                if(foundKey && row[foundKey] !== undefined && String(row[foundKey]).trim() !== '') return String(row[foundKey]).trim();
-            }
-            return '';
-        }
-
         async function fetchData() { 
             const res = await fetch('/api/data'); 
             appData = await res.json(); 
@@ -992,18 +983,24 @@
                         let importedCount = 0;
                         if(results.data && results.data.length > 0) {
                             results.data.forEach(row => {
-                                const name = getCSVVal(row, ['Name', 'Item', 'Product']);
+                                let cleanedRow = {};
+                                Object.keys(row).forEach(k => {
+                                    let cleanKey = k.replace(/^\uFEFF/, '').replace(/^[0-9]+\s*\|?\s*/, '').replace(/\s*\|?\s*$/, '').trim().toLowerCase();
+                                    if(cleanKey) cleanedRow[cleanKey] = row[k];
+                                });
+                                
+                                const name = cleanedRow.name || cleanedRow.item || cleanedRow.product;
                                 if(name) {
                                     store.menu.push({
                                         id: 'm' + Date.now() + Math.floor(Math.random() * 100000),
                                         name: name,
-                                        category: getCSVVal(row, ['Category', 'Cat']) || 'General',
-                                        size: getCSVVal(row, ['Size', 'Weight', 'Volume']),
-                                        flavor: getCSVVal(row, ['Flavor', 'Type', 'Variant']),
-                                        options: getCSVVal(row, ['Options', 'Extras']),
-                                        price: parseFloat(getCSVVal(row, ['Price', 'Cost'])) || 0,
-                                        onSale: String(getCSVVal(row, ['OnSale', 'Sale'])).toLowerCase() === 'true',
-                                        salePrice: parseFloat(getCSVVal(row, ['SalePrice', 'SpecialPrice'])) || 0,
+                                        category: cleanedRow.category || cleanedRow.cat || 'General',
+                                        size: cleanedRow.size || cleanedRow.weight || cleanedRow.volume || '',
+                                        flavor: cleanedRow.flavor || cleanedRow.type || cleanedRow.variant || '',
+                                        options: cleanedRow.options || cleanedRow.extras || '',
+                                        price: parseFloat(cleanedRow.price || cleanedRow.cost) || 0,
+                                        onSale: String(cleanedRow.onsale || cleanedRow.sale).toLowerCase() === 'true',
+                                        salePrice: parseFloat(cleanedRow.saleprice || cleanedRow.specialprice) || 0,
                                         img: null
                                     });
                                     importedCount++;
@@ -1017,6 +1014,7 @@
                         else renderAdminGroceries();
                     } catch(e) {
                         alert("An error occurred during import: " + e.message);
+                        console.error(e);
                     }
                 },
                 error: function(err) {
