@@ -36,7 +36,7 @@
         .btn-outline { background: transparent; color: #fff; border: 2px solid #fff; padding: 9px 20px; font-size: 16px; border-radius: 20px; cursor: pointer; margin: 5px; z-index: 2; text-shadow: 1px 1px 4px rgba(0,0,0,1); }
         
         .categories-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 30px; }
-        .category-card { position: relative; min-height: 180px; border-radius: 10px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; padding: 15px; color: var(--white); background-color: var(--forest); background-size: cover; background-repeat: no-repeat; background-position: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: transform 0.3s; border: 1px solid #ccc; }
+        .category-card { position: relative; min-height: 160px; border-radius: 10px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; padding: 15px; color: var(--white); background-color: var(--forest); background-size: cover; background-repeat: no-repeat; background-position: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: transform 0.3s; border: 1px solid #ccc; }
         .category-card:hover { transform: translateY(-5px); }
         .category-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to top, rgba(18, 59, 42, 0.9) 20%, rgba(18, 59, 42, 0.4) 60%, transparent 100%); z-index: 1; }
         .category-card h3, .category-card p { position: relative; z-index: 2; }
@@ -158,6 +158,8 @@
 
     <script>
         let cart = [], currentSlide = 0, slideInterval, appData = {}, adminTab = 'dashboard', isAdmin = false, adminStoreView = null;
+        let publicItemLimit = 50, adminItemLimit = 50;
+        let activeMenuStoreId = null, activeMenuStoreType = null, activeMenuCategory = null;
         const WHATSAPP_NUMBER = "27123456789"; 
 
         function safeStr(str) {
@@ -229,12 +231,27 @@
         function navigate(page, param) {
             clearInterval(slideInterval);
             const app = document.getElementById('app-content');
+            
             if (page === 'home') { app.innerHTML = renderHome(); initSlider(); }
             else if (page === 'takeaways') app.innerHTML = renderTakeawaysHub();
             else if (page === 'takeaway-list') app.innerHTML = renderTakeawayList(param);
-            else if (page === 'restaurant-menu') app.innerHTML = renderMenu(param);
+            else if (page === 'restaurant-menu') { 
+                activeMenuStoreId = param; activeMenuStoreType = 'takeaway'; activeMenuCategory = null; publicItemLimit = 50; 
+                app.innerHTML = renderStoreCategories('takeaway', param); 
+            }
+            else if (page === 'restaurant-menu-items') { 
+                activeMenuCategory = param; publicItemLimit = 50; 
+                app.innerHTML = renderStoreItems('takeaway', activeMenuStoreId, param); 
+            }
             else if (page === 'groceries') app.innerHTML = renderGroceryHub();
-            else if (page === 'grocery-menu') app.innerHTML = renderGroceryMenu(param);
+            else if (page === 'grocery-menu') { 
+                activeMenuStoreId = param; activeMenuStoreType = 'grocery'; activeMenuCategory = null; publicItemLimit = 50; 
+                app.innerHTML = renderStoreCategories('grocery', param); 
+            }
+            else if (page === 'grocery-menu-items') { 
+                activeMenuCategory = param; publicItemLimit = 50; 
+                app.innerHTML = renderStoreItems('grocery', activeMenuStoreId, param); 
+            }
             else if (page === 'parcels') app.innerHTML = renderParcelOptions();
             else if (page === 'send-parcel') app.innerHTML = renderSendParcel();
             else if (page === 'collect-parcel') app.innerHTML = renderCollectParcel();
@@ -299,7 +316,46 @@
             }); 
             return html; 
         }
+
+        function findStore(storeType, storeId) {
+            if (storeType === 'takeaway') {
+                let s = appData.takeaways.franchises.find(s => s.id === storeId);
+                if(s) return { store: s, type: 'franchises' };
+                s = appData.takeaways.local.find(s => s.id === storeId);
+                if(s) return { store: s, type: 'local' };
+                return null;
+            } else {
+                const s = appData.groceries.find(s => s.id === storeId);
+                return s ? { store: s, type: 'grocery' } : null;
+            }
+        }
         
+        function renderStoreCategories(storeType, storeId) {
+            const result = findStore(storeType, storeId);
+            if (!result) return '<h2>Store not found</h2>';
+            const { store, type } = result;
+
+            let backLink = storeType === 'takeaway' ? `navigate('takeaway-list', '${type}')` : `navigate('groceries')`;
+            
+            let html = `<span class="back-link" onclick="${backLink}">← Back to Stores</span>`;
+            html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest);">${store.name}</h2></div>`; 
+            
+            if(store.menu.length === 0) return html + '<p>No categories available yet.</p>';
+
+            const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
+            
+            html += '<div class="categories-grid">';
+            cats.forEach(cat => {
+                const itemCount = store.menu.filter(m => (m.category || 'General') === cat).length;
+                html += `<div class="category-card" onclick="navigate('${storeType === 'takeaway' ? 'restaurant-menu-items' : 'grocery-menu-items'}', '${safeStr(cat)}')" style="background-image: url('https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800');">
+                    <h3>${cat}</h3>
+                    <p>${itemCount} items</p>
+                </div>`;
+            });
+            html += '</div>';
+            return html;
+        }
+
         function renderItemRow(item, storeName) {
             let basePrice = parseFloat(item.price) || 0;
             let salePrice = parseFloat(item.salePrice) || 0;
@@ -338,36 +394,43 @@
             </div>`;
         }
 
-        function renderMenu(storeId) { 
-            let store = null, storeType = ''; 
-            appData.takeaways.franchises.forEach(s => { if(s.id === storeId) { store = s; storeType = 'franchises'; } }); 
-            if(!store) appData.takeaways.local.forEach(s => { if(s.id === storeId) { store = s; storeType = 'local'; } }); 
-            if (!store) return '<h2>Store not found</h2>'; 
-            
-            let html = `<span class="back-link" onclick="navigate('takeaway-list', '${safeStr(storeType)}')">← Back to Stores</span><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest);">${store.name}</h2></div>`; 
-            
-            if(store.menu.length === 0) return html + '<p>No menu items yet.</p>';
+        function renderStoreItems(storeType, storeId, categoryName) {
+            const result = findStore(storeType, storeId);
+            if (!result) return '<h2>Store not found</h2>';
+            const { store } = result;
 
-            const grouped = {};
-            const onSaleItems = [];
-            store.menu.forEach(item => {
-                if(item.onSale) onSaleItems.push(item);
-                const cat = item.category || 'General';
-                if(!grouped[cat]) grouped[cat] = [];
-                grouped[cat].push(item);
-            });
+            let backLink = storeType === 'takeaway' ? `navigate('restaurant-menu', '${storeId}')` : `navigate('grocery-menu', '${storeId}')`;
+            
+            let html = `<span class="back-link" onclick="${backLink}">← Back to Categories</span>`;
+            html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest);">${store.name}</h2></div>`; 
+
+            const filteredItems = store.menu.filter(item => (item.category || 'General') === categoryName);
+            if(filteredItems.length === 0) return html + '<p>No items in this category yet.</p>';
+
+            const itemsToRender = filteredItems.slice(0, publicItemLimit);
+            const onSaleItems = itemsToRender.filter(item => item.onSale && parseFloat(item.salePrice) > 0);
+            const regularItems = itemsToRender.filter(item => !item.onSale || parseFloat(item.salePrice) <= 0);
+
+            html += `<div class="menu-category-header">${categoryName}</div>`;
 
             if(onSaleItems.length > 0) {
                 html += '<div class="sale-banner">🔥 Items on Sale</div>';
-                onSaleItems.forEach(item => html += renderItemRow(item, store.name));
+                html += onSaleItems.map(item => renderItemRow(item, store.name)).join('');
             }
 
-            Object.keys(grouped).forEach(cat => {
-                html += `<div class="menu-category-header">${cat}</div>`;
-                grouped[cat].forEach(item => html += renderItemRow(item, store.name));
-            });
+            html += regularItems.map(item => renderItemRow(item, store.name)).join('');
+
+            if (filteredItems.length > publicItemLimit) {
+                html += `<div style="text-align: center; margin-top: 20px; margin-bottom: 20px;"><button class="btn-gold" onclick="loadMorePublicItems()">Load 50 More</button></div>`;
+            }
             
             return html; 
+        }
+
+        function loadMorePublicItems() {
+            publicItemLimit += 50;
+            const app = document.getElementById('app-content');
+            app.innerHTML = renderStoreItems(activeMenuStoreType, activeMenuStoreId, activeMenuCategory);
         }
         
         function renderGroceryHub() { 
@@ -383,35 +446,6 @@
                     <span style="color: ${isOnline ? 'var(--gold)' : '#999'}; font-weight: bold;">${isOnline ? 'Shop Now →' : 'Offline'}</span>
                 </div>`; 
             }); 
-            return html; 
-        }
-        
-        function renderGroceryMenu(storeId) { 
-            const store = appData.groceries.find(s => s.id === storeId); 
-            if (!store) return '<h2>Store not found</h2>'; 
-            let html = `<span class="back-link" onclick="navigate('groceries')">← Back to Stores</span><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest);">${store.name} Catalogue</h2></div>`; 
-            
-            if(store.menu.length === 0) return html + '<p>No products yet.</p>';
-
-            const grouped = {};
-            const onSaleItems = [];
-            store.menu.forEach(item => {
-                if(item.onSale) onSaleItems.push(item);
-                const cat = item.category || 'General';
-                if(!grouped[cat]) grouped[cat] = [];
-                grouped[cat].push(item);
-            });
-
-            if(onSaleItems.length > 0) {
-                html += '<div class="sale-banner">🔥 Items on Sale</div>';
-                onSaleItems.forEach(item => html += renderItemRow(item, store.name));
-            }
-
-            Object.keys(grouped).forEach(cat => {
-                html += `<div class="menu-category-header">${cat}</div>`;
-                grouped[cat].forEach(item => html += renderItemRow(item, store.name));
-            });
-            
             return html; 
         }
         
@@ -472,9 +506,7 @@
             let html = `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Shopping Cart</h2><div class="cart-container">`; 
             stores.forEach(store => { 
                 html += `<div class="cart-store-header">📍 ${store}</div>`; 
-                grouped[store].forEach(item => { 
-                    html += `<div class="cart-item"><div><strong>${item.name}</strong> x ${item.qty} <button onclick="removeFromCart('${safeStr(item.id)}', '${safeStr(item.name)}')" style="color: red; border: none; background: none; cursor: pointer; margin-left: 10px;">✖</button></div><div>R${(item.price * item.qty).toFixed(2)}</div></div>`; 
-                }); 
+                html += grouped[store].map(item => `<div class="cart-item"><div><strong>${item.name}</strong> x ${item.qty} <button onclick="removeFromCart('${safeStr(item.id)}', '${safeStr(item.name)}')" style="color: red; border: none; background: none; cursor: pointer; margin-left: 10px;">✖</button></div><div>R${(item.price * item.qty).toFixed(2)}</div></div>`).join(''); 
             }); 
             html += `<div class="cart-summary"><p>Products Subtotal: R${subtotal.toFixed(2)}</p><p>Additional-Store Fees: R${additionalStoreFee.toFixed(2)}</p><p class="total">Estimated Total: R${total.toFixed(2)}</p><p style="font-size: 12px; color: #666;">* Delivery fee will be confirmed on WhatsApp.</p><div class="trust-badge"><span>🔒</span> Trusted & Secure WhatsApp Checkout</div><button class="wa-btn" onclick="checkoutWhatsApp()">Checkout via WhatsApp</button></div>`; 
             return html + `</div>`; 
@@ -507,15 +539,15 @@
             if(results.length === 0) {
                 html += '<p>No stores or items found.</p>';
             } else {
-                results.forEach(res => {
+                html += results.slice(0, 50).map(res => { 
                     if(res.type === 'store') {
-                        html += `<div class="store-item" onclick="navigate('${res.cat === 'takeaway' ? 'restaurant-menu' : 'grocery-menu'}', '${res.store.id}')" style="cursor: pointer;">
+                        return `<div class="store-item" onclick="navigate('${res.cat === 'takeaway' ? 'restaurant-menu' : 'grocery-menu'}', '${res.store.id}')" style="cursor: pointer;">
                             <div class="item-info"><span style="font-size: 30px;">${res.store.logo}</span><h4>${res.store.name}</h4></div>
                             <span style="color: var(--gold);">View Store →</span>
                         </div>`;
                     } else {
                         let price = res.item.onSale && res.item.salePrice ? res.item.salePrice : res.item.price;
-                        html += `<div class="store-item" onclick="navigate('${res.cat === 'takeaway' ? 'restaurant-menu' : 'grocery-menu'}', '${res.store.id}')" style="cursor: pointer;">
+                        return `<div class="store-item" onclick="navigate('${res.cat === 'takeaway' ? 'restaurant-menu' : 'grocery-menu'}', '${res.store.id}')" style="cursor: pointer;">
                             <div class="item-info">
                                 <img src="${res.item.img || 'https://via.placeholder.com/50'}" class="item-img">
                                 <div>
@@ -526,7 +558,7 @@
                             <div class="item-price">R${parseFloat(price).toFixed(2)}</div>
                         </div>`;
                     }
-                });
+                }).join('');
             }
             return html;
         }
@@ -712,7 +744,7 @@
             appData.furnitureRequests.forEach(f => recent.push({ date: f.date, text: `Furniture Move ${f.ref} (${f.vehicle})` }));
             recent.sort((a,b) => new Date(b.date) - new Date(a.date));
             if(recent.length === 0) html += '<p>No recent activity.</p>';
-            recent.slice(0, 5).forEach(r => html += `<p>${r.date}: ${r.text}</p><hr>`);
+            html += recent.slice(0, 5).map(r => `<p>${r.date}: ${r.text}</p><hr>`).join('');
             html += '</div>';
             document.getElementById('admin-content').innerHTML = html;
         }
@@ -763,12 +795,12 @@
                 html += `<div class="form-row"><div class="form-group"><label>Username</label><input type="text" id="new_user"></div><div class="form-group"><label>Password</label><input type="text" id="new_pass"></div></div><button class="btn-gold" style="width: 100%;" onclick="adminAddUser()">Add User</button>`;
             }
             html += '</div><div class="admin-card"><h4>Current Users</h4>';
-            appData.users.forEach((u, i) => {
-                html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            html += appData.users.map((u, i) => 
+                `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                     <div><strong>${u.username}</strong><br><input type="text" value="${u.password}" id="pass_${i}" style="padding: 5px; border: 1px solid #ccc; border-radius: 4px; width: 100%;"></div>
                     <div><button class="add-btn" onclick="adminUpdatePass(${i})">Update Pass</button> ${u.username !== 'admin' ? `<button class="btn-delete" onclick="adminDeleteUser(${i})">Delete</button>` : ''}</div>
-                </div>`;
-            });
+                </div>`
+            ).join('');
             html += '</div>';
             document.getElementById('admin-content').innerHTML = html;
         }
@@ -812,15 +844,15 @@
             }
 
             html += '<hr style="margin: 30px 0;"><h3>Category & Service Images</h3><p style="margin-bottom: 10px;">Upload images for the service cards on the homepage and parcels page.</p>';
-            cats.forEach(cat => {
-                html += `<div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+            html += cats.map(cat => 
+                `<div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
                     <div style="width: 120px; height: 80px; background-image: url('${appData.categories[cat]}'); background-size: cover; background-repeat: no-repeat; background-position: center; border-radius: 8px; border: 1px solid #ccc;"></div>
                     <div>
                         <label style="text-transform: capitalize; font-weight: bold; color: var(--forest); font-size: 18px;">${cat.replace('_', ' ')}</label><br>
                         <input type="file" accept="image/*" onchange="handleImageUpload(event, '${cat}')" style="margin-top: 10px;">
                     </div>
-                </div>`;
-            });
+                </div>`
+            ).join('');
             html += '</div>';
             document.getElementById('admin-content').innerHTML = html;
         }
@@ -875,9 +907,9 @@
             
             ['franchises', 'local'].forEach(type => {
                 html += `<h5 style="color: var(--forest); margin-top: 20px; text-transform: capitalize;">${type}</h5>`;
-                appData.takeaways[type].forEach((store, storeIndex) => {
+                html += appData.takeaways[type].map((store, storeIndex) => {
                     const isOnline = store.isOnline !== false;
-                    html += `<div class="store-item">
+                    return `<div class="store-item">
                         <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
                             ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
                             <div><h4>${store.name}</h4><p>${isOnline ? 'Online' : 'Offline'} | ${store.menu.length} Items</p></div>
@@ -889,9 +921,9 @@
                             <button class="btn-gold" style="padding:5px 8px; font-size:12px; margin:0;" onclick="adminViewStore('takeaway_${type}_${storeIndex}')">Manage Menu →</button>
                             <button class="btn-delete" onclick="adminDeleteStore('takeaway', '${type}', ${storeIndex})">Delete</button>
                         </div>
-                    </div>`; 
-                }); 
-            }); 
+                    </div>`;
+                }).join('');
+            });
             html += '</div>';
             document.getElementById('admin-content').innerHTML = html;
         }
@@ -925,12 +957,12 @@
                     <small>Use this to delete an entire category and all its items.</small><div style="margin-top:10px;">`;
                     const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
                     if(cats.length > 0) {
-                        cats.forEach(c => {
-                            html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px; background:#fff; padding: 5px; border-radius: 4px;">
+                        html += cats.map(c => 
+                            `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px; background:#fff; padding: 5px; border-radius: 4px;">
                                 <span>${c}</span>
                                 <button class="btn-delete" onclick="adminDeleteCategory('takeaway', '${type}', ${storeIndex}, '${safeStr(c)}')">Delete Category</button>
-                            </div>`;
-                        });
+                            </div>`
+                        ).join('');
                     } else {
                         html += '<small>No categories yet.</small>';
                     }
@@ -947,8 +979,9 @@
             <button class="btn-gold" style="margin-top: 5px; padding: 8px; font-size: 14px;" onclick="adminAddMenuItem('takeaway', '${type}', ${storeIndex})">Add Item</button></div>`;
 
             html += '<div class="admin-card"><h4>Current Items</h4>';
-            store.menu.forEach((item, itemIndex) => { 
-                html += `<div class="admin-item-card">
+            const itemsToRender = store.menu.slice(0, adminItemLimit);
+            html += itemsToRender.map((item, itemIndex) => 
+                `<div class="admin-item-card">
                     <div class="card-header">
                         <div style="display:flex; gap:10px; align-items:center;">
                             <img src="${item.img || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; object-fit:cover; border-radius:5px;">
@@ -976,11 +1009,23 @@
                             <label for="i_onsale_takeaway_${type}_${storeIndex}_${itemIndex}" style="font-size: 12px;">On Sale</label>
                         </div>
                     </div>
-                </div>`; 
-            }); 
+                </div>`
+            ).join('');
+            
+            if (store.menu.length > adminItemLimit) {
+                html += `<div style="text-align: center; margin-top: 20px; margin-bottom: 20px;"><button class="btn-gold" onclick="loadMoreAdminItems()">Load 50 More</button></div>`;
+            }
             html += '</div>';
 
             document.getElementById('admin-content').innerHTML = html;
+        }
+
+        function loadMoreAdminItems() {
+            adminItemLimit += 50;
+            const scrollY = window.scrollY;
+            if (adminStoreView && adminStoreView.startsWith('takeaway_')) renderAdminTakeawayMenu();
+            else if (adminStoreView && adminStoreView.startsWith('grocery_')) renderAdminGroceryMenu();
+            window.scrollTo(0, scrollY);
         }
         
         // --- GROCERIES ADMIN ---
@@ -1002,9 +1047,9 @@
                 <button class="btn-offline" onclick="adminSetAllStoreStatus('groceries', false)">Set All Groceries Offline</button>
             </div>`;
 
-            appData.groceries.forEach((store, storeIndex) => {
+            html += appData.groceries.map((store, storeIndex) => {
                 const isOnline = store.isOnline !== false;
-                html += `<div class="store-item">
+                return `<div class="store-item">
                     <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
                         ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
                         <div><h4>${store.name}</h4><p>${isOnline ? 'Online' : 'Offline'} | ${store.menu.length} Items</p></div>
@@ -1016,8 +1061,8 @@
                         <button class="btn-gold" style="padding:5px 8px; font-size:12px; margin:0;" onclick="adminViewStore('grocery_${storeIndex}')">Manage Catalogue →</button>
                         <button class="btn-delete" onclick="adminDeleteStore('grocery', null, ${storeIndex})">Delete</button>
                     </div>
-                </div>`; 
-            });
+                </div>`;
+            }).join('');
             html += '</div>';
             document.getElementById('admin-content').innerHTML = html;
         }
@@ -1049,12 +1094,12 @@
                     <small>Use this to delete an entire category and all its items.</small><div style="margin-top:10px;">`;
                     const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
                     if(cats.length > 0) {
-                        cats.forEach(c => {
-                            html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px; background:#fff; padding: 5px; border-radius: 4px;">
+                        html += cats.map(c => 
+                            `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px; background:#fff; padding: 5px; border-radius: 4px;">
                                 <span>${c}</span>
                                 <button class="btn-delete" onclick="adminDeleteCategory('grocery', null, ${storeIndex}, '${safeStr(c)}')">Delete Category</button>
-                            </div>`;
-                        });
+                            </div>`
+                        ).join('');
                     } else {
                         html += '<small>No categories yet.</small>';
                     }
@@ -1071,8 +1116,9 @@
             <button class="btn-gold" style="margin-top: 5px; padding: 8px; font-size: 14px;" onclick="adminAddMenuItem('grocery', null, ${storeIndex})">Add Product</button></div>`;
 
             html += '<div class="admin-card"><h4>Current Products</h4>';
-            store.menu.forEach((item, itemIndex) => { 
-                html += `<div class="admin-item-card">
+            const itemsToRender = store.menu.slice(0, adminItemLimit);
+            html += itemsToRender.map((item, itemIndex) => 
+                `<div class="admin-item-card">
                     <div class="card-header">
                         <div style="display:flex; gap:10px; align-items:center;">
                             <img src="${item.img || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; object-fit:cover; border-radius:5px;">
@@ -1100,8 +1146,12 @@
                             <label for="i_onsale_grocery_g_${storeIndex}_${itemIndex}" style="font-size: 12px;">On Sale</label>
                         </div>
                     </div>
-                </div>`; 
-            }); 
+                </div>`
+            ).join('');
+            
+            if (store.menu.length > adminItemLimit) {
+                html += `<div style="text-align: center; margin-top: 20px; margin-bottom: 20px;"><button class="btn-gold" onclick="loadMoreAdminItems()">Load 50 More</button></div>`;
+            }
             html += '</div>';
 
             document.getElementById('admin-content').innerHTML = html;
@@ -1109,6 +1159,7 @@
 
         function adminViewStore(viewId) {
             adminStoreView = viewId;
+            adminItemLimit = 50; 
             navigate('admin');
         }
 
@@ -1185,6 +1236,11 @@
                 return;
             }
             
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = "Importing...";
+            btn.disabled = true;
+
             const file = fileInput.files[0];
             const reader = new FileReader();
             
@@ -1205,6 +1261,9 @@
                     }
                 } catch(err) {
                     alert("Error reading Excel file: " + err.message);
+                } finally {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
                 }
             };
             reader.readAsArrayBuffer(file);
@@ -1214,6 +1273,11 @@
             const textArea = document.getElementById(`paste_input_${cat}_${type ? type : 'g'}_${storeIndex}`);
             const text = textArea.value.trim();
             if(!text) { alert("Nothing pasted."); return; }
+
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = "Importing...";
+            btn.disabled = true;
 
             try {
                 const workbook = XLSX.read(text, { type: 'string' });
@@ -1230,6 +1294,9 @@
                 }
             } catch(err) {
                 alert("Error parsing pasted data: " + err.message);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
             }
         }
 
@@ -1354,7 +1421,7 @@
             if(cat === 'takeaway') renderAdminTakeawayMenu(); 
             else renderAdminGroceryMenu(); 
         }
-
+        
         async function adminAddGrocery() {
             const name = document.getElementById('g_name').value;
             const logo = document.getElementById('g_logo').value || '🛒';
