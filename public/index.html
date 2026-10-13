@@ -47,9 +47,14 @@
         .item-info { flex: 1; display: flex; align-items: center; gap: 10px; }
         .item-info h4 { color: var(--forest); font-size: 16px; }
         .item-info p { color: #666; font-size: 12px; }
-        .item-size { color: var(--gold); font-weight: bold; font-size: 12px; margin-top: 2px; }
-        .item-price { font-weight: bold; color: var(--forest); font-size: 14px; text-align: right; }
-        .add-btn { background-color: var(--gold); color: var(--forest); border: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; margin-top: 5px; }
+        .item-price { font-weight: bold; color: var(--forest); font-size: 14px; text-align: right; margin-top: 5px; }
+        .add-btn { background-color: var(--gold); color: var(--forest); border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        
+        /* Quantity Selector */
+        .qty-selector { display: flex; align-items: center; gap: 8px; background: #f2f4f1; padding: 4px; border-radius: 20px; }
+        .qty-btn { background: var(--gold); color: var(--forest); border: none; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .qty-display { font-weight: bold; color: var(--forest); min-width: 25px; text-align: center; }
+        .item-options { width: 100%; margin-top: 5px; padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 12px; }
         
         .form-container { background: var(--white); padding: 20px; border-radius: 10px; max-width: 800px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .form-section { margin-bottom: 20px; border-bottom: 1px solid var(--light-grey); padding-bottom: 15px; }
@@ -58,14 +63,14 @@
         .form-group { margin-bottom: 10px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--forest); font-size: 14px; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: inherit; font-size: 16px; }
-        .form-row { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         
         .cart-container { background: var(--white); padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .cart-item { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
-        .cart-store-header { background: var(--light-grey); padding: 8px; margin-top: 15px; border-left: 4px solid var(--forest); font-weight: bold; font-size: 14px; }
-        .cart-summary { margin-top: 20px; text-align: right; }
+        .cart-item { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; justify-content: space-between; align-items: center; gap: 15px; }
+        .cart-store-header { background: var(--light-grey); padding: 10px; margin-top: 20px; border-left: 4px solid var(--forest); font-weight: bold; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .cart-summary { margin-top: 30px; text-align: right; }
         .cart-summary p { margin: 5px 0; font-size: 16px; }
-        .total { font-size: 20px; font-weight: bold; color: var(--forest); border-top: 2px solid var(--forest); padding-top: 10px; }
+        .total { font-size: 24px; font-weight: bold; color: var(--forest); border-top: 2px solid var(--forest); padding-top: 10px; }
         .wa-btn { background-color: #25D366; color: white; border: none; padding: 15px; font-size: 18px; border-radius: 30px; cursor: pointer; margin-top: 15px; width: 100%; font-weight: bold; }
         
         .wa-float { position: fixed; bottom: 15px; right: 15px; background-color: #25D366; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 99; text-decoration: none; }
@@ -106,7 +111,6 @@
         .btn-online { background-color: #4CAF50; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
         .btn-offline { background-color: #999; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
 
-        /* Admin Item Card Layout */
         .admin-item-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 15px; background: #fafafa; }
         .admin-item-card .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .admin-item-card .card-header img { width: 40px; height: 40px; object-fit: cover; border-radius: 5px; }
@@ -368,7 +372,7 @@
             html += '<div class="categories-grid">';
             cats.forEach(cat => {
                 const itemCount = store.menu.filter(m => (m.category || 'General') === cat).length;
-                const catImg = store.categoryImages && store.categoryImages[cat] ? store.categoryImages[cat] : 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800'; // default food image
+                const catImg = store.categoryImages && store.categoryImages[cat] ? store.categoryImages[cat] : 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800'; 
                 html += `<div class="category-card" style="background-image: url('${catImg}');" onclick="navigate('${storeType === 'takeaway' ? 'restaurant-menu-items' : 'grocery-menu-items'}', '${safeStr(cat)}')">
                     <h3>${cat}</h3>
                     <p>${itemCount} items</p>
@@ -389,12 +393,26 @@
             let optionsHtml = '';
             if(item.options) {
                 const opts = item.options.split(',');
-                optionsHtml = `<select id="opt_${item.id}" style="width: 100%; margin-top: 5px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;">`;
+                optionsHtml = `<select id="opt_${item.id}" class="item-options">`;
                 opts.forEach(opt => {
                     const [name, addPrice] = opt.split('|');
                     optionsHtml += `<option value="${name}" data-price="${addPrice}">${name} (+R${parseFloat(addPrice).toFixed(2)})</option>`;
                 });
                 optionsHtml += '</select>';
+            }
+
+            const cartItem = cart.find(ci => ci.id === item.id && ci.store === storeName);
+            const currentQty = cartItem ? cartItem.qty : 0;
+
+            let actionHtml = '';
+            if (currentQty > 0) {
+                actionHtml = `<div class="qty-selector">
+                    <button class="qty-btn" onclick="changeQty('${item.id}', '${storeName}', -1)">−</button>
+                    <span class="qty-display">×${currentQty}</span>
+                    <button class="qty-btn" onclick="changeQty('${item.id}', '${storeName}', 1)">+</button>
+                </div>`;
+            } else {
+                actionHtml = `<button class="add-btn" onclick="addItemToCart('${item.id}', '${storeName}', '${safeStr(item.name)}', ${displayPrice}, '${safeStr(item.size || '')}')">Add</button>`;
             }
 
             return `<div class="store-item">
@@ -404,14 +422,11 @@
                         <h4>${item.name} ${item.size ? `<small>(${item.size})</small>` : ''}</h4>
                         ${item.flavor ? `<div style="font-size: 12px; color: #666;">${item.flavor}</div>` : ''}
                         ${optionsHtml}
-                        <div style="margin-top: 5px;">
-                            <input type="number" min="1" value="1" id="qty_${item.id}" style="width: 60px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" />
-                        </div>
+                        <div class="item-price">${oldPriceHtml} R${displayPrice.toFixed(2)}</div>
                     </div>
                 </div>
                 <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
-                    <div class="item-price">${oldPriceHtml} R${displayPrice.toFixed(2)}</div>
-                    <button class="add-btn" onclick="addToCart('${safeStr(item.id)}', '${safeStr(storeName)}', '${safeStr(item.name)}', ${displayPrice}, '${safeStr(item.size || '')}', '${safeStr(item.options || '')}')">Add</button>
+                    ${actionHtml}
                 </div>
             </div>`;
         }
@@ -483,8 +498,53 @@
         
         function renderSendParcel() { 
             return `<span class="back-link" onclick="navigate('parcels')">← Back to Parcels</span><h2 style="color: var(--forest); margin-bottom: 20px;">Send a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('send')">
-                <div class="form-section"><h3>Sender Details</h3><div class="form-row"><div class="form-group"><label>★ Full Name</label><input type="text" id="p_sender_name" required></div><div class="form-group"><label>★ Mobile Number</label><input type="tel" id="p_sender_phone" required></div></div></div>
-                <div class="form-section"><h3>Parcel Details</h3><div class="form-group"><label>★ Description of Contents</label><input type="text" id="p_desc" required></div></div>
+                <div class="form-section"><h3>Sender Details</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>★ Full Name</label><input type="text" id="p_sender_name" required></div>
+                        <div class="form-group"><label>★ Mobile Number</label><input type="tel" id="p_sender_phone" required></div>
+                    </div>
+                </div>
+                <div class="form-section"><h3>Collection Address</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>★ Province</label><input type="text" id="p_coll_province" required></div>
+                        <div class="form-group"><label>★ City or Town</label><input type="text" id="p_coll_city" required></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Suburb or Township</label><input type="text" id="p_coll_suburb"></div>
+                        <div class="form-group"><label>Street Name (if available)</label><input type="text" id="p_coll_street"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>House/Building No</label><input type="text" id="p_coll_house"></div>
+                        <div class="form-group"><label>Complex/Unit No</label><input type="text" id="p_coll_unit"></div>
+                    </div>
+                    <div class="form-group"><label>★ Nearest Landmark</label><input type="text" id="p_coll_landmark" placeholder="e.g. Near Alexandra Pan Africa Mall" required></div>
+                    <div class="form-group"><label>Additional Directions (Optional)</label><textarea id="p_coll_directions" rows="2"></textarea></div>
+                </div>
+                <div class="form-section"><h3>Recipient Details</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>★ Full Name</label><input type="text" id="p_rec_name" required></div>
+                        <div class="form-group"><label>★ Mobile Number</label><input type="tel" id="p_rec_phone" required></div>
+                    </div>
+                </div>
+                <div class="form-section"><h3>Delivery Address</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>★ Province</label><input type="text" id="p_del_province" required></div>
+                        <div class="form-group"><label>★ City or Town</label><input type="text" id="p_del_city" required></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Suburb or Township</label><input type="text" id="p_del_suburb"></div>
+                        <div class="form-group"><label>Street Name (if available)</label><input type="text" id="p_del_street"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>House/Building No</label><input type="text" id="p_del_house"></div>
+                        <div class="form-group"><label>Complex/Unit No</label><input type="text" id="p_del_unit"></div>
+                    </div>
+                    <div class="form-group"><label>★ Nearest Landmark</label><input type="text" id="p_del_landmark" placeholder="e.g. Opposite the local clinic" required></div>
+                    <div class="form-group"><label>Additional Directions (Optional)</label><textarea id="p_del_directions" rows="2"></textarea></div>
+                </div>
+                <div class="form-section"><h3>Parcel Details</h3>
+                    <div class="form-group"><label>★ Description of Contents</label><input type="text" id="p_desc" required></div>
+                </div>
                 <div class="form-section"><h3>Parcel Pictures (Max 5)</h3><div class="upload-box"><input type="file" id="p_send_files" accept="image/*" capture="environment" multiple><small style="color:#666; display:block; margin-top:5px;">Take a photo or select from gallery.</small></div></div>
                 <button type="submit" class="btn-gold" style="width: 100%;">Submit Parcel Request</button>
             </form>`; 
@@ -492,7 +552,50 @@
         
         function renderCollectParcel() { 
             return `<span class="back-link" onclick="navigate('parcels')">← Back to Parcels</span><h2 style="color: var(--forest); margin-bottom: 20px;">Collect a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('collect')">
-                <div class="form-section"><h3>Collector Details</h3><div class="form-group"><label>★ Full Name</label><input type="text" id="p_coll_name" required></div><div class="form-group"><label>★ ID Number</label><input type="text" id="p_coll_id" required></div></div>
+                <div class="form-section"><h3>Collector Details</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>★ Full Name</label><input type="text" id="c_coll_name" required></div>
+                        <div class="form-group"><label>★ Mobile Number</label><input type="tel" id="c_coll_phone" required></div>
+                    </div>
+                </div>
+                <div class="form-section"><h3>Collection Address</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>★ Province</label><input type="text" id="c_coll_province" required></div>
+                        <div class="form-group"><label>★ City or Town</label><input type="text" id="c_coll_city" required></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Suburb or Township</label><input type="text" id="c_coll_suburb"></div>
+                        <div class="form-group"><label>Street Name (if available)</label><input type="text" id="c_coll_street"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>House/Building No</label><input type="text" id="c_coll_house"></div>
+                        <div class="form-group"><label>Complex/Unit No</label><input type="text" id="c_coll_unit"></div>
+                    </div>
+                    <div class="form-group"><label>★ Nearest Landmark</label><input type="text" id="c_coll_landmark" placeholder="e.g. Next to the nearest petrol station" required></div>
+                    <div class="form-group"><label>Additional Directions (Optional)</label><textarea id="c_coll_directions" rows="2"></textarea></div>
+                </div>
+                <div class="form-section"><h3>Recipient Details</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>★ Full Name</label><input type="text" id="c_rec_name" required></div>
+                        <div class="form-group"><label>★ Mobile Number</label><input type="tel" id="c_rec_phone" required></div>
+                    </div>
+                </div>
+                <div class="form-section"><h3>Delivery Address</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>★ Province</label><input type="text" id="c_del_province" required></div>
+                        <div class="form-group"><label>★ City or Town</label><input type="text" id="c_del_city" required></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Suburb or Township</label><input type="text" id="c_del_suburb"></div>
+                        <div class="form-group"><label>Street Name (if available)</label><input type="text" id="c_del_street"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>House/Building No</label><input type="text" id="c_del_house"></div>
+                        <div class="form-group"><label>Complex/Unit No</label><input type="text" id="c_del_unit"></div>
+                    </div>
+                    <div class="form-group"><label>★ Nearest Landmark</label><input type="text" id="c_del_landmark" placeholder="e.g. Behind the local school" required></div>
+                    <div class="form-group"><label>Additional Directions (Optional)</label><textarea id="c_del_directions" rows="2"></textarea></div>
+                </div>
                 <div class="form-section"><h3>Parcel Pictures (Max 5)</h3><div class="upload-box"><input type="file" id="p_coll_files" accept="image/*" capture="environment" multiple><small style="color:#666; display:block; margin-top:5px;">Take a photo or select from gallery.</small></div></div>
                 <button type="submit" class="btn-gold" style="width: 100%;">Submit Collection Request</button>
             </form>`; 
@@ -528,12 +631,26 @@
             const additionalStoreFee = stores.length > 1 ? (stores.length - 1) * 10 : 0; 
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0); 
             const total = subtotal + additionalStoreFee; 
+            
             let html = `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Shopping Cart</h2><div class="cart-container">`; 
             stores.forEach(store => { 
-                html += `<div class="cart-store-header">📍 ${store}</div>`; 
-                html += grouped[store].map(item => `<div class="cart-item"><div><strong>${item.name}</strong> x ${item.qty} <button onclick="removeFromCart('${safeStr(item.id)}', '${safeStr(item.name)}')" style="color: red; border: none; background: none; cursor: pointer; margin-left: 10px;">✖</button></div><div>R${(item.price * item.qty).toFixed(2)}</div></div>`).join(''); 
+                html += `<div class="cart-store-header">📍 ${store} <button onclick="clearCart()" style="float:right; color: red; border: none; background: none; cursor: pointer; font-size: 12px;">Clear Cart</button></div>`; 
+                html += grouped[store].map(item => 
+                    `<div class="cart-item">
+                        <div style="flex:1">
+                            <strong>${item.name}</strong><br>
+                            <small>R${item.price.toFixed(2)} each</small>
+                        </div>
+                        <div class="qty-selector">
+                            <button class="qty-btn" onclick="changeQty('${item.id}', '${item.store}', -1)">−</button>
+                            <span class="qty-display">×${item.qty}</span>
+                            <button class="qty-btn" onclick="changeQty('${item.id}', '${item.store}', 1)">+</button>
+                        </div>
+                        <div style="width: 80px; text-align: right;">R${(item.price * item.qty).toFixed(2)}</div>
+                    </div>`
+                ).join(''); 
             }); 
-            html += `<div class="cart-summary"><p>Products Subtotal: R${subtotal.toFixed(2)}</p><p>Additional-Store Fees: R${additionalStoreFee.toFixed(2)}</p><p class="total">Estimated Total: R${total.toFixed(2)}</p><p style="font-size: 12px; color: #666;">* Delivery fee will be confirmed on WhatsApp.</p><div class="trust-badge"><span>🔒</span> Trusted & Secure WhatsApp Checkout</div><button class="wa-btn" onclick="checkoutWhatsApp()">Checkout via WhatsApp</button></div>`; 
+            html += `<div class="cart-summary"><p>Items subtotal: R${subtotal.toFixed(2)}</p><p>Additional-Store Fees: R${additionalStoreFee.toFixed(2)}</p><p class="total">Estimated Total: R${total.toFixed(2)}</p><p style="font-size: 12px; color: #666;">* Delivery fee will be confirmed on WhatsApp.</p><div class="trust-badge"><span>🔒</span> Trusted & Secure WhatsApp Checkout</div><button class="wa-btn" onclick="checkoutWhatsApp()">Checkout via WhatsApp</button></div>`; 
             return html + `</div>`; 
         }
 
@@ -588,37 +705,64 @@
             return html;
         }
 
-        function addToCart(itemId, storeName, baseName, basePrice, size, optionsStr) {
-            const qtyInput = document.getElementById(`qty_${itemId}`);
-            const qty = parseInt(qtyInput.value) || 1;
+        // --- CART LOGIC ---
+        function addItemToCart(itemId, storeName, baseName, basePrice, size) {
+            if (cart.length > 0 && cart[0].store !== storeName) {
+                if (!confirm(`Your cart contains items from ${cart[0].store}. Do you want to clear your cart and add items from ${storeName}?`)) return;
+                cart = [];
+            }
             
-            let extraPrice = 0;
+            const selectEl = document.getElementById(`opt_${itemId}`);
             let optionText = '';
-            if(optionsStr) {
-                const selectEl = document.getElementById(`opt_${itemId}`);
-                if(selectEl) {
-                    const selectedOpt = selectEl.options[selectEl.selectedIndex];
-                    optionText = selectedOpt.value;
-                    extraPrice = parseFloat(selectedOpt.getAttribute('data-price')) || 0;
-                }
+            let extraPrice = 0;
+            if(selectEl) {
+                const selectedOpt = selectEl.options[selectEl.selectedIndex];
+                optionText = selectedOpt.value;
+                extraPrice = parseFloat(selectedOpt.getAttribute('data-price')) || 0;
             }
             
             const finalPrice = basePrice + extraPrice;
             const fullName = baseName + (optionText ? ` (${optionText})` : '') + (size ? ` ${size}` : '');
-            const uniqueId = itemId + (optionText ? '_'+optionText : '');
-
-            const existing = cart.find(item => item.id === uniqueId && item.store === storeName); 
-            if (existing) existing.qty += qty; 
-            else cart.push({ id: uniqueId, store: storeName, name: fullName, price: finalPrice, qty: qty }); 
+            
+            const existing = cart.find(item => item.id === itemId && item.store === storeName); 
+            if (existing) {
+                existing.qty++;
+                existing.name = fullName;
+                existing.price = finalPrice;
+            } else {
+                cart.push({ id: itemId, store: storeName, name: fullName, price: finalPrice, qty: 1 });
+            }
             
             updateCartCount(); 
-            alert(`${fullName} x ${qty} added to cart!`); 
+            // Re-render list to show quantity controls
+            const app = document.getElementById('app-content');
+            app.innerHTML = renderStoreItems(activeMenuStoreType, activeMenuStoreId, activeMenuCategory);
+        }
+
+        function changeQty(itemId, storeName, delta) {
+            const existing = cart.find(item => item.id === itemId && item.store === storeName);
+            if (existing) {
+                existing.qty += delta;
+                if (existing.qty <= 0) {
+                    cart = cart.filter(item => item !== existing);
+                }
+            }
+            updateCartCount();
+            // Check if we are on the cart page or the menu page
+            const app = document.getElementById('app-content');
+            if (activeMenuStoreId && activeMenuCategory) {
+                app.innerHTML = renderStoreItems(activeMenuStoreType, activeMenuStoreId, activeMenuCategory);
+            } else {
+                app.innerHTML = renderCart();
+            }
         }
         
-        function removeFromCart(id, name) { 
-            cart = cart.filter(item => !(item.id === id && item.name === name)); 
-            updateCartCount(); 
-            navigate('cart'); 
+        function clearCart() {
+            if(confirm('Are you sure you want to clear your cart?')) {
+                cart = [];
+                updateCartCount();
+                navigate('cart');
+            }
         }
         
         function updateCartCount() { 
@@ -649,28 +793,63 @@
             event.preventDefault(); 
             const waNum = appData.siteContent.whatsappNumber || "27843689501";
             const ref = type === 'send' ? `KD-SEND-${Date.now()}` : `KD-COLL-${Date.now()}`; 
-            let msg = `*${type.toUpperCase()} PARCEL REQUEST — ${(appData.siteContent.websiteName || 'KASIDELIVERIES').toUpperCase()}*\n\n*Reference:* ${ref}\n\nI have submitted the form details.\n\nPlease confirm receipt of this request.`; 
-            
-            const fileInputId = type === 'send' ? 'p_send_files' : 'p_coll_files';
-            const imageUrls = await uploadMultipleFiles(fileInputId);
-            if(imageUrls.length > 0) {
-                msg += `\n\n*Attached Images:*\n${imageUrls.join('\n')}`;
+            let msg = `*${type.toUpperCase()} PARCEL REQUEST — ${(appData.siteContent.websiteName || 'KASIDELIVERIES').toUpperCase()}*\n\n*Reference:* ${ref}\n\n`; 
+
+            const imageUrls = await uploadMultipleFiles(type === 'send' ? 'p_send_files' : 'p_coll_files');
+
+            if (type === 'send') {
+                const collAddr = `${document.getElementById('p_coll_province').value}, ${document.getElementById('p_coll_city').value}, ${document.getElementById('p_coll_suburb').value}, ${document.getElementById('p_coll_street').value}, ${document.getElementById('p_coll_house').value}, ${document.getElementById('p_coll_unit').value}`;
+                const collLandmark = document.getElementById('p_coll_landmark').value;
+                const collDirections = document.getElementById('p_coll_directions').value;
+
+                const delAddr = `${document.getElementById('p_del_province').value}, ${document.getElementById('p_del_city').value}, ${document.getElementById('p_del_suburb').value}, ${document.getElementById('p_del_street').value}, ${document.getElementById('p_del_house').value}, ${document.getElementById('p_del_unit').value}`;
+                const delLandmark = document.getElementById('p_del_landmark').value;
+                const delDirections = document.getElementById('p_del_directions').value;
+
+                msg += `*SENDER DETAILS*\nName: ${document.getElementById('p_sender_name').value}\nPhone: ${document.getElementById('p_sender_phone').value}\n\n`;
+                msg += `*COLLECTION ADDRESS*\n${collAddr}\n*Nearest Landmark:* ${collLandmark}\n*Directions:* ${collDirections || 'None'}\n\n`;
+                msg += `*RECIPIENT DETAILS*\nName: ${document.getElementById('p_rec_name').value}\nPhone: ${document.getElementById('p_rec_phone').value}\n\n`;
+                msg += `*DELIVERY ADDRESS*\n${delAddr}\n*Nearest Landmark:* ${delLandmark}\n*Directions:* ${delDirections || 'None'}\n\n`;
+                msg += `*PARCEL DETAILS*\nDesc: ${document.getElementById('p_desc').value}\n`;
+                
+                const reqData = { 
+                    sender: { name: document.getElementById('p_sender_name').value, phone: document.getElementById('p_sender_phone').value, address: collAddr, landmark: collLandmark, directions: collDirections },
+                    recipient: { name: document.getElementById('p_rec_name').value, phone: document.getElementById('p_rec_phone').value, address: delAddr, landmark: delLandmark, directions: delDirections },
+                    desc: document.getElementById('p_desc').value,
+                    images: imageUrls
+                }; 
+                const newParcel = { ref: ref, type: 'Send Parcel', details: reqData, date: new Date().toLocaleString(), status: 'New Request' }; 
+                await fetch('/api/parcel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newParcel) }); 
+                appData.parcelRequests.push(newParcel); 
+            } else {
+                const collAddr = `${document.getElementById('c_coll_province').value}, ${document.getElementById('c_coll_city').value}, ${document.getElementById('c_coll_suburb').value}, ${document.getElementById('c_coll_street').value}, ${document.getElementById('c_coll_house').value}, ${document.getElementById('c_coll_unit').value}`;
+                const collLandmark = document.getElementById('c_coll_landmark').value;
+                const collDirections = document.getElementById('c_coll_directions').value;
+
+                const delAddr = `${document.getElementById('c_del_province').value}, ${document.getElementById('c_del_city').value}, ${document.getElementById('c_del_suburb').value}, ${document.getElementById('c_del_street').value}, ${document.getElementById('c_del_house').value}, ${document.getElementById('c_del_unit').value}`;
+                const delLandmark = document.getElementById('c_del_landmark').value;
+                const delDirections = document.getElementById('c_del_directions').value;
+
+                msg += `*COLLECTOR DETAILS*\nName: ${document.getElementById('c_coll_name').value}\nPhone: ${document.getElementById('c_coll_phone').value}\n\n`;
+                msg += `*COLLECTION ADDRESS*\n${collAddr}\n*Nearest Landmark:* ${collLandmark}\n*Directions:* ${collDirections || 'None'}\n\n`;
+                msg += `*RECIPIENT DETAILS*\nName: ${document.getElementById('c_rec_name').value}\nPhone: ${document.getElementById('c_rec_phone').value}\n\n`;
+                msg += `*DELIVERY ADDRESS*\n${delAddr}\n*Nearest Landmark:* ${delLandmark}\n*Directions:* ${delDirections || 'None'}\n\n`;
+                
+                const reqData = { 
+                    collector: { name: document.getElementById('c_coll_name').value, phone: document.getElementById('c_coll_phone').value, address: collAddr, landmark: collLandmark, directions: collDirections },
+                    recipient: { name: document.getElementById('c_rec_name').value, phone: document.getElementById('c_rec_phone').value, address: delAddr, landmark: delLandmark, directions: delDirections },
+                    images: imageUrls
+                }; 
+                const newParcel = { ref: ref, type: 'Collect Parcel', details: reqData, date: new Date().toLocaleString(), status: 'New Request' }; 
+                await fetch('/api/parcel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newParcel) }); 
+                appData.parcelRequests.push(newParcel); 
             }
 
-            const reqData = type === 'send' ? { 
-                name: document.getElementById('p_sender_name').value, 
-                phone: document.getElementById('p_sender_phone').value, 
-                desc: document.getElementById('p_desc').value,
-                images: imageUrls
-            } : { 
-                name: document.getElementById('p_coll_name').value, 
-                id: document.getElementById('p_coll_id').value,
-                images: imageUrls
-            }; 
-
-            const newParcel = { ref: ref, type: type === 'send' ? 'Send Parcel' : 'Collect Parcel', details: reqData, date: new Date().toLocaleString(), status: 'New Request' }; 
-            await fetch('/api/parcel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newParcel) }); 
-            appData.parcelRequests.push(newParcel); 
+            if(imageUrls.length > 0) {
+                msg += `\n*Attached Images:*\n${imageUrls.join('\n')}`;
+            }
+            msg += `\nPlease confirm receipt of this request.`;
+            
             window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank'); 
         }
         
