@@ -101,14 +101,18 @@
         .upload-box { background: #f8f9fa; border: 2px dashed #ccc; padding: 15px; border-radius: 8px; text-align: center; margin-top: 10px; }
         
         .btn-delete { background-color: #ff4d4d; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
-        
+        .btn-online { background-color: #4CAF50; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .btn-offline { background-color: #999; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+
         /* Admin Item Card Layout */
         .admin-item-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 15px; background: #fafafa; }
         .admin-item-card .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .admin-item-card .card-header img { width: 40px; height: 40px; object-fit: cover; border-radius: 5px; }
-        .admin-item-card .card-actions { display: flex; gap: 5px; }
+        .admin-item-card .card-actions { display: flex; gap: 5px; flex-wrap: wrap; }
         .admin-item-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         
+        .store-status-offline { opacity: 0.5; background: #eee; pointer-events: none; }
+
         @media (min-width: 768px) {
             header { padding: 15px 20px; } .logo { font-size: 24px; } .brand-logo-img { height: 45px; }
             nav a, nav button, .cart-btn { font-size: 16px; } main { padding: 20px; }
@@ -158,7 +162,6 @@
             return String(str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
         }
 
-        // Helper to safely get CSV values regardless of case
         function getCSVVal(row, keys) {
             for(let key of keys) {
                 let foundKey = Object.keys(row).find(k => k.trim().toLowerCase() === key.trim().toLowerCase());
@@ -281,12 +284,13 @@
             let html = `<span class="back-link" onclick="navigate('takeaways')">← Back to Takeaways</span><h2 style="color: var(--forest); margin-bottom: 20px;">${type === 'franchises' ? 'Franchises' : 'Local Takeaways'}</h2>`; 
             if(stores.length === 0) html += '<p>No stores available yet.</p>'; 
             stores.forEach(store => { 
-                html += `<div class="store-item" onclick="navigate('restaurant-menu', '${safeStr(store.id)}')" style="cursor: pointer;">
+                const isOnline = store.isOnline !== false;
+                html += `<div class="store-item ${!isOnline ? 'store-status-offline' : ''}" onclick="${isOnline ? `navigate('restaurant-menu', '${safeStr(store.id)}')` : ''}" style="cursor: ${isOnline ? 'pointer' : 'not-allowed'};">
                     <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
                         ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
-                        <div><h4>${store.name}</h4><p>View menu and place order</p></div>
+                        <div><h4>${store.name}</h4><p>${isOnline ? 'View menu and place order' : 'Currently Offline'}</p></div>
                     </div>
-                    <span style="color: var(--gold); font-weight: bold;">View Menu →</span>
+                    <span style="color: ${isOnline ? 'var(--gold)' : '#999'}; font-weight: bold;">${isOnline ? 'View Menu →' : 'Offline'}</span>
                 </div>`; 
             }); 
             return html; 
@@ -362,12 +366,13 @@
             let html = `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Grocery Stores</h2>`; 
             if(appData.groceries.length === 0) html += '<p>No stores available yet.</p>'; 
             appData.groceries.forEach(store => { 
-                html += `<div class="store-item" onclick="navigate('grocery-menu', '${safeStr(store.id)}')" style="cursor: pointer;">
+                const isOnline = store.isOnline !== false;
+                html += `<div class="store-item ${!isOnline ? 'store-status-offline' : ''}" onclick="${isOnline ? `navigate('grocery-menu', '${safeStr(store.id)}')` : ''}" style="cursor: ${isOnline ? 'pointer' : 'not-allowed'};">
                     <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
                         ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
-                        <div><h4>${store.name}</h4><p>Browse catalogue and shop</p></div>
+                        <div><h4>${store.name}</h4><p>${isOnline ? 'Browse catalogue and shop' : 'Currently Offline'}</p></div>
                     </div>
-                    <span style="color: var(--gold); font-weight: bold;">Shop Now →</span>
+                    <span style="color: ${isOnline ? 'var(--gold)' : '#999'}; font-weight: bold;">${isOnline ? 'Shop Now →' : 'Offline'}</span>
                 </div>`; 
             }); 
             return html; 
@@ -800,12 +805,25 @@
             html += `<button class="btn-gold" style="width: 100%; margin-top: 15px;" onclick="adminAddTakeaway()">Add Store</button></div>`;
             
             html += '<div class="admin-card"><h4>Current Takeaways & Menus</h4>';
+            html += `<div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn-online" onclick="adminSetAllStoreStatus('takeaways', true)">Set All Takeaways Online</button>
+                <button class="btn-offline" onclick="adminSetAllStoreStatus('takeaways', false)">Set All Takeaways Offline</button>
+            </div>`;
+            
             ['franchises', 'local'].forEach(type => {
                 html += `<h5 style="color: var(--forest); margin-top: 20px; text-transform: capitalize;">${type}</h5>`;
                 appData.takeaways[type].forEach(store => {
+                    const isOnline = store.isOnline !== false;
                     html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;">
-                        <strong>${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : store.logo} ${store.name}</strong> 
-                        <button class="btn-delete" onclick="adminDeleteStore('takeaway', '${safeStr(type)}', '${safeStr(store.id)}')" style="float: right;">Delete Store</button>
+                        <div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <strong>${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : store.logo} ${store.name}</strong> 
+                            <div style="display:flex; gap: 5px;">
+                                <button class="${isOnline ? 'btn-online' : 'btn-offline'}" onclick="adminToggleStoreStatus('takeaway', '${safeStr(type)}', '${safeStr(store.id)}')">
+                                    ${isOnline ? 'Online (Click to Offline)' : 'Offline (Click to Online)'}
+                                </button>
+                                <button class="btn-delete" onclick="adminDeleteStore('takeaway', '${safeStr(type)}', '${safeStr(store.id)}')">Delete Store</button>
+                            </div>
+                        </div>
                         
                         <div style="margin-top: 15px; background: #e8f5e9; padding: 10px; border-radius: 5px;">
                             <strong style="color: var(--forest);">Bulk Upload Menu (CSV)</strong><br>
@@ -890,7 +908,6 @@
 
                     let importedCount = 0;
                     results.data.forEach(row => {
-                        // Robust column matching
                         const name = getCSVVal(row, ['Name', 'Item', 'Product']);
                         if(name) {
                             store.menu.push({
@@ -942,7 +959,7 @@
             let logoImg = null;
             if(logoFile) logoImg = await uploadImage(logoFile);
             const id = name.toLowerCase().replace(/[^a-z0-9]/g, '') + Date.now().toString().slice(-4);
-            appData.takeaways[type].push({ id, name, logo, logoImg, menu: [] });
+            appData.takeaways[type].push({ id, name, logo, logoImg, menu: [], isOnline: true });
             await saveConfig();
             renderAdminTakeaways();
         }
@@ -982,6 +999,32 @@
             }
         }
         
+        async function adminToggleStoreStatus(cat, type, storeId) {
+            let store;
+            if(cat === 'takeaway') store = appData.takeaways[type].find(s => s.id === storeId);
+            else store = appData.groceries.find(s => s.id === storeId);
+            if(store) {
+                store.isOnline = !store.isOnline; 
+                if(store.isOnline === undefined) store.isOnline = false;
+                await saveConfig();
+                if(cat === 'takeaway') renderAdminTakeaways();
+                else renderAdminGroceries();
+            }
+        }
+
+        async function adminSetAllStoreStatus(cat, status) {
+            if(cat === 'takeaways') {
+                appData.takeaways.franchises.forEach(s => s.isOnline = status);
+                appData.takeaways.local.forEach(s => s.isOnline = status);
+                await saveConfig();
+                renderAdminTakeaways();
+            } else if (cat === 'groceries') {
+                appData.groceries.forEach(s => s.isOnline = status);
+                await saveConfig();
+                renderAdminGroceries();
+            }
+        }
+
         async function adminDeleteStore(cat, type, storeId) { 
             if(!confirm('Are you sure you want to delete this entire store and all its products?')) return;
             if(cat === 'takeaway') appData.takeaways[type] = appData.takeaways[type].filter(s => s.id !== storeId); 
@@ -1023,10 +1066,23 @@
             html += `<button class="btn-gold" style="width: 100%; margin-top: 15px;" onclick="adminAddGrocery()">Add Store</button></div>`;
             
             html += '<div class="admin-card"><h4>Current Grocery Stores & Catalogues</h4>';
+            html += `<div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn-online" onclick="adminSetAllStoreStatus('groceries', true)">Set All Groceries Online</button>
+                <button class="btn-offline" onclick="adminSetAllStoreStatus('groceries', false)">Set All Groceries Offline</button>
+            </div>`;
+
             appData.groceries.forEach(store => {
+                const isOnline = store.isOnline !== false;
                 html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;">
-                    <strong>${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : store.logo} ${store.name}</strong> 
-                    <button class="btn-delete" onclick="adminDeleteStore('grocery', null, '${safeStr(store.id)}')" style="float: right;">Delete Store</button>
+                    <div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <strong>${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : store.logo} ${store.name}</strong> 
+                        <div style="display:flex; gap: 5px;">
+                            <button class="${isOnline ? 'btn-online' : 'btn-offline'}" onclick="adminToggleStoreStatus('grocery', null, '${safeStr(store.id)}')">
+                                ${isOnline ? 'Online (Click to Offline)' : 'Offline (Click to Online)'}
+                            </button>
+                            <button class="btn-delete" onclick="adminDeleteStore('grocery', null, '${safeStr(store.id)}')">Delete Store</button>
+                        </div>
+                    </div>
                     
                     <div style="margin-top: 15px; background: #e8f5e9; padding: 10px; border-radius: 5px;">
                         <strong style="color: var(--forest);">Bulk Upload Products (CSV)</strong><br>
@@ -1102,7 +1158,7 @@
             let logoImg = null;
             if(logoFile) logoImg = await uploadImage(logoFile);
             const id = name.toLowerCase().replace(/[^a-z0-9]/g, '') + Date.now().toString().slice(-4);
-            appData.groceries.push({ id, name, logo, logoImg, menu: [] });
+            appData.groceries.push({ id, name, logo, logoImg, menu: [], isOnline: true });
             await saveConfig();
             renderAdminGroceries();
         }
