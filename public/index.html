@@ -961,81 +961,85 @@
                 return;
             }
             const file = fileInput.files[0];
-            
-            if (!file.name.endsWith('.csv')) {
-                alert("Error: The selected file is not a .csv file. Please save your Excel sheet as a CSV file first.");
-                return;
-            }
 
-            Papa.parse(file, {
-                header: true,
-                skipEmptyLines: true,
-                complete: async function(results) {
-                    try {
-                        if (!results || !results.data) {
-                            alert("Could not read data from CSV.");
-                            return;
-                        }
-                        
-                        let store;
-                        if(cat === 'takeaway') {
-                            store = appData.takeaways[type][storeIndex];
-                        } else {
-                            store = appData.groceries[storeIndex];
-                        }
-                        
-                        if(!store) { 
-                            alert("Error: Store not found! Index: " + storeIndex); 
-                            return; 
-                        }
-                        if(!store.menu) store.menu = [];
+            // Read file as text to fix formatting issues (pipes, row numbers)
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                let text = e.target.result;
+                
+                // FIX 1: Convert all pipes (|) to commas (,) so it acts like a standard CSV
+                text = text.replace(/\|/g, ',');
+                
+                // FIX 2: Remove leading row numbers (e.g., "0," or "1 ," at the start of any line)
+                text = text.replace(/^\s*\d+\s*,/gm, '');
 
-                        let importedCount = 0;
-                        results.data.forEach(row => {
-                            let cleanedRow = {};
-                            Object.keys(row).forEach(k => {
-                                // Aggressively clean headers: remove BOM, numbers, pipes, spaces
-                                let cleanKey = String(k).replace(/^\uFEFF/, '').replace(/^[0-9]+\s*\|?\s*/, '').replace(/\|/g, '').replace(/\s+/g, '').toLowerCase();
-                                // Aggressively clean data: remove leading "1 | " from values
-                                let val = String(row[k] || '').replace(/^[0-9]+\s*\|\s*/, '').trim().replace(/^\uFEFF/, '').trim();
-                                cleanedRow[cleanKey] = val;
-                            });
-                            
-                            const name = cleanedRow.name || cleanedRow.item || cleanedRow.product || cleanedRow.description;
-                            if(name && name.toLowerCase() !== 'name') {
-                                const priceStr = cleanedRow.price || cleanedRow.cost || '0';
-                                // Extract only numbers and decimals for price
-                                const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
-                                
-                                store.menu.push({
-                                    id: 'm' + Date.now() + Math.floor(Math.random() * 100000),
-                                    name: name,
-                                    category: cleanedRow.category || cleanedRow.cat || 'General',
-                                    size: cleanedRow.size || cleanedRow.weight || cleanedRow.volume || '',
-                                    flavor: cleanedRow.flavor || cleanedRow.type || cleanedRow.variant || '',
-                                    options: cleanedRow.options || cleanedRow.extras || '',
-                                    price: price,
-                                    onSale: String(cleanedRow.onsale || cleanedRow.sale).toLowerCase() === 'true',
-                                    salePrice: parseFloat((cleanedRow.saleprice || cleanedRow.specialprice || '0').replace(/[^0-9.]/g, '')) || 0,
-                                    img: null
-                                });
-                                importedCount++;
+                // Now parse the cleaned text
+                Papa.parse(text, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: async function(results) {
+                        try {
+                            let store;
+                            if(cat === 'takeaway') {
+                                store = appData.takeaways[type][storeIndex];
+                            } else {
+                                store = appData.groceries[storeIndex];
                             }
-                        });
-                        
-                        await saveConfig();
-                        alert(importedCount + ' products imported successfully! They have been added to the list below.');
-                        if(cat === 'takeaway') renderAdminTakeaways();
-                        else renderAdminGroceries();
-                    } catch(e) {
-                        alert("Error processing file: " + e.message + "\n\nPlease make sure your CSV uses commas and has headers.");
-                        console.error(e);
+                            
+                            if(!store) { 
+                                alert("Error: Store not found! Index: " + storeIndex); 
+                                return; 
+                            }
+                            if(!store.menu) store.menu = [];
+
+                            let importedCount = 0;
+                            if(results.data && results.data.length > 0) {
+                                results.data.forEach(row => {
+                                    let cleanedRow = {};
+                                    Object.keys(row).forEach(k => {
+                                        let cleanKey = String(k).replace(/^\uFEFF/, '').replace(/\s+/g, '').toLowerCase();
+                                        let val = String(row[k] || '').replace(/^\uFEFF/, '').trim();
+                                        cleanedRow[cleanKey] = val;
+                                    });
+                                    
+                                    const name = cleanedRow.name || cleanedRow.item || cleanedRow.product || cleanedRow.description;
+                                    if(name && name.toLowerCase() !== 'name') {
+                                        const priceStr = cleanedRow.price || cleanedRow.cost || '0';
+                                        const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
+                                        
+                                        store.menu.push({
+                                            id: 'm' + Date.now() + Math.floor(Math.random() * 100000),
+                                            name: name,
+                                            category: cleanedRow.category || cleanedRow.cat || 'General',
+                                            size: cleanedRow.size || cleanedRow.weight || cleanedRow.volume || '',
+                                            flavor: cleanedRow.flavor || cleanedRow.type || cleanedRow.variant || '',
+                                            options: cleanedRow.options || cleanedRow.extras || '',
+                                            price: price,
+                                            onSale: String(cleanedRow.onsale || cleanedRow.sale).toLowerCase() === 'true',
+                                            salePrice: parseFloat((cleanedRow.saleprice || cleanedRow.specialprice || '0').replace(/[^0-9.]/g, '')) || 0,
+                                            img: null
+                                        });
+                                        importedCount++;
+                                    }
+                                });
+                            }
+                            
+                            // Save to server
+                            await saveConfig();
+                            alert(importedCount + ' products imported successfully! They have been added to the list below.');
+                            if(cat === 'takeaway') renderAdminTakeaways();
+                            else renderAdminGroceries();
+                        } catch(e) {
+                            alert("Error processing file: " + e.message);
+                            console.error(e);
+                        }
+                    },
+                    error: function(err) {
+                        alert("Error reading file: " + err.message);
                     }
-                },
-                error: function(err) {
-                    alert("Error reading file: " + err.message);
-                }
-            });
+                });
+            };
+            reader.readAsText(file);
         }
 
         async function uploadItemImg(event, cat, type, storeIndex, itemIndex) {
