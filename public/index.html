@@ -829,7 +829,10 @@
                             <strong style="color: var(--forest);">Bulk Upload Menu (CSV)</strong><br>
                             <small>Columns: Category, Name, Size, Flavor, Price, OnSale(true/false), SalePrice, Options(e.g. Meal|30,Just Burger|0)</small><br>
                             <small style="color: blue;">This will ADD to your existing list, it will not delete old items.</small>
-                            <input type="file" accept=".csv" onchange="handleBulkUpload(event, 'takeaway', '${safeStr(type)}', '${safeStr(store.id)}')" style="margin-top: 5px; font-size: 12px;">
+                            <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
+                                <input type="file" id="csv_input_${store.id}" accept=".csv" style="font-size: 12px; flex:1;">
+                                <button class="btn-gold" onclick="handleBulkUpload('takeaway', '${safeStr(type)}', '${safeStr(store.id)}')" style="padding: 5px 10px; font-size: 12px; margin:0;">Add File</button>
+                            </div>
                         </div>
 
                         <div style="margin-top: 10px;">`; 
@@ -892,9 +895,13 @@
             document.getElementById('admin-content').innerHTML = html;
         }
         
-        async function handleBulkUpload(event, cat, type, storeId) {
-            const file = event.target.files[0];
-            if (!file) return;
+        async function handleBulkUpload(cat, type, storeId) {
+            const fileInput = document.getElementById(`csv_input_${storeId}`);
+            if (!fileInput || !fileInput.files[0]) {
+                alert("Please select a CSV file first.");
+                return;
+            }
+            const file = fileInput.files[0];
             
             Papa.parse(file, {
                 header: true,
@@ -927,7 +934,7 @@
                     });
                     
                     await saveConfig();
-                    alert(importedCount + ' products imported successfully! They have been added to the list. You can now upload pictures and edit them below.');
+                    alert(importedCount + ' products imported successfully! They have been added to the list below. You can now upload pictures and edit them.');
                     if(cat === 'takeaway') renderAdminTakeaways();
                     else renderAdminGroceries();
                 }
@@ -1088,7 +1095,10 @@
                         <strong style="color: var(--forest);">Bulk Upload Products (CSV)</strong><br>
                         <small>Columns: Category, Name, Size, Flavor, Price, OnSale(true/false), SalePrice, Options</small><br>
                         <small style="color: blue;">This will ADD to your existing list, it will not delete old items.</small>
-                        <input type="file" accept=".csv" onchange="handleBulkUpload(event, 'grocery', null, '${safeStr(store.id)}')" style="margin-top: 5px; font-size: 12px;">
+                        <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
+                            <input type="file" id="csv_input_${store.id}" accept=".csv" style="font-size: 12px; flex:1;">
+                            <button class="btn-gold" onclick="handleBulkUpload('grocery', null, '${safeStr(store.id)}')" style="padding: 5px 10px; font-size: 12px; margin:0;">Add File</button>
+                        </div>
                     </div>
 
                     <div style="margin-top: 10px;">`; 
