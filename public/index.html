@@ -18,6 +18,7 @@
         nav a, nav button { color: var(--white); text-decoration: none; background: none; border: none; cursor: pointer; font-size: 14px; transition: color 0.3s; }
         nav a:hover, nav button:hover { color: var(--gold); }
         .cart-btn { border: 1px solid var(--gold); padding: 4px 8px; border-radius: 5px; font-size: 14px; }
+        #search-input { padding: 5px 10px; border-radius: 20px; border: none; font-size: 14px; width: 150px; }
         
         main { max-width: 1200px; margin: 0 auto; padding: 15px; flex: 1; width: 100%; }
         
@@ -137,6 +138,7 @@
             <div class="logo" id="brand-name">KasiDeliveries</div>
         </div>
         <nav>
+            <input type="text" id="search-input" placeholder="Search items/stores..." onkeyup="handleSearch(event)">
             <a onclick="navigate('track')">Track Order</a>
             <button class="cart-btn" onclick="navigate('cart')">🛒 Cart (<span id="cart-count">0</span>)</button>
             <a href="https://wa.me/27123456789" target="_blank">WhatsApp Support</a>
@@ -161,10 +163,14 @@
         function safeStr(str) {
             return String(str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
         }
+        function cleanId(id) {
+            return String(id || '').replace(/[^a-zA-Z0-9]/g, '');
+        }
 
         function getCSVVal(row, keys) {
+            if(!row) return '';
             for(let key of keys) {
-                let foundKey = Object.keys(row).find(k => k.trim().toLowerCase() === key.trim().toLowerCase());
+                let foundKey = Object.keys(row).find(k => k.trim().replace(/^\uFEFF/, '').toLowerCase() === key.trim().toLowerCase());
                 if(foundKey && row[foundKey] !== undefined && String(row[foundKey]).trim() !== '') return String(row[foundKey]).trim();
             }
             return '';
@@ -182,6 +188,12 @@
             if(!appData.categories.truck) appData.categories.truck = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
             if(!appData.categories.send_parcel) appData.categories.send_parcel = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800';
             if(!appData.categories.collect_parcel) appData.categories.collect_parcel = 'https://images.unsplash.com/photo-1597306622489-5c80aa3c55e3?q=80&w=800';
+            
+            // Fix old store IDs that might have spaces
+            appData.takeaways.franchises.forEach(s => s.id = cleanId(s.id));
+            appData.takeaways.local.forEach(s => s.id = cleanId(s.id));
+            appData.groceries.forEach(s => s.id = cleanId(s.id));
+            
             updateBranding();
         }
         
@@ -238,6 +250,7 @@
             else if (page === 'furniture') app.innerHTML = renderFurnitureHub();
             else if (page === 'furniture-form') app.innerHTML = renderFurnitureForm(param);
             else if (page === 'track') app.innerHTML = renderTrackOrder();
+            else if (page === 'search') app.innerHTML = renderSearchResults(param);
             else if (page === 'about') app.innerHTML = `<div class="form-container"><span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">About Us</h2><div class="text-content">${appData.siteContent.about}</div></div>`;
             else if (page === 'contact') app.innerHTML = `<div class="form-container"><span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Contact Us</h2><div class="text-content">${appData.siteContent.contact}</div></div>`;
             else if (page === 'terms') app.innerHTML = `<div class="form-container"><span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Terms & Conditions</h2><div class="text-content">${appData.siteContent.terms}</div></div>`;
@@ -470,6 +483,57 @@
             }); 
             html += `<div class="cart-summary"><p>Products Subtotal: R${subtotal.toFixed(2)}</p><p>Additional-Store Fees: R${additionalStoreFee.toFixed(2)}</p><p class="total">Estimated Total: R${total.toFixed(2)}</p><p style="font-size: 12px; color: #666;">* Delivery fee will be confirmed on WhatsApp.</p><div class="trust-badge"><span>🔒</span> Trusted & Secure WhatsApp Checkout</div><button class="wa-btn" onclick="checkoutWhatsApp()">Checkout via WhatsApp</button></div>`; 
             return html + `</div>`; 
+        }
+
+        function handleSearch(e) {
+            if (e.key === 'Enter') {
+                const query = document.getElementById('search-input').value.toLowerCase();
+                if(!query) return;
+                navigate('search', query);
+            }
+        }
+
+        function renderSearchResults(query) {
+            let results = [];
+            appData.takeaways.franchises.forEach(s => {
+                if(s.name.toLowerCase().includes(query)) results.push({type: 'store', cat: 'takeaway', subtype: 'franchises', store: s});
+                s.menu.forEach(m => { if(m.name.toLowerCase().includes(query)) results.push({type: 'item', cat: 'takeaway', subtype: 'franchises', store: s, item: m}); });
+            });
+            appData.takeaways.local.forEach(s => {
+                if(s.name.toLowerCase().includes(query)) results.push({type: 'store', cat: 'takeaway', subtype: 'local', store: s});
+                s.menu.forEach(m => { if(m.name.toLowerCase().includes(query)) results.push({type: 'item', cat: 'takeaway', subtype: 'local', store: s, item: m}); });
+            });
+            appData.groceries.forEach(s => {
+                if(s.name.toLowerCase().includes(query)) results.push({type: 'store', cat: 'grocery', subtype: null, store: s});
+                s.menu.forEach(m => { if(m.name.toLowerCase().includes(query)) results.push({type: 'item', cat: 'grocery', subtype: null, store: s, item: m}); });
+            });
+
+            let html = `<span class="back-link" onclick="navigate('home')">← Back to Home</span><h2 style="color: var(--forest); margin-bottom: 20px;">Search Results for "${query}"</h2>`;
+            if(results.length === 0) {
+                html += '<p>No stores or items found.</p>';
+            } else {
+                results.forEach(res => {
+                    if(res.type === 'store') {
+                        html += `<div class="store-item" onclick="navigate('${res.cat === 'takeaway' ? 'restaurant-menu' : 'grocery-menu'}', '${res.store.id}')" style="cursor: pointer;">
+                            <div class="item-info"><span style="font-size: 30px;">${res.store.logo}</span><h4>${res.store.name}</h4></div>
+                            <span style="color: var(--gold);">View Store →</span>
+                        </div>`;
+                    } else {
+                        let price = res.item.onSale && res.item.salePrice ? res.item.salePrice : res.item.price;
+                        html += `<div class="store-item" onclick="navigate('${res.cat === 'takeaway' ? 'restaurant-menu' : 'grocery-menu'}', '${res.store.id}')" style="cursor: pointer;">
+                            <div class="item-info">
+                                <img src="${res.item.img || 'https://via.placeholder.com/50'}" class="item-img">
+                                <div>
+                                    <h4>${res.item.name}</h4>
+                                    <p>From: ${res.store.name}</p>
+                                </div>
+                            </div>
+                            <div class="item-price">R${parseFloat(price).toFixed(2)}</div>
+                        </div>`;
+                    }
+                });
+            }
+            return html;
         }
 
         function addToCart(itemId, storeName, baseName, basePrice, size, optionsStr) {
@@ -813,6 +877,7 @@
             ['franchises', 'local'].forEach(type => {
                 html += `<h5 style="color: var(--forest); margin-top: 20px; text-transform: capitalize;">${type}</h5>`;
                 appData.takeaways[type].forEach(store => {
+                    const sId = cleanId(store.id);
                     const isOnline = store.isOnline !== false;
                     html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;">
                         <div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -830,7 +895,7 @@
                             <small>Columns: Category, Name, Size, Flavor, Price, OnSale(true/false), SalePrice, Options(e.g. Meal|30,Just Burger|0)</small><br>
                             <small style="color: blue;">This will ADD to your existing list, it will not delete old items.</small>
                             <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
-                                <input type="file" id="csv_input_${store.id}" accept=".csv" style="font-size: 12px; flex:1;">
+                                <input type="file" id="csv_input_${sId}" accept=".csv" style="font-size: 12px; flex:1;">
                                 <button class="btn-gold" onclick="handleBulkUpload('takeaway', '${safeStr(type)}', '${safeStr(store.id)}')" style="padding: 5px 10px; font-size: 12px; margin:0;">Add File</button>
                             </div>
                         </div>
@@ -883,9 +948,9 @@
                         }); 
                         
                         html += `<div class="form-row" style="margin-top: 10px;">
-                            <input type="text" id="menu_name_${store.id}" placeholder="Item Name" style="padding: 5px; font-size: 12px;">
-                            <input type="text" id="menu_size_${store.id}" placeholder="Size" style="padding: 5px; font-size: 12px;">
-                            <input type="number" id="menu_price_${store.id}" placeholder="Price" style="padding: 5px; font-size: 12px;">
+                            <input type="text" id="menu_name_${sId}" placeholder="Item Name" style="padding: 5px; font-size: 12px;">
+                            <input type="text" id="menu_size_${sId}" placeholder="Size" style="padding: 5px; font-size: 12px;">
+                            <input type="number" id="menu_price_${sId}" placeholder="Price" style="padding: 5px; font-size: 12px;">
                         </div>
                         <button class="add-btn" style="margin-top: 5px; padding: 5px; font-size: 12px;" onclick="adminAddMenuItem('takeaway', '${safeStr(type)}', '${safeStr(store.id)}')">Add Item Manually</button>
                     </div></div>`; 
@@ -896,7 +961,8 @@
         }
         
         async function handleBulkUpload(cat, type, storeId) {
-            const fileInput = document.getElementById(`csv_input_${storeId}`);
+            const sId = cleanId(storeId);
+            const fileInput = document.getElementById('csv_input_' + sId);
             if (!fileInput || !fileInput.files[0]) {
                 alert("Please select a CSV file first.");
                 return;
@@ -911,32 +977,37 @@
                     if(cat === 'takeaway') store = appData.takeaways[type].find(s => s.id === storeId);
                     else store = appData.groceries.find(s => s.id === storeId);
                     
-                    if(!store) return;
+                    if(!store) { alert("Store not found!"); return; }
 
                     let importedCount = 0;
-                    results.data.forEach(row => {
-                        const name = getCSVVal(row, ['Name', 'Item', 'Product']);
-                        if(name) {
-                            store.menu.push({
-                                id: 'm' + Date.now() + Math.floor(Math.random() * 100000),
-                                name: name,
-                                category: getCSVVal(row, ['Category', 'Cat']) || 'General',
-                                size: getCSVVal(row, ['Size', 'Weight', 'Volume']),
-                                flavor: getCSVVal(row, ['Flavor', 'Type', 'Variant']),
-                                options: getCSVVal(row, ['Options', 'Extras']),
-                                price: parseFloat(getCSVVal(row, ['Price', 'Cost'])) || 0,
-                                onSale: String(getCSVVal(row, ['OnSale', 'Sale'])).toLowerCase() === 'true',
-                                salePrice: parseFloat(getCSVVal(row, ['SalePrice', 'SpecialPrice'])) || 0,
-                                img: null
-                            });
-                            importedCount++;
-                        }
-                    });
+                    if(results.data && results.data.length > 0) {
+                        results.data.forEach(row => {
+                            const name = getCSVVal(row, ['Name', 'Item', 'Product']);
+                            if(name) {
+                                store.menu.push({
+                                    id: 'm' + Date.now() + Math.floor(Math.random() * 100000),
+                                    name: name,
+                                    category: getCSVVal(row, ['Category', 'Cat']) || 'General',
+                                    size: getCSVVal(row, ['Size', 'Weight', 'Volume']),
+                                    flavor: getCSVVal(row, ['Flavor', 'Type', 'Variant']),
+                                    options: getCSVVal(row, ['Options', 'Extras']),
+                                    price: parseFloat(getCSVVal(row, ['Price', 'Cost'])) || 0,
+                                    onSale: String(getCSVVal(row, ['OnSale', 'Sale'])).toLowerCase() === 'true',
+                                    salePrice: parseFloat(getCSVVal(row, ['SalePrice', 'SpecialPrice'])) || 0,
+                                    img: null
+                                });
+                                importedCount++;
+                            }
+                        });
+                    }
                     
                     await saveConfig();
-                    alert(importedCount + ' products imported successfully! They have been added to the list below. You can now upload pictures and edit them.');
+                    alert(importedCount + ' products imported successfully! They have been added to the list below.');
                     if(cat === 'takeaway') renderAdminTakeaways();
                     else renderAdminGroceries();
+                },
+                error: function(err) {
+                    alert("Error reading CSV: " + err.message);
                 }
             });
         }
@@ -965,19 +1036,20 @@
             if(!name) { alert('Please enter a store name'); return; }
             let logoImg = null;
             if(logoFile) logoImg = await uploadImage(logoFile);
-            const id = name.toLowerCase().replace(/[^a-z0-9]/g, '') + Date.now().toString().slice(-4);
+            const id = cleanId(name) + Date.now().toString().slice(-4);
             appData.takeaways[type].push({ id, name, logo, logoImg, menu: [], isOnline: true });
             await saveConfig();
             renderAdminTakeaways();
         }
         
         async function adminAddMenuItem(cat, type, storeId) {
+            const sId = cleanId(storeId);
             let store;
             if(cat === 'takeaway') store = appData.takeaways[type].find(s => s.id === storeId);
             else store = appData.groceries.find(s => s.id === storeId);
-            const name = document.getElementById(`menu_name_${storeId}`).value;
-            const size = document.getElementById(`menu_size_${storeId}`).value || '';
-            const price = parseFloat(document.getElementById(`menu_price_${storeId}`).value);
+            const name = document.getElementById(`menu_name_${sId}`).value;
+            const size = document.getElementById(`menu_size_${sId}`).value || '';
+            const price = parseFloat(document.getElementById(`menu_price_${sId}`).value);
             if(!name || !price) { alert('Enter item name and price'); return; }
             store.menu.push({ id: 'm' + Date.now().toString(), name, size, price, category: 'General', flavor: '', options: '', onSale: false, salePrice: 0, img: null });
             await saveConfig();
@@ -1079,6 +1151,7 @@
             </div>`;
 
             appData.groceries.forEach(store => {
+                const sId = cleanId(store.id);
                 const isOnline = store.isOnline !== false;
                 html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;">
                     <div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -1096,7 +1169,7 @@
                         <small>Columns: Category, Name, Size, Flavor, Price, OnSale(true/false), SalePrice, Options</small><br>
                         <small style="color: blue;">This will ADD to your existing list, it will not delete old items.</small>
                         <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
-                            <input type="file" id="csv_input_${store.id}" accept=".csv" style="font-size: 12px; flex:1;">
+                            <input type="file" id="csv_input_${sId}" accept=".csv" style="font-size: 12px; flex:1;">
                             <button class="btn-gold" onclick="handleBulkUpload('grocery', null, '${safeStr(store.id)}')" style="padding: 5px 10px; font-size: 12px; margin:0;">Add File</button>
                         </div>
                     </div>
@@ -1149,9 +1222,9 @@
                     }); 
                     
                     html += `<div class="form-row" style="margin-top: 10px;">
-                        <input type="text" id="menu_name_${store.id}" placeholder="Product Name" style="padding: 5px; font-size: 12px;">
-                        <input type="text" id="menu_size_${store.id}" placeholder="Size" style="padding: 5px; font-size: 12px;">
-                        <input type="number" id="menu_price_${store.id}" placeholder="Price" style="padding: 5px; font-size: 12px;">
+                        <input type="text" id="menu_name_${sId}" placeholder="Product Name" style="padding: 5px; font-size: 12px;">
+                        <input type="text" id="menu_size_${sId}" placeholder="Size" style="padding: 5px; font-size: 12px;">
+                        <input type="number" id="menu_price_${sId}" placeholder="Price" style="padding: 5px; font-size: 12px;">
                     </div>
                     <button class="add-btn" style="margin-top: 5px; padding: 5px; font-size: 12px;" onclick="adminAddMenuItem('grocery', null, '${safeStr(store.id)}')">Add Product Manually</button>
                 </div></div>`; 
@@ -1167,7 +1240,7 @@
             if(!name) { alert('Please enter a store name'); return; }
             let logoImg = null;
             if(logoFile) logoImg = await uploadImage(logoFile);
-            const id = name.toLowerCase().replace(/[^a-z0-9]/g, '') + Date.now().toString().slice(-4);
+            const id = cleanId(name) + Date.now().toString().slice(-4);
             appData.groceries.push({ id, name, logo, logoImg, menu: [], isOnline: true });
             await saveConfig();
             renderAdminGroceries();
