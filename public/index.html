@@ -965,6 +965,16 @@
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
+                delimiter: "", // Auto-detect delimiter (comma, pipe, semicolon)
+                transformHeader: function(h) {
+                    if(!h) return 'unknown';
+                    // Aggressively clean headers: remove BOM, numbers, pipes, spaces
+                    return String(h).replace(/^\uFEFF/, '')
+                                    .replace(/^[0-9]+\s*\|?\s*/, '') 
+                                    .replace(/\|/g, '')             
+                                    .replace(/\s+/g, '')            
+                                    .toLowerCase();
+                },
                 complete: async function(results) {
                     try {
                         let store;
@@ -985,12 +995,19 @@
                             results.data.forEach(row => {
                                 let cleanedRow = {};
                                 Object.keys(row).forEach(k => {
-                                    let cleanKey = k.replace(/^\uFEFF/, '').replace(/^[0-9]+\s*\|?\s*/, '').replace(/\s*\|?\s*$/, '').trim().toLowerCase();
-                                    if(cleanKey) cleanedRow[cleanKey] = row[k];
+                                    let val = String(row[k] || '');
+                                    // Aggressively clean data: remove leading "1 | " from values
+                                    val = val.replace(/^[0-9]+\s*\|\s*/, '').trim();
+                                    val = val.replace(/^\uFEFF/, '').trim();
+                                    cleanedRow[k] = val;
                                 });
                                 
-                                const name = cleanedRow.name || cleanedRow.item || cleanedRow.product;
-                                if(name) {
+                                const name = cleanedRow.name || cleanedRow.item || cleanedRow.product || cleanedRow.description;
+                                if(name && name !== 'Name' && name !== '') {
+                                    const priceStr = cleanedRow.price || cleanedRow.cost || '0';
+                                    // Extract only numbers and decimals for price
+                                    const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
+                                    
                                     store.menu.push({
                                         id: 'm' + Date.now() + Math.floor(Math.random() * 100000),
                                         name: name,
@@ -998,9 +1015,9 @@
                                         size: cleanedRow.size || cleanedRow.weight || cleanedRow.volume || '',
                                         flavor: cleanedRow.flavor || cleanedRow.type || cleanedRow.variant || '',
                                         options: cleanedRow.options || cleanedRow.extras || '',
-                                        price: parseFloat(cleanedRow.price || cleanedRow.cost) || 0,
+                                        price: price,
                                         onSale: String(cleanedRow.onsale || cleanedRow.sale).toLowerCase() === 'true',
-                                        salePrice: parseFloat(cleanedRow.saleprice || cleanedRow.specialprice) || 0,
+                                        salePrice: parseFloat((cleanedRow.saleprice || cleanedRow.specialprice || '0').replace(/[^0-9.]/g, '')) || 0,
                                         img: null
                                     });
                                     importedCount++;
