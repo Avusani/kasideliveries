@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KasiDeliveries</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/paparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root { --forest: #123B2A; --gold: #F5B82E; --white: #FFFFFF; --light-grey: #F2F4F1; --text-dark: #123B2A; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -885,12 +885,18 @@
                         </div>
                         
                         <div style="margin-top: 15px; background: #e8f5e9; padding: 10px; border-radius: 5px;">
-                            <strong style="color: var(--forest);">Bulk Upload Menu (CSV)</strong><br>
-                            <small>Columns: Category, Name, Size, Flavor, Price, OnSale(true/false), SalePrice, Options(e.g. Meal|30,Just Burger|0)</small><br>
-                            <small style="color: blue;">This will ADD to your existing list, it will not delete old items.</small>
+                            <strong style="color: var(--forest);">Bulk Upload Menu (Excel or Copy & Paste)</strong><br>
+                            <small>Columns needed: Category, Name, Size, Flavor, Price, OnSale, SalePrice, Options</small><br>
+                            <small style="color: blue;">Uploads ADD to existing items. You can upload .xlsx or just copy from Excel and paste below.</small>
+                            
                             <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
-                                <input type="file" id="csv_input_takeaway_${type}_${storeIndex}" accept=".csv" style="font-size: 12px; flex:1;">
-                                <button type="button" class="btn-gold" onclick="handleBulkUpload('takeaway', '${type}', ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:0;">Add File</button>
+                                <input type="file" id="excel_input_takeaway_${type}_${storeIndex}" accept=".xlsx, .xls, .csv" style="font-size: 12px; flex:1;">
+                                <button type="button" class="btn-gold" onclick="handleExcelUpload('takeaway', '${type}', ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:0;">Upload Excel</button>
+                            </div>
+                            
+                            <div style="margin-top:10px;">
+                                <textarea id="paste_input_takeaway_${type}_${storeIndex}" rows="4" style="width:100%; font-size: 12px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Or copy columns from Excel and paste here..."></textarea>
+                                <button type="button" class="btn-gold" onclick="handlePasteUpload('takeaway', '${type}', ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:5px 0 0 0;">Import Pasted Data</button>
                             </div>
                         </div>
 
@@ -954,92 +960,128 @@
             document.getElementById('admin-content').innerHTML = html;
         }
         
-        async function handleBulkUpload(cat, type, storeIndex) {
-            const fileInput = document.getElementById(`csv_input_${cat}_${type ? type : 'g'}_${storeIndex}`);
+        // Robust function to process workbook data (used for both Excel upload and Paste)
+        async function processSheetData(rows, cat, type, storeIndex) {
+            if (!rows || rows.length < 2) {
+                alert("No data found or missing headers.");
+                return 0;
+            }
+
+            let store;
+            if(cat === 'takeaway') {
+                store = appData.takeaways[type][storeIndex];
+            } else {
+                store = appData.groceries[storeIndex];
+            }
+            
+            if(!store) { 
+                alert("Error: Store not found!"); 
+                return 0; 
+            }
+            if(!store.menu) store.menu = [];
+
+            // Clean headers
+            const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
+            
+            // Find column indices safely
+            const idx = {
+                name: headers.findIndex(h => h.includes('name') || h.includes('item') || h.includes('product')),
+                category: headers.findIndex(h => h.includes('category') || h.includes('cat')),
+                size: headers.findIndex(h => h.includes('size') || h.includes('weight') || h.includes('volume')),
+                flavor: headers.findIndex(h => h.includes('flavor') || h.includes('type')),
+                price: headers.findIndex(h => h.includes('price') || h.includes('cost')),
+                onSale: headers.findIndex(h => h.includes('onsale') || h.includes('sale')),
+                salePrice: headers.findIndex(h => h.includes('saleprice') || h.includes('specialprice')),
+                options: headers.findIndex(h => h.includes('options') || h.includes('extras'))
+            };
+
+            if(idx.name === -1) {
+                alert("Could not find a 'Name' column. Please ensure your Excel has headers.");
+                return 0;
+            }
+
+            let importedCount = 0;
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if(!row || row.length === 0) continue;
+
+                const name = String(row[idx.name] || '').trim();
+                if(name && name.toLowerCase() !== 'name') {
+                    const priceStr = idx.price !== -1 ? String(row[idx.price] || '0') : '0';
+                    const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
+                    
+                    store.menu.push({
+                        id: 'm' + Date.now() + Math.floor(Math.random() * 100000),
+                        name: name,
+                        category: idx.category !== -1 ? String(row[idx.category] || 'General').trim() : 'General',
+                        size: idx.size !== -1 ? String(row[idx.size] || '').trim() : '',
+                        flavor: idx.flavor !== -1 ? String(row[idx.flavor] || '').trim() : '',
+                        options: idx.options !== -1 ? String(row[idx.options] || '').trim() : '',
+                        price: price,
+                        onSale: idx.onSale !== -1 ? String(row[idx.onSale] || 'false').toLowerCase() === 'true' : false,
+                        salePrice: idx.salePrice !== -1 ? parseFloat(String(row[idx.salePrice] || '0').replace(/[^0-9.]/g, '')) || 0 : 0,
+                        img: null
+                    });
+                    importedCount++;
+                }
+            }
+            return importedCount;
+        }
+
+        async function handleExcelUpload(cat, type, storeIndex) {
+            const fileInput = document.getElementById(`excel_input_${cat}_${type ? type : 'g'}_${storeIndex}`);
             if (!fileInput || !fileInput.files[0]) {
-                alert("Please select a CSV file first.");
+                alert("Please select an Excel file first.");
                 return;
             }
+            
             const file = fileInput.files[0];
-
-            // Read file as text to fix formatting issues (pipes, row numbers)
             const reader = new FileReader();
-            reader.onload = function(e) {
-                let text = e.target.result;
-                
-                // FIX 1: Convert all pipes (|) to commas (,) so it acts like a standard CSV
-                text = text.replace(/\|/g, ',');
-                
-                // FIX 2: Remove leading row numbers (e.g., "0," or "1 ," at the start of any line)
-                text = text.replace(/^\s*\d+\s*,/gm, '');
-
-                // Now parse the cleaned text
-                Papa.parse(text, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: async function(results) {
-                        try {
-                            let store;
-                            if(cat === 'takeaway') {
-                                store = appData.takeaways[type][storeIndex];
-                            } else {
-                                store = appData.groceries[storeIndex];
-                            }
-                            
-                            if(!store) { 
-                                alert("Error: Store not found! Index: " + storeIndex); 
-                                return; 
-                            }
-                            if(!store.menu) store.menu = [];
-
-                            let importedCount = 0;
-                            if(results.data && results.data.length > 0) {
-                                results.data.forEach(row => {
-                                    let cleanedRow = {};
-                                    Object.keys(row).forEach(k => {
-                                        let cleanKey = String(k).replace(/^\uFEFF/, '').replace(/\s+/g, '').toLowerCase();
-                                        let val = String(row[k] || '').replace(/^\uFEFF/, '').trim();
-                                        cleanedRow[cleanKey] = val;
-                                    });
-                                    
-                                    const name = cleanedRow.name || cleanedRow.item || cleanedRow.product || cleanedRow.description;
-                                    if(name && name.toLowerCase() !== 'name') {
-                                        const priceStr = cleanedRow.price || cleanedRow.cost || '0';
-                                        const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
-                                        
-                                        store.menu.push({
-                                            id: 'm' + Date.now() + Math.floor(Math.random() * 100000),
-                                            name: name,
-                                            category: cleanedRow.category || cleanedRow.cat || 'General',
-                                            size: cleanedRow.size || cleanedRow.weight || cleanedRow.volume || '',
-                                            flavor: cleanedRow.flavor || cleanedRow.type || cleanedRow.variant || '',
-                                            options: cleanedRow.options || cleanedRow.extras || '',
-                                            price: price,
-                                            onSale: String(cleanedRow.onsale || cleanedRow.sale).toLowerCase() === 'true',
-                                            salePrice: parseFloat((cleanedRow.saleprice || cleanedRow.specialprice || '0').replace(/[^0-9.]/g, '')) || 0,
-                                            img: null
-                                        });
-                                        importedCount++;
-                                    }
-                                });
-                            }
-                            
-                            // Save to server
-                            await saveConfig();
-                            alert(importedCount + ' products imported successfully! They have been added to the list below.');
-                            if(cat === 'takeaway') renderAdminTakeaways();
-                            else renderAdminGroceries();
-                        } catch(e) {
-                            alert("Error processing file: " + e.message);
-                            console.error(e);
-                        }
-                    },
-                    error: function(err) {
-                        alert("Error reading file: " + err.message);
+            
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Get array of arrays
+                    
+                    const count = await processSheetData(rows, cat, type, storeIndex);
+                    if(count > 0) {
+                        await saveConfig();
+                        alert(count + ' products imported successfully!');
+                        if(cat === 'takeaway') renderAdminTakeaways();
+                        else renderAdminGroceries();
                     }
-                });
+                } catch(err) {
+                    alert("Error reading Excel file: " + err.message);
+                }
             };
-            reader.readAsText(file);
+            reader.readAsArrayBuffer(file);
+        }
+
+        async function handlePasteUpload(cat, type, storeIndex) {
+            const textArea = document.getElementById(`paste_input_${cat}_${type ? type : 'g'}_${storeIndex}`);
+            const text = textArea.value.trim();
+            if(!text) { alert("Nothing pasted."); return; }
+
+            try {
+                // Use SheetJS to parse pasted TSV data
+                const workbook = XLSX.read(text, { type: 'string' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                
+                const count = await processSheetData(rows, cat, type, storeIndex);
+                if(count > 0) {
+                    await saveConfig();
+                    alert(count + ' products imported successfully!');
+                    if(cat === 'takeaway') renderAdminTakeaways();
+                    else renderAdminGroceries();
+                }
+            } catch(err) {
+                alert("Error parsing pasted data: " + err.message);
+            }
         }
 
         async function uploadItemImg(event, cat, type, storeIndex, itemIndex) {
@@ -1193,12 +1235,18 @@
                     </div>
                     
                     <div style="margin-top: 15px; background: #e8f5e9; padding: 10px; border-radius: 5px;">
-                        <strong style="color: var(--forest);">Bulk Upload Products (CSV)</strong><br>
-                        <small>Columns: Category, Name, Size, Flavor, Price, OnSale(true/false), SalePrice, Options</small><br>
-                        <small style="color: blue;">This will ADD to your existing list, it will not delete old items.</small>
+                        <strong style="color: var(--forest);">Bulk Upload Products (Excel or Copy & Paste)</strong><br>
+                        <small>Columns needed: Category, Name, Size, Flavor, Price, OnSale, SalePrice, Options</small><br>
+                        <small style="color: blue;">Uploads ADD to existing items. You can upload .xlsx or just copy from Excel and paste below.</small>
+                        
                         <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
-                            <input type="file" id="csv_input_grocery_g_${storeIndex}" accept=".csv" style="font-size: 12px; flex:1;">
-                            <button type="button" class="btn-gold" onclick="handleBulkUpload('grocery', null, ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:0;">Add File</button>
+                            <input type="file" id="excel_input_grocery_g_${storeIndex}" accept=".xlsx, .xls, .csv" style="font-size: 12px; flex:1;">
+                            <button type="button" class="btn-gold" onclick="handleExcelUpload('grocery', null, ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:0;">Upload Excel</button>
+                        </div>
+                        
+                        <div style="margin-top:10px;">
+                            <textarea id="paste_input_grocery_g_${storeIndex}" rows="4" style="width:100%; font-size: 12px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Or copy columns from Excel and paste here..."></textarea>
+                            <button type="button" class="btn-gold" onclick="handlePasteUpload('grocery', null, ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:5px 0 0 0;">Import Pasted Data</button>
                         </div>
                     </div>
 
