@@ -211,7 +211,13 @@
 
         async function saveConfig() {
             const config = { users: appData.users, siteContent: appData.siteContent, sliderImages: appData.sliderImages, categories: appData.categories, takeaways: appData.takeaways, groceries: appData.groceries };
-            await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
+            try {
+                const res = await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
+                if(!res.ok) throw new Error("Server responded with " + res.status);
+            } catch(e) {
+                alert("Error saving data to server: " + e.message + "\n\nPlease make sure your server is running.");
+                throw e;
+            }
         }
         
         async function uploadImage(file) {
@@ -310,8 +316,12 @@
         }
         
         function renderItemRow(item, storeName) {
-            let price = item.onSale && item.salePrice ? item.salePrice : item.price;
-            let oldPriceHtml = item.onSale && item.salePrice ? `<span class="old-price">R${item.price.toFixed(2)}</span>` : '';
+            let basePrice = parseFloat(item.price) || 0;
+            let salePrice = parseFloat(item.salePrice) || 0;
+            let isOnSale = item.onSale && salePrice > 0;
+            let displayPrice = isOnSale ? salePrice : basePrice;
+            
+            let oldPriceHtml = isOnSale ? `<span class="old-price">R${basePrice.toFixed(2)}</span>` : '';
             
             let optionsHtml = '';
             if(item.options) {
@@ -337,8 +347,8 @@
                     </div>
                 </div>
                 <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
-                    <div class="item-price">${oldPriceHtml} R${parseFloat(price).toFixed(2)}</div>
-                    <button class="add-btn" onclick="addToCart('${safeStr(item.id)}', '${safeStr(storeName)}', '${safeStr(item.name)}', ${price}, '${safeStr(item.size || '')}', '${safeStr(item.options || '')}')">Add</button>
+                    <div class="item-price">${oldPriceHtml} R${displayPrice.toFixed(2)}</div>
+                    <button class="add-btn" onclick="addToCart('${safeStr(item.id)}', '${safeStr(storeName)}', '${safeStr(item.name)}', ${displayPrice}, '${safeStr(item.size || '')}', '${safeStr(item.options || '')}')">Add</button>
                 </div>
             </div>`;
         }
@@ -896,7 +906,7 @@
                             <small style="color: blue;">This will ADD to your existing list, it will not delete old items.</small>
                             <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
                                 <input type="file" id="csv_input_${sId}" accept=".csv" style="font-size: 12px; flex:1;">
-                                <button class="btn-gold" onclick="handleBulkUpload('takeaway', '${safeStr(type)}', '${safeStr(store.id)}')" style="padding: 5px 10px; font-size: 12px; margin:0;">Add File</button>
+                                <button type="button" class="btn-gold" onclick="handleBulkUpload('takeaway', '${safeStr(type)}', '${safeStr(store.id)}')" style="padding: 5px 10px; font-size: 12px; margin:0;">Add File</button>
                             </div>
                         </div>
 
@@ -932,13 +942,13 @@
                                     </div>
                                 </div>
                                 <div class="admin-item-grid">
-                                    <input type="text" value="${item.name}" id="i_name_${item.id}" placeholder="Name" style="padding: 5px; font-size: 12px;">
-                                    <input type="text" value="${item.category || ''}" id="i_cat_${item.id}" placeholder="Category" style="padding: 5px; font-size: 12px;">
-                                    <input type="text" value="${item.size || ''}" id="i_size_${item.id}" placeholder="Size" style="padding: 5px; font-size: 12px;">
-                                    <input type="text" value="${item.flavor || ''}" id="i_flav_${item.id}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
+                                    <input type="text" value="${safeStr(item.name)}" id="i_name_${item.id}" placeholder="Name" style="padding: 5px; font-size: 12px;">
+                                    <input type="text" value="${safeStr(item.category || '')}" id="i_cat_${item.id}" placeholder="Category" style="padding: 5px; font-size: 12px;">
+                                    <input type="text" value="${safeStr(item.size || '')}" id="i_size_${item.id}" placeholder="Size" style="padding: 5px; font-size: 12px;">
+                                    <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_${item.id}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
                                     <input type="number" value="${item.price}" id="i_price_${item.id}" placeholder="Price" style="padding: 5px; font-size: 12px;">
                                     <input type="number" value="${item.salePrice || 0}" id="i_sale_${item.id}" placeholder="Sale Price" style="padding: 5px; font-size: 12px;">
-                                    <input type="text" value="${item.options || ''}" id="i_opt_${item.id}" placeholder="Options (Meal|30)" style="padding: 5px; font-size: 12px;">
+                                    <input type="text" value="${safeStr(item.options || '')}" id="i_opt_${item.id}" placeholder="Options (Meal|30)" style="padding: 5px; font-size: 12px;">
                                     <div style="display: flex; align-items: center; gap: 5px;">
                                         <input type="checkbox" id="i_onsale_${item.id}" ${item.onSale ? 'checked' : ''}>
                                         <label for="i_onsale_${item.id}" style="font-size: 12px;">On Sale</label>
@@ -973,41 +983,53 @@
                 header: true,
                 skipEmptyLines: true,
                 complete: async function(results) {
-                    let store;
-                    if(cat === 'takeaway') store = appData.takeaways[type].find(s => s.id === storeId);
-                    else store = appData.groceries.find(s => s.id === storeId);
-                    
-                    if(!store) { alert("Store not found!"); return; }
+                    try {
+                        let store;
+                        if(cat === 'takeaway') {
+                            if(!type) { alert("Error: Store type missing!"); return; }
+                            store = appData.takeaways[type].find(s => s.id === storeId);
+                        } else {
+                            store = appData.groceries.find(s => s.id === storeId);
+                        }
+                        
+                        if(!store) { 
+                            alert("Error: Store not found in memory! ID searched: " + storeId); 
+                            return; 
+                        }
+                        if(!store.menu) store.menu = [];
 
-                    let importedCount = 0;
-                    if(results.data && results.data.length > 0) {
-                        results.data.forEach(row => {
-                            const name = getCSVVal(row, ['Name', 'Item', 'Product']);
-                            if(name) {
-                                store.menu.push({
-                                    id: 'm' + Date.now() + Math.floor(Math.random() * 100000),
-                                    name: name,
-                                    category: getCSVVal(row, ['Category', 'Cat']) || 'General',
-                                    size: getCSVVal(row, ['Size', 'Weight', 'Volume']),
-                                    flavor: getCSVVal(row, ['Flavor', 'Type', 'Variant']),
-                                    options: getCSVVal(row, ['Options', 'Extras']),
-                                    price: parseFloat(getCSVVal(row, ['Price', 'Cost'])) || 0,
-                                    onSale: String(getCSVVal(row, ['OnSale', 'Sale'])).toLowerCase() === 'true',
-                                    salePrice: parseFloat(getCSVVal(row, ['SalePrice', 'SpecialPrice'])) || 0,
-                                    img: null
-                                });
-                                importedCount++;
-                            }
-                        });
+                        let importedCount = 0;
+                        if(results.data && results.data.length > 0) {
+                            results.data.forEach(row => {
+                                const name = getCSVVal(row, ['Name', 'Item', 'Product']);
+                                if(name) {
+                                    store.menu.push({
+                                        id: 'm' + Date.now() + Math.floor(Math.random() * 100000),
+                                        name: name,
+                                        category: getCSVVal(row, ['Category', 'Cat']) || 'General',
+                                        size: getCSVVal(row, ['Size', 'Weight', 'Volume']),
+                                        flavor: getCSVVal(row, ['Flavor', 'Type', 'Variant']),
+                                        options: getCSVVal(row, ['Options', 'Extras']),
+                                        price: parseFloat(getCSVVal(row, ['Price', 'Cost'])) || 0,
+                                        onSale: String(getCSVVal(row, ['OnSale', 'Sale'])).toLowerCase() === 'true',
+                                        salePrice: parseFloat(getCSVVal(row, ['SalePrice', 'SpecialPrice'])) || 0,
+                                        img: null
+                                    });
+                                    importedCount++;
+                                }
+                            });
+                        }
+                        
+                        await saveConfig();
+                        alert(importedCount + ' products imported successfully! They have been added to the list below.');
+                        if(cat === 'takeaway') renderAdminTakeaways();
+                        else renderAdminGroceries();
+                    } catch(e) {
+                        alert("An error occurred during import: " + e.message);
                     }
-                    
-                    await saveConfig();
-                    alert(importedCount + ' products imported successfully! They have been added to the list below.');
-                    if(cat === 'takeaway') renderAdminTakeaways();
-                    else renderAdminGroceries();
                 },
                 error: function(err) {
-                    alert("Error reading CSV: " + err.message);
+                    alert("Error reading CSV file: " + err.message);
                 }
             });
         }
@@ -1170,7 +1192,7 @@
                         <small style="color: blue;">This will ADD to your existing list, it will not delete old items.</small>
                         <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
                             <input type="file" id="csv_input_${sId}" accept=".csv" style="font-size: 12px; flex:1;">
-                            <button class="btn-gold" onclick="handleBulkUpload('grocery', null, '${safeStr(store.id)}')" style="padding: 5px 10px; font-size: 12px; margin:0;">Add File</button>
+                            <button type="button" class="btn-gold" onclick="handleBulkUpload('grocery', null, '${safeStr(store.id)}')" style="padding: 5px 10px; font-size: 12px; margin:0;">Add File</button>
                         </div>
                     </div>
 
@@ -1206,13 +1228,13 @@
                                 </div>
                             </div>
                             <div class="admin-item-grid">
-                                <input type="text" value="${item.name}" id="i_name_${item.id}" placeholder="Name" style="padding: 5px; font-size: 12px;">
-                                <input type="text" value="${item.category || ''}" id="i_cat_${item.id}" placeholder="Category" style="padding: 5px; font-size: 12px;">
-                                <input type="text" value="${item.size || ''}" id="i_size_${item.id}" placeholder="Size" style="padding: 5px; font-size: 12px;">
-                                <input type="text" value="${item.flavor || ''}" id="i_flav_${item.id}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
+                                <input type="text" value="${safeStr(item.name)}" id="i_name_${item.id}" placeholder="Name" style="padding: 5px; font-size: 12px;">
+                                <input type="text" value="${safeStr(item.category || '')}" id="i_cat_${item.id}" placeholder="Category" style="padding: 5px; font-size: 12px;">
+                                <input type="text" value="${safeStr(item.size || '')}" id="i_size_${item.id}" placeholder="Size" style="padding: 5px; font-size: 12px;">
+                                <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_${item.id}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
                                 <input type="number" value="${item.price}" id="i_price_${item.id}" placeholder="Price" style="padding: 5px; font-size: 12px;">
                                 <input type="number" value="${item.salePrice || 0}" id="i_sale_${item.id}" placeholder="Sale Price" style="padding: 5px; font-size: 12px;">
-                                <input type="text" value="${item.options || ''}" id="i_opt_${item.id}" placeholder="Options" style="padding: 5px; font-size: 12px;">
+                                <input type="text" value="${safeStr(item.options || '')}" id="i_opt_${item.id}" placeholder="Options" style="padding: 5px; font-size: 12px;">
                                 <div style="display: flex; align-items: center; gap: 5px;">
                                     <input type="checkbox" id="i_onsale_${item.id}" ${item.onSale ? 'checked' : ''}>
                                     <label for="i_onsale_${item.id}" style="font-size: 12px;">On Sale</label>
