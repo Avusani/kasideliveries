@@ -157,7 +157,7 @@
     <a href="https://wa.me/27123456789" class="wa-float" target="_blank">💬</a>
 
     <script>
-        let cart = [], currentSlide = 0, slideInterval, appData = {}, adminTab = 'dashboard', isAdmin = false;
+        let cart = [], currentSlide = 0, slideInterval, appData = {}, adminTab = 'dashboard', isAdmin = false, adminStoreView = null;
         const WHATSAPP_NUMBER = "27123456789"; 
 
         function safeStr(str) {
@@ -696,7 +696,7 @@
             return content;
         }
         
-        function setAdminTab(tab) { adminTab = tab; navigate('admin'); }
+        function setAdminTab(tab) { adminTab = tab; adminStoreView = null; navigate('admin'); }
 
         function renderAdminDashboard() {
             let html = '<div class="admin-card"><h4>Statistics</h4><div style="display: flex; flex-wrap: wrap; gap: 10px;">';
@@ -853,7 +853,11 @@
             renderAdminImages();
         }
 
+        // --- TAKEAWAYS ADMIN ---
         function renderAdminTakeaways() {
+            if (adminStoreView && adminStoreView.startsWith('takeaway_')) {
+                return renderAdminTakeawayMenu();
+            }
             let html = '<div class="admin-card"><h4>Add New Takeaway Store</h4>';
             html += `<div class="form-row">
                 <div class="form-group"><label>Type</label><select id="t_type"><option value="franchises">Franchise</option><option value="local">Local</option></select></div>
@@ -863,7 +867,7 @@
             html += `<div class="form-group" style="margin-top: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px dashed #ccc;"><label style="font-size: 18px; color: var(--forest);">Upload Store Logo Image (e.g. KFC Logo)</label><input type="file" id="t_logo_file" accept="image/*" style="margin-top: 10px;"></div>`;
             html += `<button class="btn-gold" style="width: 100%; margin-top: 15px;" onclick="adminAddTakeaway()">Add Store</button></div>`;
             
-            html += '<div class="admin-card"><h4>Current Takeaways & Menus</h4>';
+            html += '<div class="admin-card"><h4>Current Takeaways</h4>';
             html += `<div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <button class="btn-online" onclick="adminSetAllStoreStatus('takeaways', true)">Set All Takeaways Online</button>
                 <button class="btn-offline" onclick="adminSetAllStoreStatus('takeaways', false)">Set All Takeaways Offline</button>
@@ -873,97 +877,245 @@
                 html += `<h5 style="color: var(--forest); margin-top: 20px; text-transform: capitalize;">${type}</h5>`;
                 appData.takeaways[type].forEach((store, storeIndex) => {
                     const isOnline = store.isOnline !== false;
-                    html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;">
-                        <div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                            <strong>${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : store.logo} ${store.name}</strong> 
-                            <div style="display:flex; gap: 5px;">
-                                <button class="${isOnline ? 'btn-online' : 'btn-offline'}" onclick="adminToggleStoreStatus('takeaway', '${type}', ${storeIndex})">
-                                    ${isOnline ? 'Online (Click to Offline)' : 'Offline (Click to Online)'}
-                                </button>
-                                <button class="btn-delete" onclick="adminDeleteStore('takeaway', '${type}', ${storeIndex})">Delete Store</button>
-                            </div>
+                    html += `<div class="store-item">
+                        <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
+                            ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
+                            <div><h4>${store.name}</h4><p>${isOnline ? 'Online' : 'Offline'} | ${store.menu.length} Items</p></div>
                         </div>
-                        
-                        <div style="margin-top: 15px; background: #e8f5e9; padding: 10px; border-radius: 5px;">
-                            <strong style="color: var(--forest);">Bulk Upload Menu (Excel or Copy & Paste)</strong><br>
-                            <small>Columns needed: Category, Name, Size, Flavor, Price, OnSale, SalePrice, Options</small><br>
-                            <small style="color: blue;">Uploads ADD to existing items. You can upload .xlsx or just copy from Excel and paste below.</small>
-                            
-                            <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
-                                <input type="file" id="excel_input_takeaway_${type}_${storeIndex}" accept=".xlsx, .xls, .csv" style="font-size: 12px; flex:1;">
-                                <button type="button" class="btn-gold" onclick="handleExcelUpload('takeaway', '${type}', ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:0;">Upload Excel</button>
-                            </div>
-                            
-                            <div style="margin-top:10px;">
-                                <textarea id="paste_input_takeaway_${type}_${storeIndex}" rows="4" style="width:100%; font-size: 12px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Or copy columns from Excel and paste here..."></textarea>
-                                <button type="button" class="btn-gold" onclick="handlePasteUpload('takeaway', '${type}', ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:5px 0 0 0;">Import Pasted Data</button>
-                            </div>
+                        <div style="display:flex; gap: 5px; flex-wrap: wrap;">
+                            <button class="${isOnline ? 'btn-online' : 'btn-offline'}" onclick="adminToggleStoreStatus('takeaway', '${type}', ${storeIndex})">
+                                ${isOnline ? 'Online' : 'Offline'}
+                            </button>
+                            <button class="btn-gold" style="padding:5px 8px; font-size:12px; margin:0;" onclick="adminViewStore('takeaway_${type}_${storeIndex}')">Manage Menu →</button>
+                            <button class="btn-delete" onclick="adminDeleteStore('takeaway', '${type}', ${storeIndex})">Delete</button>
                         </div>
-
-                        <div style="margin-top: 10px;">`; 
-                        
-                        const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
-                        if(cats.length > 0) {
-                            html += '<div style="margin-top:10px; background:#ffebee; padding:10px; border-radius:5px; border: 1px dashed red;">';
-                            html += '<strong style="color: red; font-size: 14px;">Delete Categories</strong>';
-                            cats.forEach(c => {
-                                html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px;">
-                                    <span>${c}</span>
-                                    <button class="btn-delete" onclick="adminDeleteCategory('takeaway', '${type}', ${storeIndex}, '${safeStr(c)}')">Delete Category</button>
-                                </div>`;
-                            });
-                            html += '</div>';
-                        }
-
-                        store.menu.forEach((item, itemIndex) => { 
-                            html += `<div class="admin-item-card">
-                                <div class="card-header">
-                                    <div style="display:flex; gap:10px; align-items:center;">
-                                        <img src="${item.img || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; object-fit:cover; border-radius:5px;">
-                                        <strong>${item.name}</strong>
-                                    </div>
-                                    <div class="card-actions">
-                                        <label class="add-btn" style="cursor:pointer; padding:5px 8px; font-size:12px; background:#eee; color:#333;">
-                                            📷 Pic
-                                            <input type="file" accept="image/*" onchange="uploadItemImg(event, 'takeaway', '${type}', ${storeIndex}, ${itemIndex})" style="display:none;">
-                                        </label>
-                                        <button class="add-btn" onclick="adminUpdateMenuItem('takeaway', '${type}', ${storeIndex}, ${itemIndex})" style="padding:5px 8px; font-size:12px;">Save</button>
-                                        <button class="btn-delete" onclick="adminDeleteMenuItem('takeaway', '${type}', ${storeIndex}, ${itemIndex})">Delete</button>
-                                    </div>
-                                </div>
-                                <div class="admin-item-grid">
-                                    <input type="text" value="${safeStr(item.name)}" id="i_name_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Name" style="padding: 5px; font-size: 12px;">
-                                    <input type="text" value="${safeStr(item.category || '')}" id="i_cat_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Category" style="padding: 5px; font-size: 12px;">
-                                    <input type="text" value="${safeStr(item.size || '')}" id="i_size_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
-                                    <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
-                                    <input type="number" value="${item.price}" id="i_price_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Price" style="padding: 5px; font-size: 12px;">
-                                    <input type="number" value="${item.salePrice || 0}" id="i_sale_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Sale Price" style="padding: 5px; font-size: 12px;">
-                                    <input type="text" value="${safeStr(item.options || '')}" id="i_opt_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Options (Meal|30)" style="padding: 5px; font-size: 12px;">
-                                    <div style="display: flex; align-items: center; gap: 5px;">
-                                        <input type="checkbox" id="i_onsale_takeaway_${type}_${storeIndex}_${itemIndex}" ${item.onSale ? 'checked' : ''}>
-                                        <label for="i_onsale_takeaway_${type}_${storeIndex}_${itemIndex}" style="font-size: 12px;">On Sale</label>
-                                    </div>
-                                </div>
-                            </div>`; 
-                        }); 
-                        
-                        html += `<div class="form-row" style="margin-top: 10px;">
-                            <input type="text" id="menu_name_takeaway_${type}_${storeIndex}" placeholder="Item Name" style="padding: 5px; font-size: 12px;">
-                            <input type="text" id="menu_size_takeaway_${type}_${storeIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
-                            <input type="number" id="menu_price_takeaway_${type}_${storeIndex}" placeholder="Price" style="padding: 5px; font-size: 12px;">
-                        </div>
-                        <button class="add-btn" style="margin-top: 5px; padding: 5px; font-size: 12px;" onclick="adminAddMenuItem('takeaway', '${type}', ${storeIndex})">Add Item Manually</button>
-                    </div></div>`; 
+                    </div>`; 
                 }); 
             }); 
             html += '</div>';
             document.getElementById('admin-content').innerHTML = html;
         }
+
+        function renderAdminTakeawayMenu() {
+            const parts = adminStoreView.split('_'); // ['takeaway', 'franchises', '0']
+            const type = parts[1];
+            const storeIndex = parseInt(parts[2]);
+            const store = appData.takeaways[type][storeIndex];
+            
+            let html = `<span class="back-link" onclick="adminViewStore(null)">← Back to Stores</span>`;
+            html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name} Menu</h2></div>`;
+            
+            html += `<div class="admin-card">
+                <div style="background: #e8f5e9; padding: 10px; border-radius: 5px;">
+                    <strong style="color: var(--forest);">Bulk Upload Menu (Excel or Copy & Paste)</strong><br>
+                    <small>Columns needed: Category, Name, Size, Flavor, Price, OnSale, SalePrice, Options</small><br>
+                    <small style="color: blue;">Uploads ADD to existing items. You can upload .xlsx or just copy from Excel and paste below.</small>
+                    <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
+                        <input type="file" id="excel_input_takeaway_${type}_${storeIndex}" accept=".xlsx, .xls, .csv" style="font-size: 12px; flex:1;">
+                        <button type="button" class="btn-gold" onclick="handleExcelUpload('takeaway', '${type}', ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:0;">Upload Excel</button>
+                    </div>
+                    <div style="margin-top:10px;">
+                        <textarea id="paste_input_takeaway_${type}_${storeIndex}" rows="4" style="width:100%; font-size: 12px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Category	Name	Size	Flavor	Price	OnSale	SalePrice	Options&#10;Toppings	Russian			25.00	false		&#10;Toppings	Cheese			7.00	false		"></textarea>
+                        <button type="button" class="btn-gold" onclick="handlePasteUpload('takeaway', '${type}', ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:5px 0 0 0;">Import Pasted Data</button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; background: #fff3cd; padding: 10px; border-radius: 5px; border: 1px dashed #ffc107;">
+                    <strong style="color: #856404;">Delete Categories</strong><br>
+                    <small>Use this to delete an entire category and all its items.</small><div style="margin-top:10px;">`;
+                    const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
+                    if(cats.length > 0) {
+                        cats.forEach(c => {
+                            html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px; background:#fff; padding: 5px; border-radius: 4px;">
+                                <span>${c}</span>
+                                <button class="btn-delete" onclick="adminDeleteCategory('takeaway', '${type}', ${storeIndex}, '${safeStr(c)}')">Delete Category</button>
+                            </div>`;
+                        });
+                    } else {
+                        html += '<small>No categories yet.</small>';
+                    }
+                    html += `</div>
+                </div>
+            </div>`;
+
+            html += '<div class="admin-card"><h4>Add Item Manually</h4>';
+            html += `<div class="form-row">
+                <input type="text" id="menu_name_takeaway_${type}_${storeIndex}" placeholder="Item Name" style="padding: 10px; font-size: 14px;">
+                <input type="text" id="menu_size_takeaway_${type}_${storeIndex}" placeholder="Size" style="padding: 10px; font-size: 14px;">
+                <input type="number" id="menu_price_takeaway_${type}_${storeIndex}" placeholder="Price (R)" style="padding: 10px; font-size: 14px;">
+            </div>
+            <button class="btn-gold" style="margin-top: 5px; padding: 8px; font-size: 14px;" onclick="adminAddMenuItem('takeaway', '${type}', ${storeIndex})">Add Item</button></div>`;
+
+            html += '<div class="admin-card"><h4>Current Items</h4>';
+            store.menu.forEach((item, itemIndex) => { 
+                html += `<div class="admin-item-card">
+                    <div class="card-header">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <img src="${item.img || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; object-fit:cover; border-radius:5px;">
+                            <strong>${item.name}</strong>
+                        </div>
+                        <div class="card-actions">
+                            <label class="add-btn" style="cursor:pointer; padding:5px 8px; font-size:12px; background:#eee; color:#333;">
+                                📷 Pic
+                                <input type="file" accept="image/*" onchange="uploadItemImg(event, 'takeaway', '${type}', ${storeIndex}, ${itemIndex})" style="display:none;">
+                            </label>
+                            <button class="add-btn" onclick="adminUpdateMenuItem('takeaway', '${type}', ${storeIndex}, ${itemIndex})" style="padding:5px 8px; font-size:12px;">Save</button>
+                            <button class="btn-delete" onclick="adminDeleteMenuItem('takeaway', '${type}', ${storeIndex}, ${itemIndex})">Delete</button>
+                        </div>
+                    </div>
+                    <div class="admin-item-grid">
+                        <input type="text" value="${safeStr(item.name)}" id="i_name_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Name" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.category || '')}" id="i_cat_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Category" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.size || '')}" id="i_size_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
+                        <input type="number" value="${item.price}" id="i_price_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Price" style="padding: 5px; font-size: 12px;">
+                        <input type="number" value="${item.salePrice || 0}" id="i_sale_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Sale Price" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.options || '')}" id="i_opt_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Options (Meal|30)" style="padding: 5px; font-size: 12px;">
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <input type="checkbox" id="i_onsale_takeaway_${type}_${storeIndex}_${itemIndex}" ${item.onSale ? 'checked' : ''}>
+                            <label for="i_onsale_takeaway_${type}_${storeIndex}_${itemIndex}" style="font-size: 12px;">On Sale</label>
+                        </div>
+                    </div>
+                </div>`; 
+            }); 
+            html += '</div>';
+
+            document.getElementById('admin-content').innerHTML = html;
+        }
         
-        // Robust function to process workbook data (used for both Excel upload and Paste)
+        // --- GROCERIES ADMIN ---
+        function renderAdminGroceries() {
+            if (adminStoreView && adminStoreView.startsWith('grocery_')) {
+                return renderAdminGroceryMenu();
+            }
+            let html = '<div class="admin-card"><h4>Add New Grocery Store</h4>';
+            html += `<div class="form-row">
+                <div class="form-group"><label>Store Name</label><input type="text" id="g_name"></div>
+                <div class="form-group"><label>Logo (Emoji - Optional)</label><input type="text" id="g_logo" value="🛒"></div>
+            </div>`;
+            html += `<div class="form-group" style="margin-top: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px dashed #ccc;"><label style="font-size: 18px; color: var(--forest);">Upload Store Logo Image</label><input type="file" id="g_logo_file" accept="image/*" style="margin-top: 10px;"></div>`;
+            html += `<button class="btn-gold" style="width: 100%; margin-top: 15px;" onclick="adminAddGrocery()">Add Store</button></div>`;
+            
+            html += '<div class="admin-card"><h4>Current Grocery Stores</h4>';
+            html += `<div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn-online" onclick="adminSetAllStoreStatus('groceries', true)">Set All Groceries Online</button>
+                <button class="btn-offline" onclick="adminSetAllStoreStatus('groceries', false)">Set All Groceries Offline</button>
+            </div>`;
+
+            appData.groceries.forEach((store, storeIndex) => {
+                const isOnline = store.isOnline !== false;
+                html += `<div class="store-item">
+                    <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
+                        ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
+                        <div><h4>${store.name}</h4><p>${isOnline ? 'Online' : 'Offline'} | ${store.menu.length} Items</p></div>
+                    </div>
+                    <div style="display:flex; gap: 5px; flex-wrap: wrap;">
+                        <button class="${isOnline ? 'btn-online' : 'btn-offline'}" onclick="adminToggleStoreStatus('grocery', null, ${storeIndex})">
+                            ${isOnline ? 'Online' : 'Offline'}
+                        </button>
+                        <button class="btn-gold" style="padding:5px 8px; font-size:12px; margin:0;" onclick="adminViewStore('grocery_${storeIndex}')">Manage Catalogue →</button>
+                        <button class="btn-delete" onclick="adminDeleteStore('grocery', null, ${storeIndex})">Delete</button>
+                    </div>
+                </div>`; 
+            });
+            html += '</div>';
+            document.getElementById('admin-content').innerHTML = html;
+        }
+
+        function renderAdminGroceryMenu() {
+            const storeIndex = parseInt(adminStoreView.split('_')[1]);
+            const store = appData.groceries[storeIndex];
+            
+            let html = `<span class="back-link" onclick="adminViewStore(null)">← Back to Stores</span>`;
+            html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name} Catalogue</h2></div>`;
+            
+            html += `<div class="admin-card">
+                <div style="background: #e8f5e9; padding: 10px; border-radius: 5px;">
+                    <strong style="color: var(--forest);">Bulk Upload Products (Excel or Copy & Paste)</strong><br>
+                    <small>Columns needed: Category, Name, Size, Flavor, Price, OnSale, SalePrice, Options</small><br>
+                    <small style="color: blue;">Uploads ADD to existing items. You can upload .xlsx or just copy from Excel and paste below.</small>
+                    <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
+                        <input type="file" id="excel_input_grocery_g_${storeIndex}" accept=".xlsx, .xls, .csv" style="font-size: 12px; flex:1;">
+                        <button type="button" class="btn-gold" onclick="handleExcelUpload('grocery', null, ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:0;">Upload Excel</button>
+                    </div>
+                    <div style="margin-top:10px;">
+                        <textarea id="paste_input_grocery_g_${storeIndex}" rows="4" style="width:100%; font-size: 12px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Category	Name	Size	Flavor	Price	OnSale	SalePrice	Options&#10;Drinks	Coke	500ml		15.00	false		&#10;Bread	Brown Loaf			12.00	false		"></textarea>
+                        <button type="button" class="btn-gold" onclick="handlePasteUpload('grocery', null, ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:5px 0 0 0;">Import Pasted Data</button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; background: #fff3cd; padding: 10px; border-radius: 5px; border: 1px dashed #ffc107;">
+                    <strong style="color: #856404;">Delete Categories</strong><br>
+                    <small>Use this to delete an entire category and all its items.</small><div style="margin-top:10px;">`;
+                    const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
+                    if(cats.length > 0) {
+                        cats.forEach(c => {
+                            html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px; background:#fff; padding: 5px; border-radius: 4px;">
+                                <span>${c}</span>
+                                <button class="btn-delete" onclick="adminDeleteCategory('grocery', null, ${storeIndex}, '${safeStr(c)}')">Delete Category</button>
+                            </div>`;
+                        });
+                    } else {
+                        html += '<small>No categories yet.</small>';
+                    }
+                    html += `</div>
+                </div>
+            </div>`;
+
+            html += '<div class="admin-card"><h4>Add Product Manually</h4>';
+            html += `<div class="form-row">
+                <input type="text" id="menu_name_grocery_g_${storeIndex}" placeholder="Product Name" style="padding: 10px; font-size: 14px;">
+                <input type="text" id="menu_size_grocery_g_${storeIndex}" placeholder="Size" style="padding: 10px; font-size: 14px;">
+                <input type="number" id="menu_price_grocery_g_${storeIndex}" placeholder="Price (R)" style="padding: 10px; font-size: 14px;">
+            </div>
+            <button class="btn-gold" style="margin-top: 5px; padding: 8px; font-size: 14px;" onclick="adminAddMenuItem('grocery', null, ${storeIndex})">Add Product</button></div>`;
+
+            html += '<div class="admin-card"><h4>Current Products</h4>';
+            store.menu.forEach((item, itemIndex) => { 
+                html += `<div class="admin-item-card">
+                    <div class="card-header">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <img src="${item.img || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; object-fit:cover; border-radius:5px;">
+                            <strong>${item.name}</strong>
+                        </div>
+                        <div class="card-actions">
+                            <label class="add-btn" style="cursor:pointer; padding:5px 8px; font-size:12px; background:#eee; color:#333;">
+                                📷 Pic
+                                <input type="file" accept="image/*" onchange="uploadItemImg(event, 'grocery', null, ${storeIndex}, ${itemIndex})" style="display:none;">
+                            </label>
+                            <button class="add-btn" onclick="adminUpdateMenuItem('grocery', null, ${storeIndex}, ${itemIndex})" style="padding:5px 8px; font-size:12px;">Save</button>
+                            <button class="btn-delete" onclick="adminDeleteMenuItem('grocery', null, ${storeIndex}, ${itemIndex})">Delete</button>
+                        </div>
+                    </div>
+                    <div class="admin-item-grid">
+                        <input type="text" value="${safeStr(item.name)}" id="i_name_grocery_g_${storeIndex}_${itemIndex}" placeholder="Name" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.category || '')}" id="i_cat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Category" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.size || '')}" id="i_size_grocery_g_${storeIndex}_${itemIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_grocery_g_${storeIndex}_${itemIndex}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
+                        <input type="number" value="${item.price}" id="i_price_grocery_g_${storeIndex}_${itemIndex}" placeholder="Price" style="padding: 5px; font-size: 12px;">
+                        <input type="number" value="${item.salePrice || 0}" id="i_sale_grocery_g_${storeIndex}_${itemIndex}" placeholder="Sale Price" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.options || '')}" id="i_opt_grocery_g_${storeIndex}_${itemIndex}" placeholder="Options" style="padding: 5px; font-size: 12px;">
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <input type="checkbox" id="i_onsale_grocery_g_${storeIndex}_${itemIndex}" ${item.onSale ? 'checked' : ''}>
+                            <label for="i_onsale_grocery_g_${storeIndex}_${itemIndex}" style="font-size: 12px;">On Sale</label>
+                        </div>
+                    </div>
+                </div>`; 
+            }); 
+            html += '</div>';
+
+            document.getElementById('admin-content').innerHTML = html;
+        }
+
+        function adminViewStore(viewId) {
+            adminStoreView = viewId;
+            navigate('admin');
+        }
+
+        // --- BULK UPLOAD & ITEM LOGIC ---
         async function processSheetData(rows, cat, type, storeIndex) {
             if (!rows || rows.length < 2) {
-                alert("No data found or missing headers.");
+                alert("No data found or missing headers. Make sure you copy the headers too.");
                 return 0;
             }
 
@@ -980,10 +1132,8 @@
             }
             if(!store.menu) store.menu = [];
 
-            // Clean headers
             const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
             
-            // Find column indices safely
             const idx = {
                 name: headers.findIndex(h => h.includes('name') || h.includes('item') || h.includes('product')),
                 category: headers.findIndex(h => h.includes('category') || h.includes('cat')),
@@ -996,7 +1146,7 @@
             };
 
             if(idx.name === -1) {
-                alert("Could not find a 'Name' column. Please ensure your Excel has headers.");
+                alert("Could not find a 'Name' column. Please ensure your Excel has a column named 'Name' or 'Item'.");
                 return 0;
             }
 
@@ -1044,14 +1194,14 @@
                     const workbook = XLSX.read(data, { type: 'array' });
                     const sheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[sheetName];
-                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Get array of arrays
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                     
                     const count = await processSheetData(rows, cat, type, storeIndex);
                     if(count > 0) {
                         await saveConfig();
-                        alert(count + ' products imported successfully!');
-                        if(cat === 'takeaway') renderAdminTakeaways();
-                        else renderAdminGroceries();
+                        alert(count + ' products imported successfully! They will now show on your public menu.');
+                        if(cat === 'takeaway') renderAdminTakeawayMenu();
+                        else renderAdminGroceryMenu();
                     }
                 } catch(err) {
                     alert("Error reading Excel file: " + err.message);
@@ -1066,7 +1216,6 @@
             if(!text) { alert("Nothing pasted."); return; }
 
             try {
-                // Use SheetJS to parse pasted TSV data
                 const workbook = XLSX.read(text, { type: 'string' });
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
@@ -1075,9 +1224,9 @@
                 const count = await processSheetData(rows, cat, type, storeIndex);
                 if(count > 0) {
                     await saveConfig();
-                    alert(count + ' products imported successfully!');
-                    if(cat === 'takeaway') renderAdminTakeaways();
-                    else renderAdminGroceries();
+                    alert(count + ' products imported successfully! They will now show on your public menu.');
+                    if(cat === 'takeaway') renderAdminTakeawayMenu();
+                    else renderAdminGroceryMenu();
                 }
             } catch(err) {
                 alert("Error parsing pasted data: " + err.message);
@@ -1095,8 +1244,8 @@
             if(item) {
                 item.img = url;
                 await saveConfig();
-                if(cat === 'takeaway') renderAdminTakeaways();
-                else renderAdminGroceries();
+                if(cat === 'takeaway') renderAdminTakeawayMenu();
+                else renderAdminGroceryMenu();
             }
         }
 
@@ -1124,8 +1273,8 @@
             if(!name || !price) { alert('Enter item name and price'); return; }
             store.menu.push({ id: 'm' + Date.now().toString(), name, size, price, category: 'General', flavor: '', options: '', onSale: false, salePrice: 0, img: null });
             await saveConfig();
-            if(cat === 'takeaway') renderAdminTakeaways();
-            else renderAdminGroceries();
+            if(cat === 'takeaway') renderAdminTakeawayMenu();
+            else renderAdminGroceryMenu();
         }
 
         async function adminUpdateMenuItem(cat, type, storeIndex, itemIndex) {
@@ -1144,8 +1293,8 @@
                 item.onSale = document.getElementById(`i_onsale_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).checked;
                 await saveConfig();
                 alert('Item updated!');
-                if(cat === 'takeaway') renderAdminTakeaways();
-                else renderAdminGroceries();
+                if(cat === 'takeaway') renderAdminTakeawayMenu();
+                else renderAdminGroceryMenu();
             }
         }
         
@@ -1191,8 +1340,8 @@
             else store = appData.groceries[storeIndex];
             store.menu = store.menu.filter(item => (item.category || 'General') !== categoryName);
             await saveConfig();
-            if(cat === 'takeaway') renderAdminTakeaways();
-            else renderAdminGroceries();
+            if(cat === 'takeaway') renderAdminTakeawayMenu();
+            else renderAdminGroceryMenu();
         }
         
         async function adminDeleteMenuItem(cat, type, storeIndex, itemIndex) { 
@@ -1202,113 +1351,10 @@
             else store = appData.groceries[storeIndex]; 
             store.menu.splice(itemIndex, 1); 
             await saveConfig(); 
-            if(cat === 'takeaway') renderAdminTakeaways(); 
-            else renderAdminGroceries(); 
+            if(cat === 'takeaway') renderAdminTakeawayMenu(); 
+            else renderAdminGroceryMenu(); 
         }
-        
-        function renderAdminGroceries() {
-            let html = '<div class="admin-card"><h4>Add New Grocery Store</h4>';
-            html += `<div class="form-row">
-                <div class="form-group"><label>Store Name</label><input type="text" id="g_name"></div>
-                <div class="form-group"><label>Logo (Emoji - Optional)</label><input type="text" id="g_logo" value="🛒"></div>
-            </div>`;
-            html += `<div class="form-group" style="margin-top: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px dashed #ccc;"><label style="font-size: 18px; color: var(--forest);">Upload Store Logo Image</label><input type="file" id="g_logo_file" accept="image/*" style="margin-top: 10px;"></div>`;
-            html += `<button class="btn-gold" style="width: 100%; margin-top: 15px;" onclick="adminAddGrocery()">Add Store</button></div>`;
-            
-            html += '<div class="admin-card"><h4>Current Grocery Stores & Catalogues</h4>';
-            html += `<div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button class="btn-online" onclick="adminSetAllStoreStatus('groceries', true)">Set All Groceries Online</button>
-                <button class="btn-offline" onclick="adminSetAllStoreStatus('groceries', false)">Set All Groceries Offline</button>
-            </div>`;
 
-            appData.groceries.forEach((store, storeIndex) => {
-                const isOnline = store.isOnline !== false;
-                html += `<div style="margin-bottom: 15px; border-left: 3px solid var(--gold); padding-left: 10px;">
-                    <div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <strong>${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : store.logo} ${store.name}</strong> 
-                        <div style="display:flex; gap: 5px;">
-                            <button class="${isOnline ? 'btn-online' : 'btn-offline'}" onclick="adminToggleStoreStatus('grocery', null, ${storeIndex})">
-                                ${isOnline ? 'Online (Click to Offline)' : 'Offline (Click to Online)'}
-                            </button>
-                            <button class="btn-delete" onclick="adminDeleteStore('grocery', null, ${storeIndex})">Delete Store</button>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-top: 15px; background: #e8f5e9; padding: 10px; border-radius: 5px;">
-                        <strong style="color: var(--forest);">Bulk Upload Products (Excel or Copy & Paste)</strong><br>
-                        <small>Columns needed: Category, Name, Size, Flavor, Price, OnSale, SalePrice, Options</small><br>
-                        <small style="color: blue;">Uploads ADD to existing items. You can upload .xlsx or just copy from Excel and paste below.</small>
-                        
-                        <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
-                            <input type="file" id="excel_input_grocery_g_${storeIndex}" accept=".xlsx, .xls, .csv" style="font-size: 12px; flex:1;">
-                            <button type="button" class="btn-gold" onclick="handleExcelUpload('grocery', null, ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:0;">Upload Excel</button>
-                        </div>
-                        
-                        <div style="margin-top:10px;">
-                            <textarea id="paste_input_grocery_g_${storeIndex}" rows="4" style="width:100%; font-size: 12px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Or copy columns from Excel and paste here..."></textarea>
-                            <button type="button" class="btn-gold" onclick="handlePasteUpload('grocery', null, ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:5px 0 0 0;">Import Pasted Data</button>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 10px;">`; 
-                    
-                    const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
-                    if(cats.length > 0) {
-                        html += '<div style="margin-top:10px; background:#ffebee; padding:10px; border-radius:5px; border: 1px dashed red;">';
-                        html += '<strong style="color: red; font-size: 14px;">Delete Categories</strong>';
-                        cats.forEach(c => {
-                            html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px;">
-                                <span>${c}</span>
-                                <button class="btn-delete" onclick="adminDeleteCategory('grocery', null, ${storeIndex}, '${safeStr(c)}')">Delete Category</button>
-                            </div>`;
-                        });
-                        html += '</div>';
-                    }
-
-                    store.menu.forEach((item, itemIndex) => { 
-                        html += `<div class="admin-item-card">
-                            <div class="card-header">
-                                <div style="display:flex; gap:10px; align-items:center;">
-                                    <img src="${item.img || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; object-fit:cover; border-radius:5px;">
-                                    <strong>${item.name}</strong>
-                                </div>
-                                <div class="card-actions">
-                                    <label class="add-btn" style="cursor:pointer; padding:5px 8px; font-size:12px; background:#eee; color:#333;">
-                                        📷 Pic
-                                        <input type="file" accept="image/*" onchange="uploadItemImg(event, 'grocery', null, ${storeIndex}, ${itemIndex})" style="display:none;">
-                                    </label>
-                                    <button class="add-btn" onclick="adminUpdateMenuItem('grocery', null, ${storeIndex}, ${itemIndex})" style="padding:5px 8px; font-size:12px;">Save</button>
-                                    <button class="btn-delete" onclick="adminDeleteMenuItem('grocery', null, ${storeIndex}, ${itemIndex})">Delete</button>
-                                </div>
-                            </div>
-                            <div class="admin-item-grid">
-                                <input type="text" value="${safeStr(item.name)}" id="i_name_grocery_g_${storeIndex}_${itemIndex}" placeholder="Name" style="padding: 5px; font-size: 12px;">
-                                <input type="text" value="${safeStr(item.category || '')}" id="i_cat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Category" style="padding: 5px; font-size: 12px;">
-                                <input type="text" value="${safeStr(item.size || '')}" id="i_size_grocery_g_${storeIndex}_${itemIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
-                                <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_grocery_g_${storeIndex}_${itemIndex}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
-                                <input type="number" value="${item.price}" id="i_price_grocery_g_${storeIndex}_${itemIndex}" placeholder="Price" style="padding: 5px; font-size: 12px;">
-                                <input type="number" value="${item.salePrice || 0}" id="i_sale_grocery_g_${storeIndex}_${itemIndex}" placeholder="Sale Price" style="padding: 5px; font-size: 12px;">
-                                <input type="text" value="${safeStr(item.options || '')}" id="i_opt_grocery_g_${storeIndex}_${itemIndex}" placeholder="Options" style="padding: 5px; font-size: 12px;">
-                                <div style="display: flex; align-items: center; gap: 5px;">
-                                    <input type="checkbox" id="i_onsale_grocery_g_${storeIndex}_${itemIndex}" ${item.onSale ? 'checked' : ''}>
-                                    <label for="i_onsale_grocery_g_${storeIndex}_${itemIndex}" style="font-size: 12px;">On Sale</label>
-                                </div>
-                            </div>
-                        </div>`; 
-                    }); 
-                    
-                    html += `<div class="form-row" style="margin-top: 10px;">
-                        <input type="text" id="menu_name_grocery_g_${storeIndex}" placeholder="Product Name" style="padding: 5px; font-size: 12px;">
-                        <input type="text" id="menu_size_grocery_g_${storeIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
-                        <input type="number" id="menu_price_grocery_g_${storeIndex}" placeholder="Price" style="padding: 5px; font-size: 12px;">
-                    </div>
-                    <button class="add-btn" style="margin-top: 5px; padding: 5px; font-size: 12px;" onclick="adminAddMenuItem('grocery', null, ${storeIndex})">Add Product Manually</button>
-                </div></div>`; 
-            });
-            html += '</div>';
-            document.getElementById('admin-content').innerHTML = html;
-        }
-        
         async function adminAddGrocery() {
             const name = document.getElementById('g_name').value;
             const logo = document.getElementById('g_logo').value || '🛒';
