@@ -1618,6 +1618,7 @@
             html += '<div class="admin-card"><h4>Add Item Manually</h4>';
             html += `<div class="form-row">
                 <input type="text" id="menu_name_takeaway_${type}_${storeIndex}" placeholder="Item Name" style="padding: 10px; font-size: 14px;">
+                <input type="text" id="menu_cat_takeaway_${type}_${storeIndex}" placeholder="Category (e.g. Burgers)" style="padding: 10px; font-size: 14px;">
                 <input type="text" id="menu_subcat_takeaway_${type}_${storeIndex}" placeholder="Sub-Category (e.g. Beef)" style="padding: 10px; font-size: 14px;">
                 <input type="number" id="menu_price_takeaway_${type}_${storeIndex}" placeholder="Base Price (R)" style="padding: 10px; font-size: 14px;">
             </div>
@@ -1779,6 +1780,7 @@
             html += '<div class="admin-card"><h4>Add Product Manually</h4>';
             html += `<div class="form-row">
                 <input type="text" id="menu_name_grocery_g_${storeIndex}" placeholder="Product Name" style="padding: 10px; font-size: 14px;">
+                <input type="text" id="menu_cat_grocery_g_${storeIndex}" placeholder="Section (e.g. Baby & Toddler)" list="section_list_grocery" style="padding: 10px; font-size: 14px;">
                 <input type="text" id="menu_subcat_grocery_g_${storeIndex}" placeholder="Sub-Category (e.g. Diapers)" list="baby_subcat_list" style="padding: 10px; font-size: 14px;">
                 <input type="text" id="menu_size_grocery_g_${storeIndex}" placeholder="Size (e.g. 500ml)" style="padding: 10px; font-size: 14px;">
                 <input type="number" id="menu_price_grocery_g_${storeIndex}" placeholder="Price (R)" style="padding: 10px; font-size: 14px;">
@@ -2010,10 +2012,13 @@
             let store;
             if(cat === 'takeaway') store = appData.takeaways[type][storeIndex];
             else store = appData.groceries[storeIndex];
+            
             const name = document.getElementById(`menu_name_${cat}_${type ? type : 'g'}_${storeIndex}`).value;
+            const category = document.getElementById(`menu_cat_${cat}_${type ? type : 'g'}_${storeIndex}`).value || 'General';
             const subCat = document.getElementById(`menu_subcat_${cat}_${type ? type : 'g'}_${storeIndex}`).value || 'General';
             const size = document.getElementById(`menu_size_${cat}_${type ? type : 'g'}_${storeIndex}`).value || '';
             const price = parseFloat(document.getElementById(`menu_price_${cat}_${type ? type : 'g'}_${storeIndex}`).value);
+            
             if(!name || !price) { alert('Enter item name and price'); return; }
             
             if(store.menu.some(m => m.name.toLowerCase() === name.toLowerCase() && (m.size || '').toLowerCase() === size.toLowerCase())) {
@@ -2021,7 +2026,7 @@
                 return;
             }
 
-            store.menu.push({ id: 'm' + Date.now().toString(), name, size, price, category: 'General', subCategory: subCat, flavor: '', mealOptions: '', extras: '', onSale: false, salePrice: 0, img: null });
+            store.menu.push({ id: 'm' + Date.now().toString(), name, size, price, category: category, subCategory: subCat, flavor: '', mealOptions: '', extras: '', onSale: false, salePrice: 0, img: null });
             await saveConfig();
             renderRoute();
         }
