@@ -50,7 +50,6 @@
         .item-price { font-weight: bold; color: var(--forest); font-size: 14px; text-align: right; margin-top: 5px; }
         .add-btn { background-color: var(--gold); color: var(--forest); border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; }
         
-        /* Product Image Enhancement - No white space, object-fit cover */
         .item-img { width: 70px; height: 70px; object-fit: cover; object-position: center; border-radius: 5px; background: #f2f4f1; flex-shrink: 0; }
         
         .qty-selector { display: flex; align-items: center; gap: 8px; background: #f2f4f1; padding: 4px; border-radius: 20px; }
@@ -59,6 +58,11 @@
         .item-options, .item-extras { width: 100%; margin-top: 5px; padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 12px; }
         .item-extras label { display: flex; align-items: center; gap: 5px; margin: 3px 0; font-size: 12px; color: #444; }
         
+        .breadcrumb { margin-bottom: 15px; font-size: 14px; color: #666; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+        .breadcrumb a { color: var(--forest); text-decoration: underline; cursor: pointer; }
+        .breadcrumb span { margin: 0 5px; color: #999; }
+        .breadcrumb strong { color: var(--forest); }
+
         .form-container { background: var(--white); padding: 20px; border-radius: 10px; max-width: 800px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .form-section { margin-bottom: 20px; border-bottom: 1px solid var(--light-grey); padding-bottom: 15px; }
         .form-section:last-child { border-bottom: none; }
@@ -177,21 +181,19 @@
     </footer>
 
     <script>
-        let cart = [], currentSlide = 0, slideInterval, appData = {}, adminTab = 'dashboard', isAdmin = false, adminStoreView = null;
-        let publicItemLimit = 50, adminItemLimit = 50;
-        let activeMenuStoreId = null, activeMenuStoreType = null, activeMenuCategory = null;
+        let cart = JSON.parse(localStorage.getItem('kd_cart') || '[]');
+        let currentSlide = 0, slideInterval, appData = {}, adminTab = 'dashboard', isAdmin = false;
+        let adminStoreView = sessionStorage.getItem('adminStoreView') || null;
+        let adminItemLimit = 50;
+        
+        // Active context for item rendering (used to re-render the list after cart update)
+        let activeStoreId = null, activeStoreType = null, activeSection = null, activeSubcat = null, activeTakeawayType = null;
 
-        function safeStr(str) {
-            return String(str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        }
-        function cleanId(id) {
-            return String(id || '').replace(/[^a-zA-Z0-9]/g, '');
-        }
-        function escHtml(str) {
-            return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        }
+        function safeStr(str) { return String(str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+        function cleanId(id) { return String(id || '').replace(/[^a-zA-Z0-9]/g, ''); }
+        function escHtml(str) { return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+        function saveCart() { localStorage.setItem('kd_cart', JSON.stringify(cart)); }
 
-        // --- DATA PARSING HELPERS ---
         function parseOptions(str) {
             if(!str) return [];
             return str.split(',').map(s => {
@@ -212,6 +214,7 @@
             if(!appData.siteContent.callNumber) appData.siteContent.callNumber = "0613642449";
             if(!appData.siteContent.email) appData.siteContent.email = "support@kasideliveries.co.za";
             
+            if(!appData.categories) appData.categories = {};
             if(!appData.categories.van) appData.categories.van = 'https://images.unsplash.com/photo-1597007030739-6d2e7172ee5b?q=80&w=800';
             if(!appData.categories.bakkie) appData.categories.bakkie = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
             if(!appData.categories.truck) appData.categories.truck = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
@@ -284,44 +287,112 @@
             { title: 'Shop Multiple Stores in One Order', text: 'Groceries delivered to your door', btnText: 'Shop Groceries', action: "navigate('groceries')", bg: 'linear-gradient(45deg, #123B2A, #3b2d1e)' }
         ];
 
+        // --- URL ROUTING ---
         function navigate(page, param) {
-            clearInterval(slideInterval);
-            const app = document.getElementById('app-content');
+            let hash = '#/';
+            if (page === 'home') hash = '#/';
+            else if (page === 'groceries') hash = '#/groceries';
+            else if (page === 'grocery-store') hash = `#/grocery-store/${param}`;
+            else if (page === 'grocery-section') hash = `#/grocery-section/${param.storeId}/${encodeURIComponent(param.section)}`;
+            else if (page === 'grocery-subcategory') hash = `#/grocery-subcategory/${param.storeId}/${encodeURIComponent(param.section)}/${encodeURIComponent(param.subcat)}`;
+            else if (page === 'takeaways') hash = '#/takeaways';
+            else if (page === 'takeaway-list') hash = `#/takeaway-list/${param}`;
+            else if (page === 'restaurant-menu') hash = `#/restaurant-menu/${param}`;
+            else if (page === 'restaurant-menu-items') hash = `#/restaurant-menu-items/${activeTakeawayType}/${activeStoreId}/${encodeURIComponent(param)}`;
+            else if (page === 'parcels') hash = '#/parcels';
+            else if (page === 'send-parcel') hash = '#/send-parcel';
+            else if (page === 'collect-parcel') hash = '#/collect-parcel';
+            else if (page === 'furniture') hash = '#/furniture';
+            else if (page === 'furniture-form') hash = `#/furniture-form/${param}`;
+            else if (page === 'track') hash = '#/track';
+            else if (page === 'search') hash = `#/search/${encodeURIComponent(param)}`;
+            else if (page === 'about') hash = '#/about';
+            else if (page === 'contact') hash = '#/contact';
+            else if (page === 'terms') hash = '#/terms';
+            else if (page === 'privacy') hash = '#/privacy';
+            else if (page === 'cart') hash = '#/cart';
+            else if (page === 'admin') hash = adminStoreView ? `#/admin/${adminTab}/${adminStoreView}` : `#/admin/${adminTab}`;
             
-            if (page === 'home') { app.innerHTML = renderHome(); initSlider(); }
-            else if (page === 'takeaways') app.innerHTML = renderTakeawaysHub();
-            else if (page === 'takeaway-list') app.innerHTML = renderTakeawayList(param);
-            else if (page === 'restaurant-menu') { 
-                activeMenuStoreId = param; activeMenuStoreType = 'takeaway'; activeMenuCategory = null; publicItemLimit = 50; 
-                app.innerHTML = renderStoreCategories('takeaway', param); 
+            window.location.hash = hash;
+        }
+
+        window.addEventListener('hashchange', renderRoute);
+
+        function renderRoute() {
+            const hash = window.location.hash || '#/';
+            const parts = hash.substring(2).split('/').filter(p => p.length > 0);
+            const app = document.getElementById('app-content');
+            clearInterval(slideInterval);
+
+            try {
+                if (parts.length === 0) { app.innerHTML = renderHome(); initSlider(); }
+                else if (parts[0] === 'groceries') { app.innerHTML = renderGroceryHub(); }
+                else if (parts[0] === 'grocery-store' && parts[1]) { 
+                    activeStoreId = decodeURIComponent(parts[1]); activeStoreType = 'grocery';
+                    app.innerHTML = renderGroceryStore(activeStoreId); 
+                }
+                else if (parts[0] === 'grocery-section' && parts[1] && parts[2]) { 
+                    activeStoreId = decodeURIComponent(parts[1]); activeStoreType = 'grocery'; activeSection = decodeURIComponent(parts[2]);
+                    app.innerHTML = renderGrocerySection(activeStoreId, activeSection); 
+                }
+                else if (parts[0] === 'grocery-subcategory' && parts[1] && parts[2] && parts[3]) { 
+                    activeStoreId = decodeURIComponent(parts[1]); activeStoreType = 'grocery'; activeSection = decodeURIComponent(parts[2]); activeSubcat = decodeURIComponent(parts[3]);
+                    app.innerHTML = renderGrocerySubcategory(activeStoreId, activeSection, activeSubcat); 
+                }
+                else if (parts[0] === 'takeaways') { app.innerHTML = renderTakeawaysHub(); }
+                else if (parts[0] === 'takeaway-list' && parts[1]) { app.innerHTML = renderTakeawayList(parts[1]); }
+                else if (parts[0] === 'restaurant-menu' && parts[1]) { 
+                    activeStoreId = parts[1]; activeStoreType = 'takeaway'; 
+                    app.innerHTML = renderStoreCategories('takeaway', parts[1]); 
+                }
+                else if (parts[0] === 'restaurant-menu-items' && parts[1] && parts[2] && parts[3]) { 
+                    activeTakeawayType = parts[1]; activeStoreId = parts[2]; activeStoreType = 'takeaway'; activeSection = decodeURIComponent(parts[3]);
+                    app.innerHTML = renderStoreItems('takeaway', activeStoreId, activeSection); 
+                }
+                else if (parts[0] === 'parcels') { app.innerHTML = renderParcelOptions(); }
+                else if (parts[0] === 'send-parcel') { app.innerHTML = renderSendParcel(); }
+                else if (parts[0] === 'collect-parcel') { app.innerHTML = renderCollectParcel(); }
+                else if (parts[0] === 'furniture') { app.innerHTML = renderFurnitureHub(); }
+                else if (parts[0] === 'furniture-form' && parts[1]) { app.innerHTML = renderFurnitureForm(decodeURIComponent(parts[1])); }
+                else if (parts[0] === 'track') { app.innerHTML = renderTrackOrder(); }
+                else if (parts[0] === 'search' && parts[1]) { app.innerHTML = renderSearchResults(decodeURIComponent(parts.slice(1).join('/'))); }
+                else if (parts[0] === 'about') { app.innerHTML = renderTextPage('About Us', appData.siteContent.about); }
+                else if (parts[0] === 'contact') { app.innerHTML = renderTextPage('Contact Us', appData.siteContent.contact); }
+                else if (parts[0] === 'terms') { app.innerHTML = renderTextPage('Terms & Conditions', appData.siteContent.terms); }
+                else if (parts[0] === 'privacy') { app.innerHTML = renderTextPage('Privacy Policy', appData.siteContent.privacy); }
+                else if (parts[0] === 'cart') { app.innerHTML = renderCart(); }
+                else if (parts[0] === 'admin') { 
+                    if (parts[1]) adminTab = parts[1];
+                    if (parts[2]) adminStoreView = parts[2]; else adminStoreView = null;
+                    if (!isAdmin) {
+                        localStorage.setItem('redirectHash', window.location.hash);
+                        app.innerHTML = renderAdminLogin();
+                    } else {
+                        app.innerHTML = renderAdmin();
+                    }
+                }
+                else { app.innerHTML = renderHome(); initSlider(); }
+            } catch (e) {
+                console.error("Routing error:", e);
+                app.innerHTML = '<h2>Page not found</h2><a href="#/">Go Home</a>';
             }
-            else if (page === 'restaurant-menu-items') { 
-                activeMenuCategory = param; publicItemLimit = 50; 
-                app.innerHTML = renderStoreItems('takeaway', activeMenuStoreId, param); 
-            }
-            else if (page === 'groceries') app.innerHTML = renderGroceryHub();
-            else if (page === 'grocery-menu') { 
-                activeMenuStoreId = param; activeMenuStoreType = 'grocery'; activeMenuCategory = null; publicItemLimit = 50; 
-                app.innerHTML = renderStoreCategories('grocery', param); 
-            }
-            else if (page === 'grocery-menu-items') { 
-                activeMenuCategory = param; publicItemLimit = 50; 
-                app.innerHTML = renderStoreItems('grocery', activeMenuStoreId, param); 
-            }
-            else if (page === 'parcels') app.innerHTML = renderParcelOptions();
-            else if (page === 'send-parcel') app.innerHTML = renderSendParcel();
-            else if (page === 'collect-parcel') app.innerHTML = renderCollectParcel();
-            else if (page === 'furniture') app.innerHTML = renderFurnitureHub();
-            else if (page === 'furniture-form') app.innerHTML = renderFurnitureForm(param);
-            else if (page === 'track') app.innerHTML = renderTrackOrder();
-            else if (page === 'search') app.innerHTML = renderSearchResults(param);
-            else if (page === 'about') app.innerHTML = `<div class="form-container"><a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">About Us</h2><div class="text-content">${appData.siteContent.about}</div></div>`;
-            else if (page === 'contact') app.innerHTML = `<div class="form-container"><a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">Contact Us</h2><div class="text-content">${appData.siteContent.contact}</div></div>`;
-            else if (page === 'terms') app.innerHTML = `<div class="form-container"><a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">Terms & Conditions</h2><div class="text-content">${appData.siteContent.terms}</div></div>`;
-            else if (page === 'privacy') app.innerHTML = `<div class="form-container"><a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">Privacy Policy</h2><div class="text-content">${appData.siteContent.privacy}</div></div>`;
-            else if (page === 'admin') app.innerHTML = isAdmin ? renderAdmin() : renderAdminLogin();
-            else if (page === 'cart') app.innerHTML = renderCart();
             window.scrollTo(0, 0);
+        }
+
+        function renderTextPage(title, content) {
+            return `<div class="form-container"><a class="back-link" href="#/">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">${title}</h2><div class="text-content">${content}</div></div>`;
+        }
+
+        function renderBreadcrumb(crumbs) {
+            let html = '<div class="breadcrumb">';
+            crumbs.forEach((c, i) => {
+                if(i < crumbs.length - 1) {
+                    html += `<a href="${c.route}">${escHtml(c.label)}</a> <span>›</span> `;
+                } else {
+                    html += `<strong>${escHtml(c.label)}</strong>`;
+                }
+            });
+            return html + '</div>';
         }
 
         function initSlider() { 
@@ -349,8 +420,115 @@
             </div>`;
         }
         
+        // --- GROCERY JOURNEY ---
+        function renderGroceryHub() { 
+            let html = `<a class="back-link" href="#/">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">Grocery Stores</h2>`; 
+            if(appData.groceries.length === 0) html += '<p>No stores available yet.</p>'; 
+            appData.groceries.forEach(store => { 
+                const isOnline = store.isOnline !== false;
+                html += `<div class="store-item ${!isOnline ? 'store-status-offline' : ''}" onclick="${isOnline ? `navigate('grocery-store', '${safeStr(store.id)}')` : ''}" style="cursor: ${isOnline ? 'pointer' : 'not-allowed'};">
+                    <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
+                        ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
+                        <div>
+                            <h4>${store.name}</h4>
+                            <p>${isOnline ? '✅ Available Now' : '❌ Currently Offline'}</p>
+                        </div>
+                    </div>
+                    <span style="color: ${isOnline ? 'var(--gold)' : '#999'}; font-weight: bold;">${isOnline ? 'Shop Now →' : 'Offline'}</span>
+                </div>`; 
+            }); 
+            return html; 
+        }
+
+        function renderGroceryStore(storeId) {
+            const result = findStore('grocery', storeId);
+            if (!result) return '<h2>Store not found</h2>';
+            const { store } = result;
+            
+            let html = renderBreadcrumb([
+                { label: 'Home', route: '#/' },
+                { label: 'Groceries', route: '#/groceries' },
+                { label: store.name, route: `#/grocery-store/${store.id}` }
+            ]);
+            
+            html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name}</h2></div>`;
+            
+            const sections = [...new Set(store.menu.map(m => m.category || 'General'))];
+            if(sections.length === 0) return html + '<p>No sections available yet.</p>';
+
+            html += '<div class="categories-grid">';
+            sections.forEach(section => {
+                const itemCount = store.menu.filter(m => (m.category || 'General') === section).length;
+                const catImg = store.categoryImages && store.categoryImages[section] ? store.categoryImages[section] : 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800'; 
+                html += `<div class="category-card" style="background-image: url('${catImg}');" onclick="navigate('grocery-section', { storeId: '${safeStr(store.id)}', section: '${safeStr(section)}' })">
+                    <h3>${escHtml(section)}</h3>
+                    <p>${itemCount} items</p>
+                </div>`;
+            });
+            return html + '</div>';
+        }
+
+        function renderGrocerySection(storeId, sectionName) {
+            const result = findStore('grocery', storeId);
+            if (!result) return '<h2>Store not found</h2>';
+            const { store } = result;
+            
+            let html = renderBreadcrumb([
+                { label: 'Home', route: '#/' },
+                { label: 'Groceries', route: '#/groceries' },
+                { label: store.name, route: `#/grocery-store/${store.id}` },
+                { label: sectionName, route: `#/grocery-section/${store.id}/${encodeURIComponent(sectionName)}` }
+            ]);
+            html += `<h2 style="color: var(--forest); margin-bottom: 20px;">${escHtml(sectionName)}</h2>`;
+            
+            const sectionItems = store.menu.filter(m => (m.category || 'General') === sectionName);
+            const subcats = [...new Set(sectionItems.map(m => m.subCategory || 'General'))];
+            if(subcats.length === 0) return html + '<p>No subcategories available yet.</p>';
+
+            html += '<div class="categories-grid">';
+            subcats.forEach(subcat => {
+                const itemCount = sectionItems.filter(m => (m.subCategory || 'General') === subcat).length;
+                const catImg = store.categoryImages && store.categoryImages[`${sectionName}_${subcat}`] ? store.categoryImages[`${sectionName}_${subcat}`] : 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?q=80&w=800'; 
+                html += `<div class="category-card" style="background-image: url('${catImg}');" onclick="navigate('grocery-subcategory', { storeId: '${safeStr(store.id)}', section: '${safeStr(sectionName)}', subcat: '${safeStr(subcat)}' })">
+                    <h3>${escHtml(subcat)}</h3>
+                    <p>${itemCount} items</p>
+                </div>`;
+            });
+            return html + '</div>';
+        }
+
+        function renderGrocerySubcategory(storeId, sectionName, subcatName) {
+            const result = findStore('grocery', storeId);
+            if (!result) return '<h2>Store not found</h2>';
+            const { store } = result;
+            
+            let html = renderBreadcrumb([
+                { label: 'Home', route: '#/' },
+                { label: 'Groceries', route: '#/groceries' },
+                { label: store.name, route: `#/grocery-store/${store.id}` },
+                { label: sectionName, route: `#/grocery-section/${store.id}/${encodeURIComponent(sectionName)}` },
+                { label: subcatName, route: `#/grocery-subcategory/${store.id}/${encodeURIComponent(sectionName)}/${encodeURIComponent(subcatName)}` }
+            ]);
+            html += `<h2 style="color: var(--forest); margin-bottom: 20px;">${escHtml(subcatName)}</h2>`;
+            
+            const items = store.menu.filter(m => (m.category || 'General') === sectionName && (m.subCategory || 'General') === subcatName);
+            if(items.length === 0) return html + '<p>No products in this subcategory yet.</p>';
+
+            const onSaleItems = items.filter(item => item.onSale && parseFloat(item.salePrice) > 0);
+            const regularItems = items.filter(item => !item.onSale || parseFloat(item.salePrice) <= 0);
+
+            if(onSaleItems.length > 0) {
+                html += '<div class="sale-banner">🔥 Items on Sale</div>';
+                html += onSaleItems.map(item => renderItemRow(item, store.name)).join('');
+            }
+
+            html += regularItems.map(item => renderItemRow(item, store.name)).join('');
+            return html;
+        }
+
+        // --- TAKEAWAYS ---
         function renderTakeawaysHub() { 
-            return `<a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">Takeaways</h2><div class="categories-grid">
+            return `<a class="back-link" href="#/">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">Takeaways</h2><div class="categories-grid">
                 <div class="category-card" style="background-image: url('${appData.categories.takeaways}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('takeaway-list', 'franchises')"><h3>🍗 Franchises</h3><p>Popular fast-food brands.</p></div>
                 <div class="category-card" style="background-image: url('https://images.unsplash.com/photo-1565299585323-38d6b0865b47?q=80&w=800'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('takeaway-list', 'local')"><h3>🍽️ Local Takeaways</h3><p>Independent restaurants and local businesses.</p></div>
             </div>`; 
@@ -358,7 +536,7 @@
         
         function renderTakeawayList(type) { 
             const stores = appData.takeaways[type] || []; 
-            let html = `<a class="back-link" href="javascript:void(0)" onclick="navigate('takeaways')">← Back to Takeaways</a><h2 style="color: var(--forest); margin-bottom: 20px;">${type === 'franchises' ? 'Franchises' : 'Local Takeaways'}</h2>`; 
+            let html = `<a class="back-link" href="#/takeaways">← Back to Takeaways</a><h2 style="color: var(--forest); margin-bottom: 20px;">${type === 'franchises' ? 'Franchises' : 'Local Takeaways'}</h2>`; 
             if(stores.length === 0) html += '<p>No stores available yet.</p>'; 
             stores.forEach(store => { 
                 const isOnline = store.isOnline !== false;
@@ -394,9 +572,13 @@
             if (!result) return '<h2>Store not found</h2>';
             const { store, type } = result;
 
-            let backLink = storeType === 'takeaway' ? `navigate('takeaway-list', '${type}')` : `navigate('groceries')`;
-            
-            let html = `<a class="back-link" href="javascript:void(0)" onclick="${backLink}">← Back to Stores</a>`;
+            let html = renderBreadcrumb([
+                { label: 'Home', route: '#/' },
+                { label: 'Takeaways', route: '#/takeaways' },
+                { label: type === 'franchises' ? 'Franchises' : 'Local Takeaways', route: `#/takeaway-list/${type}` },
+                { label: store.name, route: `#/restaurant-menu/${store.id}` }
+            ]);
+
             html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<div><h2 style="color: var(--forest); margin:0;">${store.name}</h2></div></div>`; 
             
             if(store.menu.length === 0) return html + '<p>No categories available yet.</p>';
@@ -407,13 +589,13 @@
             cats.forEach(cat => {
                 const itemCount = store.menu.filter(m => (m.category || 'General') === cat).length;
                 const catImg = store.categoryImages && store.categoryImages[cat] ? store.categoryImages[cat] : 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800'; 
-                html += `<div class="category-card" style="background-image: url('${catImg}');" onclick="navigate('${storeType === 'takeaway' ? 'restaurant-menu-items' : 'grocery-menu-items'}', '${safeStr(cat)}')">
-                    <h3>${cat}</h3>
+                activeTakeawayType = type;
+                html += `<div class="category-card" style="background-image: url('${catImg}');" onclick="navigate('restaurant-menu-items', '${safeStr(cat)}')">
+                    <h3>${escHtml(cat)}</h3>
                     <p>${itemCount} items</p>
                 </div>`;
             });
-            html += '</div>';
-            return html;
+            return html + '</div>';
         }
 
         function renderItemRow(item, storeName) {
@@ -493,76 +675,50 @@
         function renderStoreItems(storeType, storeId, categoryName) {
             const result = findStore(storeType, storeId);
             if (!result) return '<h2>Store not found</h2>';
-            const { store } = result;
+            const { store, type } = result;
 
-            let backLink = storeType === 'takeaway' ? `navigate('restaurant-menu', '${storeId}')` : `navigate('grocery-menu', '${storeId}')`;
-            
-            let html = `<a class="back-link" href="javascript:void(0)" onclick="${backLink}">← Back to Categories</a>`;
+            let html = renderBreadcrumb([
+                { label: 'Home', route: '#/' },
+                { label: 'Takeaways', route: '#/takeaways' },
+                { label: type === 'franchises' ? 'Franchises' : 'Local Takeaways', route: `#/takeaway-list/${type}` },
+                { label: store.name, route: `#/restaurant-menu/${store.id}` },
+                { label: categoryName, route: `#/restaurant-menu-items/${type}/${store.id}/${encodeURIComponent(categoryName)}` }
+            ]);
+
             html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name}</h2></div>`; 
 
             const filteredItems = store.menu.filter(item => (item.category || 'General') === categoryName);
             if(filteredItems.length === 0) return html + '<p>No items in this category yet.</p>';
 
-            const itemsToRender = filteredItems.slice(0, publicItemLimit);
-            const onSaleItems = itemsToRender.filter(item => item.onSale && parseFloat(item.salePrice) > 0);
-            const regularItems = itemsToRender.filter(item => !item.onSale || parseFloat(item.salePrice) <= 0);
+            const onSaleItems = filteredItems.filter(item => item.onSale && parseFloat(item.salePrice) > 0);
+            const regularItems = filteredItems.filter(item => !item.onSale || parseFloat(item.salePrice) <= 0);
 
-            html += `<div class="menu-category-header">${categoryName}</div>`;
+            html += `<div class="menu-category-header">${escHtml(categoryName)}</div>`;
 
             if(onSaleItems.length > 0) {
                 html += '<div class="sale-banner">🔥 Items on Sale</div>';
                 html += onSaleItems.map(item => renderItemRow(item, store.name)).join('');
             }
 
-            // Group by Sub-Category for Groceries (e.g. Baby -> Diapers, Lotions)
             const subCats = [...new Set(regularItems.map(i => i.subCategory || 'General'))];
             subCats.forEach(sub => {
-                if(sub !== 'General') html += `<div class="menu-subcategory-header">${sub}</div>`;
+                if(sub !== 'General') html += `<div class="menu-subcategory-header">${escHtml(sub)}</div>`;
                 const subItems = regularItems.filter(i => (i.subCategory || 'General') === sub);
                 html += subItems.map(item => renderItemRow(item, store.name)).join('');
             });
-
-            if (filteredItems.length > publicItemLimit) {
-                html += `<div style="text-align: center; margin-top: 20px; margin-bottom: 20px;"><button class="btn-gold" onclick="loadMorePublicItems()">Load 50 More</button></div>`;
-            }
             
             return html; 
         }
 
-        function loadMorePublicItems() {
-            publicItemLimit += 50;
-            const app = document.getElementById('app-content');
-            app.innerHTML = renderStoreItems(activeMenuStoreType, activeMenuStoreId, activeMenuCategory);
-        }
-        
-        function renderGroceryHub() { 
-            let html = `<a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">Grocery Stores</h2>`; 
-            if(appData.groceries.length === 0) html += '<p>No stores available yet.</p>'; 
-            appData.groceries.forEach(store => { 
-                const isOnline = store.isOnline !== false;
-                html += `<div class="store-item ${!isOnline ? 'store-status-offline' : ''}" onclick="${isOnline ? `navigate('grocery-menu', '${safeStr(store.id)}')` : ''}" style="cursor: ${isOnline ? 'pointer' : 'not-allowed'};">
-                    <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
-                        ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
-                        <div>
-                            <h4>${store.name}</h4>
-                            <p>${isOnline ? '✅ Available Now' : '❌ Currently Offline'}</p>
-                        </div>
-                    </div>
-                    <span style="color: ${isOnline ? 'var(--gold)' : '#999'}; font-weight: bold;">${isOnline ? 'Shop Now →' : 'Offline'}</span>
-                </div>`; 
-            }); 
-            return html; 
-        }
-        
         function renderParcelOptions() { 
-            return `<a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">KasiDeliveries Parcels</h2><p style="text-align: center; margin-bottom: 30px;">What would you like to do?</p><div class="categories-grid">
+            return `<a class="back-link" href="#/">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">KasiDeliveries Parcels</h2><p style="text-align: center; margin-bottom: 30px;">What would you like to do?</p><div class="categories-grid">
                 <div class="category-card" style="background-image: url('${appData.categories.send_parcel}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('send-parcel')"><h3>📤 Send a Parcel</h3><p>Send a parcel to someone nearby or far.</p></div>
                 <div class="category-card" style="background-image: url('${appData.categories.collect_parcel}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('collect-parcel')"><h3>📥 Collect a Parcel</h3><p>Collect a parcel sent to you or holding for you.</p></div>
             </div>`; 
         }
         
         function renderSendParcel() { 
-            return `<a class="back-link" href="javascript:void(0)" onclick="navigate('parcels')">← Back to Parcels</a><h2 style="color: var(--forest); margin-bottom: 20px;">Send a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('send')">
+            return `<a class="back-link" href="#/parcels">← Back to Parcels</a><h2 style="color: var(--forest); margin-bottom: 20px;">Send a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('send')">
                 <div class="form-section"><h3>Sender Details</h3>
                     <div class="form-row">
                         <div class="form-group"><label>★ Full Name</label><input type="text" id="p_sender_name" required></div>
@@ -616,7 +772,7 @@
         }
         
         function renderCollectParcel() { 
-            return `<a class="back-link" href="javascript:void(0)" onclick="navigate('parcels')">← Back to Parcels</a><h2 style="color: var(--forest); margin-bottom: 20px;">Collect a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('collect')">
+            return `<a class="back-link" href="#/parcels">← Back to Parcels</a><h2 style="color: var(--forest); margin-bottom: 20px;">Collect a Parcel</h2><form class="form-container" onsubmit="submitParcelRequest('collect')">
                 <div class="form-section"><h3>Collector Details</h3>
                     <div class="form-row">
                         <div class="form-group"><label>★ Full Name</label><input type="text" id="c_coll_name" required></div>
@@ -667,7 +823,7 @@
         }
         
         function renderFurnitureHub() { 
-            return `<a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">Furniture Transport</h2><p style="text-align: center; margin-bottom: 30px;">Select the type of vehicle you need for your move:</p><div class="categories-grid">
+            return `<a class="back-link" href="#/">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">Furniture Transport</h2><p style="text-align: center; margin-bottom: 30px;">Select the type of vehicle you need for your move:</p><div class="categories-grid">
                 <div class="category-card" style="background-image: url('${appData.categories.van}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('furniture-form', 'Van')"><h3>🚐 Van</h3><p>For small moves (1-2 items)</p></div>
                 <div class="category-card" style="background-image: url('${appData.categories.bakkie}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('furniture-form', 'Bakkie')"><h3>🛻 Bakkie</h3><p>For medium loads (beds, fridges)</p></div>
                 <div class="category-card" style="background-image: url('${appData.categories.truck}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('furniture-form', 'Truck')"><h3>🚚 Truck</h3><p>For full household removals</p></div>
@@ -675,7 +831,7 @@
         }
         
         function renderFurnitureForm(vehicle) { 
-            return `<a class="back-link" href="javascript:void(0)" onclick="navigate('furniture')">← Back to Vehicle Selection</a><h2 style="color: var(--forest); margin-bottom: 20px;">${vehicle} Quotation Request</h2><form class="form-container" onsubmit="submitFurnitureRequest('${vehicle}')">
+            return `<a class="back-link" href="#/furniture">← Back to Vehicle Selection</a><h2 style="color: var(--forest); margin-bottom: 20px;">${vehicle} Quotation Request</h2><form class="form-container" onsubmit="submitFurnitureRequest('${vehicle}')">
                 <div class="form-section"><h3>Personal Details</h3><div class="form-group"><label>★ Full Name & Surname</label><input type="text" id="f_name" required></div><div class="form-group"><label>★ Mobile Number</label><input type="tel" id="f_phone" required></div></div>
                 <div class="form-section"><h3>Move Details</h3><div class="form-group"><label>★ Moving From (Address)</label><input type="text" id="f_from" required></div><div class="form-group"><label>★ Moving To (Address)</label><input type="text" id="f_to" required></div></div>
                 <div class="form-section"><h3>Furniture Details</h3><div class="form-row"><div class="form-group"><label>★ How many items?</label><input type="number" id="f_item_count" min="1" required></div></div><div class="form-group"><label>★ What are the items?</label><textarea id="f_item_names" placeholder="e.g. 1 double bed, 2 couches, 1 fridge" required></textarea></div></div>
@@ -685,7 +841,7 @@
         }
         
         function renderTrackOrder() {
-            return `<a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px; text-align: center;">Track My Driver</h2><div class="form-container" style="max-width: 500px; text-align: center;"><p style="margin-bottom: 20px;">May we have your Order Number?</p><div class="form-group"><input type="text" id="track-order-input" placeholder="e.g. KD-123456789" style="text-align: center; font-size: 18px; padding: 15px;"></div><button class="btn-gold" style="width: 100%; padding: 15px;" onclick="trackOrder()">Track my order</button><div id="track-result" style="margin-top: 20px;"></div></div>`;
+            return `<a class="back-link" href="#/">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px; text-align: center;">Track My Driver</h2><div class="form-container" style="max-width: 500px; text-align: center;"><p style="margin-bottom: 20px;">May we have your Order Number?</p><div class="form-group"><input type="text" id="track-order-input" placeholder="e.g. KD-123456789" style="text-align: center; font-size: 18px; padding: 15px;"></div><button class="btn-gold" style="width: 100%; padding: 15px;" onclick="trackOrder()">Track my order</button><div id="track-result" style="margin-top: 20px;"></div></div>`;
         }
 
         async function trackOrder() {
@@ -708,7 +864,7 @@
         }
 
         function renderCart() { 
-            if (cart.length === 0) return `<h2 style="color: var(--forest); text-align: center; margin-top: 50px;">Your cart is empty</h2>`; 
+            if (cart.length === 0) return `<a class="back-link" href="#/">← Back to Home</a><h2 style="color: var(--forest); text-align: center; margin-top: 50px;">Your cart is empty</h2>`; 
             const grouped = {}; 
             cart.forEach(item => { if (!grouped[item.store]) grouped[item.store] = []; grouped[item.store].push(item); }); 
             const stores = Object.keys(grouped); 
@@ -716,13 +872,13 @@
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0); 
             const total = subtotal + additionalStoreFee; 
             
-            let html = `<a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">Shopping Cart</h2><div class="cart-container">`; 
+            let html = `<a class="back-link" href="#/">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">Shopping Cart</h2><div class="cart-container">`; 
             stores.forEach(store => { 
-                html += `<div class="cart-store-header">📍 ${store} <button onclick="clearCart()" style="float:right; color: red; border: none; background: none; cursor: pointer; font-size: 12px;">Clear Cart</button></div>`; 
+                html += `<div class="cart-store-header">📍 ${escHtml(store)} <button onclick="clearCart()" style="float:right; color: red; border: none; background: none; cursor: pointer; font-size: 12px;">Clear Cart</button></div>`; 
                 html += grouped[store].map(item => 
                     `<div class="cart-item">
                         <div style="flex:1">
-                            <strong>${item.name}</strong><br>
+                            <strong>${escHtml(item.name)}</strong><br>
                             <small>R${item.price.toFixed(2)} each</small>
                         </div>
                         <div class="qty-selector">
@@ -764,19 +920,19 @@
                 s.menu.forEach(m => { if(m.name.toLowerCase().includes(query)) results.push({type: 'item', cat: 'grocery', subtype: null, store: s, item: m}); });
             });
 
-            let html = `<a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">Search Results for "${query}"</h2>`;
+            let html = `<a class="back-link" href="#/">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">Search Results for "${escHtml(query)}"</h2>`;
             if(results.length === 0) {
                 html += '<p>No stores or items found.</p>';
             } else {
                 html += results.slice(0, 50).map(res => { 
                     if(res.type === 'store') {
-                        return `<div class="store-item" onclick="navigate('${res.cat === 'takeaway' ? 'restaurant-menu' : 'grocery-menu'}', '${res.store.id}')" style="cursor: pointer;">
+                        return `<div class="store-item" onclick="navigate('${res.cat === 'takeaway' ? 'restaurant-menu' : 'grocery-store'}', '${res.store.id}')" style="cursor: pointer;">
                             <div class="item-info"><span style="font-size: 30px;">${res.store.logo}</span><h4>${res.store.name}</h4></div>
                             <span style="color: var(--gold);">View Store →</span>
                         </div>`;
                     } else {
                         let price = res.item.onSale && res.item.salePrice ? res.item.salePrice : res.item.price;
-                        return `<div class="store-item" onclick="navigate('${res.cat === 'takeaway' ? 'restaurant-menu' : 'grocery-menu'}', '${res.store.id}')" style="cursor: pointer;">
+                        return `<div class="store-item" onclick="navigate('${res.cat === 'takeaway' ? 'restaurant-menu' : 'grocery-store'}', '${res.store.id}')" style="cursor: pointer;">
                             <div class="item-info">
                                 <img src="${res.item.img || 'https://via.placeholder.com/70'}" class="item-img">
                                 <div>
@@ -839,15 +995,15 @@
 
             if (existing) {
                 existing.qty++;
-                existing.name = fullName; // Update name just in case
+                existing.name = fullName; 
                 existing.price = finalPrice;
             } else {
                 cart.push({ id: itemId, sig, store: storeName, name: fullName, price: finalPrice, qty: 1, mealLabel, extras: extrasLabels });
             }
             
+            saveCart();
             updateCartCount(); 
-            const app = document.getElementById('app-content');
-            app.innerHTML = renderStoreItems(activeMenuStoreType, activeMenuStoreId, activeMenuCategory);
+            renderRoute(); // Re-render current page to show qty selector
         }
 
         function changeQty(sig, storeName, delta) {
@@ -858,18 +1014,15 @@
                     cart = cart.filter(item => item !== existing);
                 }
             }
+            saveCart();
             updateCartCount();
-            const app = document.getElementById('app-content');
-            if (activeMenuStoreId && activeMenuCategory) {
-                app.innerHTML = renderStoreItems(activeMenuStoreType, activeMenuStoreId, activeMenuCategory);
-            } else {
-                app.innerHTML = renderCart();
-            }
+            renderRoute();
         }
         
         function clearCart() {
             if(confirm('Are you sure you want to clear your cart?')) {
                 cart = [];
+                saveCart();
                 updateCartCount();
                 navigate('cart');
             }
@@ -895,6 +1048,7 @@
 
             const sent = data.orders.filter(o => !o.error);
             cart = cart.filter(item => !sent.some(o => o.store === item.store));
+            saveCart();
             updateCartCount();
             document.getElementById('app-content').innerHTML = renderCheckoutResult(data.orders);
             window.scrollTo(0, 0);
@@ -911,7 +1065,7 @@
 
         function renderCheckoutResult(orders) {
             const sent = orders.filter(o => !o.error);
-            let html = `<a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 10px;">${sent.length ? 'One more step: send your order on WhatsApp' : 'We could not take this order'}</h2>`;
+            let html = `<a class="back-link" href="#/">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 10px;">${sent.length ? 'One more step: send your order on WhatsApp' : 'We could not take this order'}</h2>`;
             if (sent.length) html += `<p style="margin-bottom: 20px; color: #555;">Tap the green button${sent.length > 1 ? ' for each shop' : ''}. On WhatsApp we ask where to deliver, then send your invoice with the delivery fee.</p>`;
             html += '<div class="cart-container">';
             orders.forEach(order => {
@@ -1046,12 +1200,18 @@
                 data = await res.json().catch(() => ({}));
             } catch (err) { alert('Could not reach the server. Please try again.'); return; }
             if (!res.ok) { alert(data.error || 'Invalid credentials'); return; }
-            await fetchData();          
+            await fetchData(); 
             if (data.mustChangePassword) {
-                alert('You are still using the default password. Please change it now: type a new one next to your username and tap Update Pass.');
+                alert('You are still using the default password. Please change it now.');
                 adminTab = 'users';
             }
-            navigate('admin');
+            const redirect = localStorage.getItem('redirectHash');
+            if (redirect) {
+                localStorage.removeItem('redirectHash');
+                window.location.hash = redirect;
+            } else {
+                navigate('admin');
+            }
         }
 
         async function adminLogout() {
@@ -1090,7 +1250,12 @@
             return content;
         }
         
-        function setAdminTab(tab) { adminTab = tab; adminStoreView = null; navigate('admin'); }
+        function setAdminTab(tab) { 
+            adminTab = tab; 
+            adminStoreView = null; 
+            sessionStorage.removeItem('adminStoreView');
+            navigate('admin'); 
+        }
 
         function renderAdminDashboard() {
             let html = '<div class="admin-card"><h4>Statistics</h4><div style="display: flex; flex-wrap: wrap; gap: 10px;">';
@@ -1309,7 +1474,7 @@
             document.getElementById('admin-content').innerHTML = html;
         }
 
-        function renderAdminStoreHeader(store, type, storeIndex, backLinkAction, titleSuffix) {
+        function renderAdminStoreHeader(store, backLinkAction, titleSuffix) {
             let html = `<a class="back-link" href="javascript:void(0)" onclick="${backLinkAction}">← Back to Stores</a>`;
             html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name} ${titleSuffix}</h2></div>`;
             return html;
@@ -1324,7 +1489,7 @@
                 cats.forEach(c => {
                     const currentImg = store.categoryImages && store.categoryImages[c] ? store.categoryImages[c] : null;
                     html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px; background:#fff; padding: 5px; border-radius: 4px; flex-wrap: wrap; gap: 10px;">
-                        <span style="font-weight:bold; color:var(--forest);">${c}</span>
+                        <span style="font-weight:bold; color:var(--forest);">${escHtml(c)}</span>
                         <div style="display:flex; align-items:center; gap:10px;">
                             ${currentImg ? `<img src="${currentImg}" style="width: 40px; height: 40px; object-fit:cover; border-radius:4px;">` : ''}
                             <label class="add-btn" style="cursor:pointer; padding:5px 8px; font-size:12px; background:#eee; color:#333;">
@@ -1361,7 +1526,7 @@
             const storeIndex = parseInt(parts[2]);
             const store = appData.takeaways[type][storeIndex];
             
-            let html = renderAdminStoreHeader(store, 'takeaway', type, storeIndex, "adminViewStore(null)", "Menu");
+            let html = renderAdminStoreHeader(store, "adminViewStore(null)", "Menu");
             html += renderAdminCategoryImages(store, 'takeaway', type, storeIndex);
             
             html += `<div class="admin-card">
@@ -1386,7 +1551,7 @@
                     if(cats.length > 0) {
                         html += cats.map(c => 
                             `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px; background:#fff; padding: 5px; border-radius: 4px;">
-                                <span>${c}</span>
+                                <span>${escHtml(c)}</span>
                                 <button class="btn-delete" onclick="adminDeleteCategory('takeaway', '${type}', ${storeIndex}, '${safeStr(c)}')">Delete Category</button>
                             </div>`
                         ).join('');
@@ -1412,7 +1577,7 @@
                     <div class="card-header">
                         <div style="display:flex; gap:10px; align-items:center;">
                             <img src="${item.img || 'https://via.placeholder.com/50'}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">
-                            <strong>${item.name}</strong>
+                            <strong>${escHtml(item.name)}</strong>
                         </div>
                         <div class="card-actions">
                             <label class="add-btn" style="cursor:pointer; padding:5px 8px; font-size:12px; background:#eee; color:#333;">
@@ -1452,8 +1617,7 @@
         function loadMoreAdminItems() {
             adminItemLimit += 50;
             const scrollY = window.scrollY;
-            if (adminStoreView && adminStoreView.startsWith('takeaway_')) renderAdminTakeawayMenu();
-            else if (adminStoreView && adminStoreView.startsWith('grocery_')) renderAdminGroceryMenu();
+            renderRoute();
             window.scrollTo(0, scrollY);
         }
         
@@ -1504,13 +1668,13 @@
             const storeIndex = parseInt(adminStoreView.split('_')[1]);
             const store = appData.groceries[storeIndex];
             
-            let html = renderAdminStoreHeader(store, 'grocery', null, storeIndex, "adminViewStore(null)", "Catalogue");
+            let html = renderAdminStoreHeader(store, "adminViewStore(null)", "Catalogue");
             html += renderAdminCategoryImages(store, 'grocery', null, storeIndex);
             
             html += `<div class="admin-card">
                 <div style="background: #e8f5e9; padding: 10px; border-radius: 5px;">
                     <strong style="color: var(--forest);">Bulk Upload Products (Excel or Copy & Paste)</strong><br>
-                    <small>Columns: Category, SubCategory, Name, Size, Flavor, Price, OnSale, SalePrice</small><br>
+                    <small>Columns: Category (Section), SubCategory, Name, Size, Flavor, Price, OnSale, SalePrice</small><br>
                     <small style="color: blue;">Uploads ADD to or UPDATE existing items. Duplicates are identified by Name + Size.</small>
                     <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
                         <input type="file" id="excel_input_grocery_g_${storeIndex}" accept=".xlsx, .xls, .csv" style="font-size: 12px; flex:1;">
@@ -1524,12 +1688,12 @@
 
                 <div style="margin-top: 20px; background: #fff3cd; padding: 10px; border-radius: 5px; border: 1px dashed #ffc107;">
                     <strong style="color: #856404;">Delete Categories</strong><br>
-                    <small>Use this to delete an entire category and all its items.</small><div style="margin-top:10px;">`;
+                    <small>Use this to delete an entire category (Section) and all its items.</small><div style="margin-top:10px;">`;
                     const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
                     if(cats.length > 0) {
                         html += cats.map(c => 
                             `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px; background:#fff; padding: 5px; border-radius: 4px;">
-                                <span>${c}</span>
+                                <span>${escHtml(c)}</span>
                                 <button class="btn-delete" onclick="adminDeleteCategory('grocery', null, ${storeIndex}, '${safeStr(c)}')">Delete Category</button>
                             </div>`
                         ).join('');
@@ -1556,7 +1720,7 @@
                     <div class="card-header">
                         <div style="display:flex; gap:10px; align-items:center;">
                             <img src="${item.img || 'https://via.placeholder.com/50'}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">
-                            <strong>${item.name}</strong>
+                            <strong>${escHtml(item.name)}</strong>
                         </div>
                         <div class="card-actions">
                             <label class="add-btn" style="cursor:pointer; padding:5px 8px; font-size:12px; background:#eee; color:#333;">
@@ -1569,7 +1733,7 @@
                     </div>
                     <div class="admin-item-grid">
                         <input type="text" value="${safeStr(item.name)}" id="i_name_grocery_g_${storeIndex}_${itemIndex}" placeholder="Name" style="padding: 5px; font-size: 12px;">
-                        <input type="text" value="${safeStr(item.category || '')}" id="i_cat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Category" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.category || '')}" id="i_cat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Section (Category)" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.subCategory || '')}" id="i_subcat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Sub-Category" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.size || '')}" id="i_size_grocery_g_${storeIndex}_${itemIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_grocery_g_${storeIndex}_${itemIndex}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
@@ -1591,6 +1755,8 @@
 
         function adminViewStore(viewId) {
             adminStoreView = viewId;
+            if(viewId) sessionStorage.setItem('adminStoreView', viewId);
+            else sessionStorage.removeItem('adminStoreView');
             adminItemLimit = 50; 
             navigate('admin');
         }
@@ -1616,7 +1782,7 @@
             
             const idx = {
                 name: headers.findIndex(h => h.includes('name') || h.includes('item') || h.includes('product')),
-                category: headers.findIndex(h => h.includes('category') || h.includes('cat')),
+                category: headers.findIndex(h => h.includes('category') || h.includes('section') || h.includes('cat')),
                 subcat: headers.findIndex(h => h.includes('subcat') || h.includes('subcategory') || h.includes('sub-category')),
                 size: headers.findIndex(h => h.includes('size') || h.includes('weight') || h.includes('volume')),
                 flavor: headers.findIndex(h => h.includes('flavor') || h.includes('type')),
@@ -1640,7 +1806,6 @@
                 const name = String(row[idx.name] || '').trim();
                 if(name && name.toLowerCase() !== 'name') {
                     const sizeStr = idx.size !== -1 ? String(row[idx.size] || '').trim() : '';
-                    // Duplicate Check: Match by Name AND Size
                     const existingIndex = store.menu.findIndex(m => m.name.toLowerCase() === name.toLowerCase() && (m.size || '').toLowerCase() === sizeStr.toLowerCase());
                     
                     const itemData = {
@@ -1695,9 +1860,8 @@
                     const count = await processSheetData(rows, cat, type, storeIndex);
                     if(count > 0) {
                         await saveConfig();
-                        alert(count + ' products imported/updated successfully! They will now show on your public menu.');
-                        if(cat === 'takeaway') renderAdminTakeawayMenu();
-                        else renderAdminGroceryMenu();
+                        alert(count + ' products imported/updated successfully!');
+                        renderRoute();
                     }
                 } catch(err) {
                     alert("Error reading Excel file: " + err.message);
@@ -1728,9 +1892,8 @@
                 const count = await processSheetData(rows, cat, type, storeIndex);
                 if(count > 0) {
                     await saveConfig();
-                    alert(count + ' products imported/updated successfully! They will now show on your public menu.');
-                    if(cat === 'takeaway') renderAdminTakeawayMenu();
-                    else renderAdminGroceryMenu();
+                    alert(count + ' products imported/updated successfully!');
+                    renderRoute();
                 }
             } catch(err) {
                 alert("Error parsing pasted data: " + err.message);
@@ -1751,8 +1914,7 @@
             if(item) {
                 item.img = url;
                 await saveConfig();
-                if(cat === 'takeaway') renderAdminTakeawayMenu();
-                else renderAdminGroceryMenu();
+                renderRoute();
             }
         }
 
@@ -1769,7 +1931,7 @@
             const id = cleanId(name) + Date.now().toString().slice(-4);
             appData.takeaways[type].push({ id, name, logo, logoImg, menu: [], isOnline: true, fee, eta, categoryImages: {} });
             await saveConfig();
-            renderAdminTakeaways();
+            renderRoute();
         }
         
         async function adminAddMenuItem(cat, type, storeIndex) {
@@ -1782,16 +1944,14 @@
             const price = parseFloat(document.getElementById(`menu_price_${cat}_${type ? type : 'g'}_${storeIndex}`).value);
             if(!name || !price) { alert('Enter item name and price'); return; }
             
-            // Duplicate check
             if(store.menu.some(m => m.name.toLowerCase() === name.toLowerCase() && (m.size || '').toLowerCase() === size.toLowerCase())) {
-                alert('An item with this name and size already exists. Please edit the existing item instead.');
+                alert('Duplicate product detected! An item with this name and size already exists. Please edit the existing item instead.');
                 return;
             }
 
             store.menu.push({ id: 'm' + Date.now().toString(), name, size, price, category: 'General', subCategory: subCat, flavor: '', mealOptions: '', extras: '', onSale: false, salePrice: 0, img: null });
             await saveConfig();
-            if(cat === 'takeaway') renderAdminTakeawayMenu();
-            else renderAdminGroceryMenu();
+            renderRoute();
         }
 
         async function adminUpdateMenuItem(e, cat, type, storeIndex, itemIndex) {
@@ -1820,8 +1980,7 @@
                 item.onSale = document.getElementById(`i_onsale_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).checked;
                 await saveConfig();
                 alert('Item updated!');
-                if(cat === 'takeaway') renderAdminTakeawayMenu();
-                else renderAdminGroceryMenu();
+                renderRoute();
             } else {
                 btn.dataset.saving = '0';
                 btn.innerText = 'Save';
@@ -1836,8 +1995,7 @@
                 store.isOnline = !store.isOnline; 
                 if(store.isOnline === undefined) store.isOnline = false;
                 await saveConfig();
-                if(cat === 'takeaway') renderAdminTakeaways();
-                else renderAdminGroceries();
+                renderRoute();
             }
         }
 
@@ -1846,11 +2004,11 @@
                 appData.takeaways.franchises.forEach(s => s.isOnline = status);
                 appData.takeaways.local.forEach(s => s.isOnline = status);
                 await saveConfig();
-                renderAdminTakeaways();
+                renderRoute();
             } else if (cat === 'groceries') {
                 appData.groceries.forEach(s => s.isOnline = status);
                 await saveConfig();
-                renderAdminGroceries();
+                renderRoute();
             }
         }
 
@@ -1859,8 +2017,9 @@
             if(cat === 'takeaway') appData.takeaways[type].splice(storeIndex, 1); 
             else appData.groceries.splice(storeIndex, 1); 
             await saveConfig(); 
-            if(cat === 'takeaway') renderAdminTakeaways(); 
-            else renderAdminGroceries(); 
+            adminStoreView = null;
+            sessionStorage.removeItem('adminStoreView');
+            renderRoute(); 
         }
 
         async function adminDeleteCategory(cat, type, storeIndex, categoryName) {
@@ -1873,8 +2032,7 @@
                 delete store.categoryImages[categoryName];
             }
             await saveConfig();
-            if(cat === 'takeaway') renderAdminTakeawayMenu();
-            else renderAdminGroceryMenu();
+            renderRoute();
         }
         
         async function adminDeleteMenuItem(cat, type, storeIndex, itemIndex) { 
@@ -1884,8 +2042,7 @@
             else store = appData.groceries[storeIndex]; 
             store.menu.splice(itemIndex, 1); 
             await saveConfig(); 
-            if(cat === 'takeaway') renderAdminTakeawayMenu(); 
-            else renderAdminGroceryMenu(); 
+            renderRoute(); 
         }
         
         async function adminAddGrocery() {
@@ -1900,10 +2057,14 @@
             const id = cleanId(name) + Date.now().toString().slice(-4);
             appData.groceries.push({ id, name, logo, logoImg, menu: [], isOnline: true, fee, eta, categoryImages: {} });
             await saveConfig();
-            renderAdminGroceries();
+            renderRoute();
         }
 
-        (async () => { await fetchData(); navigate('home'); })();
+        (async () => { 
+            await fetchData(); 
+            updateCartCount();
+            renderRoute(); 
+        })();
     </script>
 </body>
 </html>
