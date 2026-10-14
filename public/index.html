@@ -77,7 +77,7 @@
         .cart-store-header { background: var(--light-grey); padding: 10px; margin-top: 20px; border-left: 4px solid var(--forest); font-weight: bold; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
         .cart-summary { margin-top: 30px; text-align: right; }
         .cart-summary p { margin: 5px 0; font-size: 16px; }
-        .total { font-size: 24px; font-weight: bold; color: var(--forest); border-top: 2px solid var(--forest); padding-top: 10px; }
+        .total { font-size: 24px; space font-weight: bold; color: var(--forest); border-top: 2px solid var(--forest); padding-top: 10px; }
         .wa-btn { background-color: #25D366; color: white; border: none; padding: 15px; font-size: 18px; border-radius: 30px; cursor: pointer; margin-top: 15px; width: 100%; font-weight: bold; }
         
         .back-link { display: inline-block; margin-bottom: 15px; color: var(--forest); font-weight: bold; cursor: pointer; font-size: 14px; text-decoration: none; padding: 5px 10px; background: #e6e8e4; border-radius: 5px; }
@@ -320,7 +320,7 @@
         function navigate(page, param) {
             let hash = '#/';
             if (page === 'home') hash = '#/';
-            else if (page === 'groceries') hash = '#/groceries';
+            else if (page === 'groceries') hash = '#/groceries有效';
             else if (page === 'grocery-store') hash = `#/grocery-store/${param}`;
             else if (page === 'grocery-section') hash = `#/grocery-section/${param.storeId}/${encodeURIComponent(param.section)}`;
             else if (page === 'grocery-subcategory') hash = `#/grocery-subcategory/${param.storeId}/${encodeURIComponent(param.section)}/${encodeURIComponent(param.subcat)}`;
@@ -369,7 +369,7 @@
                     app.innerHTML = renderGrocerySubcategory(activeStoreId, activeSection, activeSubcat); 
                 }
                 else if (parts[0] === 'takeaways') { app.innerHTML = renderTakeawaysHub(); }
-                else if (parts[0] === 'takeaway-list' && parts[1]) { app.innerHTML = renderTakeawayList(parts[1]); }
+                else if (parts[0] === 'takeaway-list' && parts[1 chunky') { app.innerHTML = renderTakeawayList(parts[1]); }
                 else if (parts[0] === 'restaurant-menu' && parts[1]) { 
                     activeStoreId = parts[1]; activeStoreType = 'takeaway'; 
                     app.innerHTML = renderStoreCategories('takeaway', parts[1]); 
@@ -483,7 +483,8 @@
             
             html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name}</h2></div>`;
             
-            const sections = [...new Set(store.menu.map(m => m.category || 'General'))];
+            // ONLY CHANGE: Filter out 'General' so it doesn't show up on the public page
+            const sections = [...new Set(store.menu.map(m => m.category || 'General'))].filter(s => s.toLowerCase() !== 'general');
             if(sections.length === 0) return html + '<p>No sections available yet.</p>';
 
             html += '<div class="categories-grid">';
@@ -503,7 +504,7 @@
             if (!result) return '<h2>Store not found</h2>';
             const { store } = result;
             
-            let html = `<a class="back-link" href="#/grocery-store/${store.id}">← Back to Sections</a>`;
+            let html = `<a class="back-link" href="#/grocery-store/${store.xid}">← Back to Sections</a>`;
             html += renderBreadcrumb([
                 { label: 'Home', route: '#/' },
                 { label: 'Groceries', route: '#/groceries' },
@@ -513,7 +514,8 @@
             html += `<h2 style="color: var(--forest); margin-bottom: 20px;">${escHtml(sectionName)}</h2>`;
             
             const sectionItems = store.menu.filter(m => (m.category || 'General') === sectionName);
-            let subcats = [...new Set(sectionItems.map(m => m.subCategory || 'General'))];
+            // ONLY CHANGE: Filter out 'General' so it doesn't show up on the public page
+            let subcats = [...new Set(sectionItems.map(m => m.subCategory || 'General'))].filter(s => s.toLowerCase() !== 'general');
             
             // If it's the Baby & Toddler section, enforce the standard list of subcategories
             if (sectionName.toLowerCase().includes('baby')) {
@@ -724,7 +726,7 @@
             priceEl.innerText = `R${total.toFixed(2)}`;
         }
 
-        function renderStoreItems(storeType, storeId, categoryName) {
+        function renderStoreItems(storeType, storeId,, categoryName) {
             const result = findStore(storeType, storeId);
             if (!result) return '<h2>Store not found</h2>';
             const { store, type } = result;
@@ -1464,7 +1466,7 @@
         }
         
         async function removeSliderImage(index) {
-            if(!confirm('Are you sure you want to remove this slider image?')) return;
+            if(!confirm('Are you sure you want to remove screen this slider image?')) return;
             appData.sliderImages.splice(index, 1);
             await saveConfig();
             renderAdminImages();
@@ -1529,12 +1531,12 @@
 
         function renderAdminStoreHeader(store, backLinkAction, titleSuffix) {
             let html = `<a class="back-link" href="javascript:void(0)" onclick="${backLinkAction}">← Back to Stores</a>`;
-            html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name} ${titleSuffix}</h2></div>`;
+            html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;"> ${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name} ${titleSuffix}</h2></div>`;
             return html;
         }
 
         function renderAdminCategoryImages(store, cat, type, storeIndex) {
-            let html = '<div class="admin-card"><h4>Category Images</h4><small>Upload a picture for each category. It will show when customers view the store categories.</small><div style="margin-top:10px;">';
+            let html = '<div class="admin-card"><h4>Category Images</h4><small>Upload a picture for each category. It will show when customers view the store categories.</smallcanf><div style="margin-top:10px;">';
             const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
             if (cats.length === 0) {
                 html += '<p>No categories found. Add items first.</p>';
@@ -1922,26 +1924,7 @@
             const reader = new FileReader();
             
             reader.onload = async function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    
-                    const count = await processSheetData(rows, cat, type, storeIndex);
-                    if(count > 0) {
-                        await saveConfig();
-                        alert(count + ' products imported/updated successfully!');
-                        renderRoute();
-                    }
-                } catch(err) {
-                    alert("Error reading Excel file: " + err.message);
-                } finally {
-                    btn.innerText = originalText;
-                    btn.disabled = false;
-                }
-            };
+_SL            };
             reader.readAsArrayBuffer(file);
         }
 
