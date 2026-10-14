@@ -171,6 +171,34 @@ function hashStoredPasswords(config) {
     return changed;
 }
 
+// Locked out of admin: set ADMIN_RESET_PASSWORD on Railway (8 characters or
+// more) and let it redeploy. The "admin" user's password becomes that, or a
+// user called admin is made with it if there is none. Only a NEW value is
+// applied: the last one applied is remembered (as a hash, like every
+// password here), so a variable left behind does not undo a password changed
+// in admin afterwards. Delete the variable once you are back in.
+function applyPasswordReset(config) {
+    const chosen = String(process.env.ADMIN_RESET_PASSWORD || '');
+    if (!chosen) return false;
+    if (chosen.length < MIN_PASSWORD) {
+        console.error(`ADMIN_RESET_PASSWORD is shorter than ${MIN_PASSWORD} characters, so it was not used.`);
+        return false;
+    }
+    if (checkPassword(chosen, config.resetPasswordHash)) return false;
+
+    const users = Array.isArray(config.users) ? config.users : (config.users = []);
+    const admin = users.find(u => u.username === 'admin');
+    if (admin) {
+        admin.hash = hashPassword(chosen);
+        delete admin.isDefault;
+    } else {
+        users.push({ username: 'admin', hash: hashPassword(chosen) });
+    }
+    config.resetPasswordHash = hashPassword(chosen);
+    console.log('Admin password reset from ADMIN_RESET_PASSWORD. Log in as "admin", then delete the variable on Railway.');
+    return true;
+}
+
 const SESSION_COOKIE = 'kd_admin';
 const SESSION_MS = 12 * 60 * 60 * 1000;
 const sessions = new Map(); // token -> { username, expires }. A restart signs everybody out.
@@ -230,10 +258,10 @@ async function initDB() {
             // A database from before this change holds passwords as plain text.
             const config = stateRes.rows[0].data;
             if (!Array.isArray(config.users)) config.users = [];
-            if (hashStoredPasswords(config)) {
-                await client.query('UPDATE app_state SET data = $1 WHERE id = 1', [JSON.stringify(config)]);
-                console.log('Admin passwords are now stored as hashes.');
-            }
+            const hashed = hashStoredPasswords(config);
+            if (hashed) console.log('Admin passwords are now stored as hashes.');
+            const reset = applyPasswordReset(config);
+            if (hashed || reset) await client.query('UPDATE app_state SET data = $1 WHERE id = 1', [JSON.stringify(config)]);
         }
     } finally {
         client.release();
@@ -346,7 +374,8 @@ app.get('/api/data', async (req, res) => {
 
         if(needsSave) await saveConfigData(config);
 
-        const { users, ...site } = config;
+        // Nothing about passwords leaves the server, not even as hashes.
+        const { users, resetPasswordHash, ...site } = config;
         const shared = { ...site, kasiDelivery: Boolean(KASI_API_KEY) };
 
         const admin = adminOf(req);
