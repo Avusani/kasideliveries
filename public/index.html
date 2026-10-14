@@ -181,6 +181,23 @@
     </footer>
 
     <script>
+        // Standard Subcategories for Baby & Toddler
+        const BABY_SUBCATEGORIES = [
+            "Diapers & Nappies",
+            "Baby Milk & Formula",
+            "Baby Food & Purees",
+            "Baby Cereals & Snacks",
+            "Baby Wipes",
+            "Baby Lotions & Moisturisers",
+            "Baby Soap, Shampoo & Body Wash",
+            "Baby Oils & Powders",
+            "Baby Bottles & Feeding Accessories",
+            "Baby Clothing",
+            "Baby Health & Care",
+            "Potty Training",
+            "Other Baby Products"
+        ];
+
         // Safely load cart from localStorage to survive refreshes
         let cart = [];
         try {
@@ -496,7 +513,22 @@
             html += `<h2 style="color: var(--forest); margin-bottom: 20px;">${escHtml(sectionName)}</h2>`;
             
             const sectionItems = store.menu.filter(m => (m.category || 'General') === sectionName);
-            const subcats = [...new Set(sectionItems.map(m => m.subCategory || 'General'))];
+            let subcats = [...new Set(sectionItems.map(m => m.subCategory || 'General'))];
+            
+            // If it's the Baby & Toddler section, enforce the standard list of subcategories
+            if (sectionName.toLowerCase().includes('baby')) {
+                const allBabySubcats = [...new Set([...BABY_SUBCATEGORIES, ...subcats])];
+                // Sort them according to the standard list order
+                subcats = allBabySubcats.sort((a, b) => {
+                    const ia = BABY_SUBCATEGORIES.indexOf(a);
+                    const ib = BABY_SUBCATEGORIES.indexOf(b);
+                    if (ia !== -1 && ib !== -1) return ia - ib;
+                    if (ia !== -1) return -1;
+                    if (ib !== -1) return 1;
+                    return 0;
+                });
+            }
+
             if(subcats.length === 0) return html + '<p>No subcategories available yet.</p>';
 
             html += '<div class="categories-grid">';
@@ -642,8 +674,6 @@
                 extrasHtml += `</div>`;
             }
 
-            // Only show qty selector if the item has NO meal options/extras.
-            // If it has options, always show "Add" because the cart line depends on the selection.
             const cartItem = (!mealOptions.length && !extras.length) 
                 ? cart.find(ci => ci.id === item.id && ci.store === storeName) 
                 : null;
@@ -1116,7 +1146,7 @@
             const imageUrls = await uploadMultipleFiles(type === 'send' ? 'p_send_files' : 'p_coll_files');
 
             if (type === 'send') {
-                const collAddr = `${document.getElementById('p_coll_province').value}, ${document.getElementById('p_coll_city').value}, ${document.getElementById('p_coll_suburb').value}, ${document.getElementById('p_coll_street').value}, ${document.getElementById('p_coll_house').value}, ${document.getElementById('p_coll_unit').value}`;
+                const collAddr = `${document.getElementById('p_coll_province').value}, ${document.getElementById('p_coll_city).value}, ${document.getElementById('p_coll_suburb').value}, ${document.getElementById('p_coll_street').value}, ${document.getElementById('p_coll_house').value}, ${document.getElementById('p_coll_unit').value}`;
                 const collLandmark = document.getElementById('p_coll_landmark').value;
                 const collDirections = document.getElementById('p_coll_directions').value;
 
@@ -1694,6 +1724,25 @@
             let html = renderAdminStoreHeader(store, "adminViewStore(null)", "Catalogue");
             html += renderAdminCategoryImages(store, 'grocery', null, storeIndex);
             
+            // Datalists for structured dropdowns
+            html += `<datalist id="section_list_grocery">
+                <option value="Baby & Toddler">
+                <option value="Fresh Produce">
+                <option value="Meat & Poultry">
+                <option value="Dairy & Eggs">
+                <option value="Bakery">
+                <option value="Pantry & Dry Goods">
+                <option value="Frozen Foods">
+                <option value="Beverages">
+                <option value="Household Cleaning">
+                <option value="Personal Care">
+                <option value="Pet Care">
+                <option value="Snacks & Sweets">
+            </datalist>
+            <datalist id="baby_subcat_list">
+                ${BABY_SUBCATEGORIES.map(sub => `<option value="${sub}>`).join('')}
+            </datalist>`;
+
             html += `<div class="admin-card">
                 <div style="background: #e8f5e9; padding: 10px; border-radius: 5px;">
                     <strong style="color: var(--forest);">Bulk Upload Products (Excel or Copy & Paste)</strong><br>
@@ -1730,7 +1779,7 @@
             html += '<div class="admin-card"><h4>Add Product Manually</h4>';
             html += `<div class="form-row">
                 <input type="text" id="menu_name_grocery_g_${storeIndex}" placeholder="Product Name" style="padding: 10px; font-size: 14px;">
-                <input type="text" id="menu_subcat_grocery_g_${storeIndex}" placeholder="Sub-Category (e.g. Diapers)" style="padding: 10px; font-size: 14px;">
+                <input type="text" id="menu_subcat_grocery_g_${storeIndex}" placeholder="Sub-Category (e.g. Diapers)" list="baby_subcat_list" style="padding: 10px; font-size: 14px;">
                 <input type="text" id="menu_size_grocery_g_${storeIndex}" placeholder="Size (e.g. 500ml)" style="padding: 10px; font-size: 14px;">
                 <input type="number" id="menu_price_grocery_g_${storeIndex}" placeholder="Price (R)" style="padding: 10px; font-size: 14px;">
             </div>
@@ -1756,8 +1805,8 @@
                     </div>
                     <div class="admin-item-grid">
                         <input type="text" value="${safeStr(item.name)}" id="i_name_grocery_g_${storeIndex}_${itemIndex}" placeholder="Name" style="padding: 5px; font-size: 12px;">
-                        <input type="text" value="${safeStr(item.category || '')}" id="i_cat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Section (Category)" style="padding: 5px; font-size: 12px;">
-                        <input type="text" value="${safeStr(item.subCategory || '')}" id="i_subcat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Sub-Category" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.category || '')}" id="i_cat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Section (Category)" list="section_list_grocery" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.subCategory || '')}" id="i_subcat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Sub-Category" list="baby_subcat_list" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.size || '')}" id="i_size_grocery_g_${storeIndex}_${itemIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_grocery_g_${storeIndex}_${itemIndex}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
                         <input type="number" value="${item.price}" id="i_price_grocery_g_${storeIndex}_${itemIndex}" placeholder="Price" style="padding: 5px; font-size: 12px;">
