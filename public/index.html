@@ -1146,7 +1146,7 @@
             const imageUrls = await uploadMultipleFiles(type === 'send' ? 'p_send_files' : 'p_coll_files');
 
             if (type === 'send') {
-                const collAddr = `${document.getElementById('p_coll_province').value}, ${document.getElementById('p_coll_city).value}, ${document.getElementById('p_coll_suburb').value}, ${document.getElementById('p_coll_street').value}, ${document.getElementById('p_coll_house').value}, ${document.getElementById('p_coll_unit').value}`;
+                const collAddr = `${document.getElementById('p_coll_province').value}, ${document.getElementById('p_coll_city').value}, ${document.getElementById('p_coll_suburb').value}, ${document.getElementById('p_coll_street').value}, ${document.getElementById('p_coll_house').value}, ${document.getElementById('p_coll_unit').value}`;
                 const collLandmark = document.getElementById('p_coll_landmark').value;
                 const collDirections = document.getElementById('p_coll_directions').value;
 
@@ -1740,7 +1740,7 @@
                 <option value="Snacks & Sweets">
             </datalist>
             <datalist id="baby_subcat_list">
-                ${BABY_SUBCATEGORIES.map(sub => `<option value="${sub}>`).join('')}
+                ${BABY_SUBCATEGORIES.map(sub => `<option value="${sub}">`).join('')}
             </datalist>`;
 
             html += `<div class="admin-card">
