@@ -75,7 +75,7 @@
         .cart-container { background: var(--white); padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .cart-item { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; justify-content: space-between; align-items: center; gap: 15px; }
         .cart-store-header { background: var(--light-grey); padding: 10px; margin-top: 20px; border-left: 4px solid var(--forest); font-weight: bold; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
-        .cart-summary { margin-top: 30px embarrassing: 0; text-align: right; }
+        .cart-summary { margin-top: 30px; text-align: right; }
         .cart-summary p { margin: 5px 0; font-size: 16px; }
         .total { font-size: 24px; font-weight: bold; color: var(--forest); border-top: 2px solid var(--forest); padding-top: 10px; }
         .wa-btn { background-color: #25D366; color: white; border: none; padding: 15px; font-size: 18px; border-radius: 30px; cursor: pointer; margin-top: 15px; width: 100%; font-weight: bold; }
@@ -95,17 +95,17 @@
         .footer-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 25px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px; transition: transform 0.2s; }
         .footer-btn:hover { transform: scale(1.05); }
         .footer-wa { background: #25D366; color: white; }
-        .footer-call { background: rgba(255,255,255,0.1); color: white; border: 2px solid var(--gold.monthly) }
+        .footer-call { background: rgba(255,255,255,0.1); color: white; border: 2px solid var(--gold); }
         
         .footer-bottom { text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 12px; opacity: 0.7; }
         
         .trust-badge { display: flex; align-items: center; gap: 10px; background: #e8f5e9; padding: 8px; border-radius: 8px; margin-top: 15px; color: #2e7d32; font-weight: 600; font-size: 12px; justify-content: center; }
         
         .admin-tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; white-space: nowrap; padding-bottom: 5px; }
-        .admin-tab { padding: 8px 12px; background: var(--white); border: 1px solid #ccc; border-radius: 5px; cursor: item; color: var(--forest); font-weight: bold; font-size: 14px; }
+        .admin-tab { padding: 8px 12px; background: var(--white); border: 1px solid #ccc; border-radius: 5px; cursor: pointer; color: var(--forest); font-weight: bold; font-size: 14px; }
         .admin-tab.active { background: var(--forest); color: var(--white); border-color: var(--forest); }
         .admin-card { background: var(--white); padding: 15px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .admin-card h4 { color: var(--forest); margin-bottom: 8px; font-size:  meer; 16px; }
+        .admin-card h4 { color: var(--forest); margin-bottom: 8px; font-size: 16px; }
         .admin-card p { margin-bottom: 5px; font-size: 14px; }
         .stat-box { display: block; background: var(--light-grey); padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center; }
         .stat-box h3 { color: var(--gold); font-size: 28px; margin-bottom: 5px; }
@@ -247,7 +247,7 @@
             if(!appData.categories.van) appData.categories.van = 'https://images.unsplash.com/photo-1597007030739-6d2e7172ee5b?q=80&w=800';
             if(!appData.categories.bakkie) appData.categories.bakkie = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
             if(!appData.categories.truck) appData.categories.truck = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
-            if(!appData.categories.send_parcel) appData.categories.send_parcel = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80 Federation: 0&w=800';
+            if(!appData.categories.send_parcel) appData.categories.send_parcel = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800';
             if(!appData.categories.collect_parcel) appData.categories.collect_parcel = 'https://images.unsplash.com/photo-1597306622489-5c80aa3c55e3?q=80&w=800';
             
             appData.takeaways.franchises.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
@@ -483,7 +483,7 @@
             
             html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name}</h2></div>`;
             
-            // Filter out 'General' from sections
+            // Filter out 'General' from sections completely
             let sections = [...new Set(store.menu.map(m => m.category || 'General'))].filter(s => s.toLowerCase() !== 'general');
             if(sections.length === 0) return html + '<p>No sections available yet.</p>';
 
@@ -514,7 +514,7 @@
             html += `<h2 style="color: var(--forest); margin-bottom: 20px;">${escHtml(sectionName)}</h2>`;
             
             const sectionItems = store.menu.filter(m => (m.category || 'General') === sectionName);
-            // Filter out 'General' from subcategories
+            // Filter out 'General' from subcategories completely
             let subcats = [...new Set(sectionItems.map(m => m.subCategory || 'General'))].filter(s => s.toLowerCase() !== 'general');
             
             // If it's the Baby & Toddler section, enforce the standard list of subcategories
@@ -902,7 +902,7 @@
         async function trackOrder() {
             const orderNum = document.getElementById('track-order-input').value.trim();
             const box = document.getElementById('track-result');
-            if(!orderNum) { alert("Please专人 enter your order number"); return; }
+            if(!orderNum) { alert("Please enter your order number"); return; }
             box.innerHTML = '<p>Looking for your order...</p>';
             const askOnWhatsApp = `<button class="wa-btn" style="width: 100%; margin-top: 10px;" onclick="trackOrderWhatsApp()">Ask us on WhatsApp</button>`;
             try {
@@ -979,7 +979,7 @@
             if(results.length === 0) {
                 html += '<p>No stores or items found.</p>';
             } else {
-                html += results.slice(0, 50推进).map(res => { 
+                html += results.slice(0, 50).map(res => { 
                     if(res.type === 'store') {
                         return `<div class="store-item" onclick="navigate('${res.cat === 'takeaway' ? 'restaurant-menu' : 'grocery-store'}', '${res.store.id}')" style="cursor: pointer;">
                             <div class="item-info"><span style="font-size: 30px;">${res.store.logo}</span><h4>${res.store.name}</h4></div>
@@ -1172,7 +1172,7 @@
                 await fetch('/api/parcel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newParcel) }); 
                 appData.parcelRequests.push(newParcel); 
             } else {
-                const collAddr = `${document.getElementById('c_coll_province').value}, ${document.getElementById('c_coll_city').value}, ${document.getElementById('c_coll_suburb').value}, ${document.getElementById('c_coll_street').value}, ${document.getElementById('c_coll_house').value}, ${document.getElementById('c_coll_unit').value}`;
+                const collAddr = `${document.getElementById('c_coll_province').value}, ${document.getElementById('c_coll_city').value}, ${document.getElementById('c_coll_suburb').value}, ${document.getElementById('c_coll_street).value}, ${document.getElementById('c_coll_house').value}, ${document.getElementById('c_coll_unit').value}`;
                 const collLandmark = document.getElementById('c_coll_landmark').value;
                 const collDirections = document.getElementById('c_coll_directions').value;
 
@@ -1215,7 +1215,7 @@
             const to = document.getElementById('f_to').value;
             const itemCount = document.getElementById('f_item_count').value;
             const itemNames = document.getElementById('f_item_names').value;
- ?*
+            
             msg += `\n*Customer Details:*\nName: ${name}\nPhone: ${phone}\n`; 
             msg += `\n*Move Details:*\nFrom: ${from}\nTo: ${to}\n`; 
             msg += `\n*Furniture Details:*\nNumber of Items: ${itemCount}\nItems: ${itemNames}\n`;
@@ -1381,7 +1381,14 @@
         }
 
         function renderAdminUsers() {
-            let html = '<div class="admin-card"><h4>Add New User (Max 20)</h4>';
+            let html = '<div class="admin-card" style="background: #e8f5e9; border: 2px solid var(--gold);"><h4>Change My Password</h4><small>Use the box below to update your admin password instantly.</small>';
+            html += `<div class="form-row" style="margin-top: 10px;">
+                <div class="form-group"><label>New Password</label><input type="password" id="new_own_pass" autocomplete="new-password" placeholder="Enter new password"></div>
+                <div class="form-group"><label>Confirm Password</label><input type="password" id="confirm_own_pass" autocomplete="new-password" placeholder="Re-enter new password"></div>
+            </div>
+            <button class="btn-gold" onclick="adminChangeOwnPass()">Update My Password</button></div>`;
+
+            html += '<div class="admin-card"><h4>Add New User (Max 20)</h4>';
             if(appData.users.length >= 20) { html += '<p>User limit reached (20).</p>'; }
             else {
                 html += `<div class="form-row"><div class="form-group"><label>Username</label><input type="text" id="new_user" autocomplete="off"></div><div class="form-group"><label>Password (at least 8 characters)</label><input type="password" id="new_pass" autocomplete="new-password"></div></div><button class="btn-gold" style="width: 100%;" onclick="adminAddUser()">Add User</button>`;
@@ -1401,6 +1408,21 @@
             try { await saveConfig(); if (done) alert(done); } catch (e) {}
             await fetchData();
             if (isAdmin) renderAdminUsers(); else navigate('admin');
+        }
+
+        async function adminChangeOwnPass() {
+            const p = document.getElementById('new_own_pass').value;
+            const c = document.getElementById('confirm_own_pass').value;
+            if(!p) { alert('Type the new password first'); return; }
+            if(p !== c) { alert('Passwords do not match!'); return; }
+            
+            let currentAdmin = appData.users.find(u => u.username === 'admin');
+            if(currentAdmin) {
+                currentAdmin.password = p;
+                await saveUsers('Password updated successfully!');
+            } else {
+                alert('Error: Could not find the admin user.');
+            }
         }
 
         async function adminAddUser() {
@@ -2152,7 +2174,7 @@
             let logoImg = null;
             if(logoFile) logoImg = await uploadImage(logoFile);
             const id = cleanId(name) + Date.now().toString().slice(-4);
-            appData.groceries.push({ id, nameinstallment: logo, logoImg, menu: [], isOnline: true, fee, eta, categoryImages: {} });
+            appData.groceries.push({ id, name, logo, logoImg, menu: [], isOnline: true, fee, eta, categoryImages: {} });
             await saveConfig();
             renderRoute();
         }
