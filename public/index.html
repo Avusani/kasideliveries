@@ -181,18 +181,30 @@
     </footer>
 
     <script>
-        let cart = JSON.parse(localStorage.getItem('kd_cart') || '[]');
+        // Safely load cart from localStorage to survive refreshes
+        let cart = [];
+        try {
+            cart = JSON.parse(localStorage.getItem('kd_cart') || '[]');
+        } catch(e) {
+            localStorage.removeItem('kd_cart');
+        }
+
         let currentSlide = 0, slideInterval, appData = {}, adminTab = 'dashboard', isAdmin = false;
         let adminStoreView = sessionStorage.getItem('adminStoreView') || null;
         let adminItemLimit = 50;
         
-        // Active context for item rendering (used to re-render the list after cart update)
         let activeStoreId = null, activeStoreType = null, activeSection = null, activeSubcat = null, activeTakeawayType = null;
 
         function safeStr(str) { return String(str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
         function cleanId(id) { return String(id || '').replace(/[^a-zA-Z0-9]/g, ''); }
         function escHtml(str) { return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-        function saveCart() { localStorage.setItem('kd_cart', JSON.stringify(cart)); }
+        function saveCart() { 
+            try {
+                localStorage.setItem('kd_cart', JSON.stringify(cart)); 
+            } catch(e) {
+                console.error("Failed to save cart", e);
+            }
+        }
 
         function parseOptions(str) {
             if(!str) return [];
@@ -374,13 +386,13 @@
                 else { app.innerHTML = renderHome(); initSlider(); }
             } catch (e) {
                 console.error("Routing error:", e);
-                app.innerHTML = '<h2>Page not found</h2><a href="#/">Go Home</a>';
+                app.innerHTML = '<h2>Something went wrong.</h2><a href="#/">Go Home</a>';
             }
             window.scrollTo(0, 0);
         }
 
         function renderTextPage(title, content) {
-            return `<div class="form-container"><a class="back-link" href="#/">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">${title}</h2><div class="text-content">${content}</div></div>`;
+            return `<a class="back-link" href="#/">← Back to Home</a><div class="form-container"><h2 style="color: var(--forest); margin-bottom: 20px;">${title}</h2><div class="text-content">${content}</div></div>`;
         }
 
         function renderBreadcrumb(crumbs) {
@@ -445,7 +457,8 @@
             if (!result) return '<h2>Store not found</h2>';
             const { store } = result;
             
-            let html = renderBreadcrumb([
+            let html = `<a class="back-link" href="#/groceries">← Back to Groceries</a>`;
+            html += renderBreadcrumb([
                 { label: 'Home', route: '#/' },
                 { label: 'Groceries', route: '#/groceries' },
                 { label: store.name, route: `#/grocery-store/${store.id}` }
@@ -473,7 +486,8 @@
             if (!result) return '<h2>Store not found</h2>';
             const { store } = result;
             
-            let html = renderBreadcrumb([
+            let html = `<a class="back-link" href="#/grocery-store/${store.id}">← Back to Sections</a>`;
+            html += renderBreadcrumb([
                 { label: 'Home', route: '#/' },
                 { label: 'Groceries', route: '#/groceries' },
                 { label: store.name, route: `#/grocery-store/${store.id}` },
@@ -502,7 +516,8 @@
             if (!result) return '<h2>Store not found</h2>';
             const { store } = result;
             
-            let html = renderBreadcrumb([
+            let html = `<a class="back-link" href="#/grocery-section/${store.id}/${encodeURIComponent(sectionName)}">← Back to Subcategories</a>`;
+            html += renderBreadcrumb([
                 { label: 'Home', route: '#/' },
                 { label: 'Groceries', route: '#/groceries' },
                 { label: store.name, route: `#/grocery-store/${store.id}` },
@@ -572,7 +587,8 @@
             if (!result) return '<h2>Store not found</h2>';
             const { store, type } = result;
 
-            let html = renderBreadcrumb([
+            let html = `<a class="back-link" href="#/takeaway-list/${type}">← Back to Stores</a>`;
+            html += renderBreadcrumb([
                 { label: 'Home', route: '#/' },
                 { label: 'Takeaways', route: '#/takeaways' },
                 { label: type === 'franchises' ? 'Franchises' : 'Local Takeaways', route: `#/takeaway-list/${type}` },
@@ -626,13 +642,19 @@
                 extrasHtml += `</div>`;
             }
 
-            const cartItem = cart.find(ci => ci.id === item.id && ci.store === storeName && !ci.mealLabel && mealOptions.length === 0 && !ci.extras.length);
+            // Only show qty selector if the item has NO meal options/extras.
+            // If it has options, always show "Add" because the cart line depends on the selection.
+            const cartItem = (!mealOptions.length && !extras.length) 
+                ? cart.find(ci => ci.id === item.id && ci.store === storeName) 
+                : null;
+            
             const currentQty = cartItem ? cartItem.qty : 0;
+            const currentSig = cartItem ? cartItem.sig : '';
 
             let actionHtml = '';
             if (currentQty > 0) {
                 actionHtml = `<div class="qty-selector">
-                    <button class="qty-btn" onclick="changeQty('${safeStr(item.id)}', '${safeStr(storeName)}', -1)">−</button>
+                    <button class="qty-btn" onclick="changeQty('${safeStr(currentSig)}', '${safeStr(storeName)}', -1)">−</button>
                     <span class="qty-display">×${currentQty}</span>
                     <button class="qty-btn" onclick="addItemToCart('${safeStr(item.id)}', '${safeStr(storeName)}')">+</button>
                 </div>`;
@@ -677,7 +699,8 @@
             if (!result) return '<h2>Store not found</h2>';
             const { store, type } = result;
 
-            let html = renderBreadcrumb([
+            let html = `<a class="back-link" href="#/restaurant-menu/${store.id}">← Back to Categories</a>`;
+            html += renderBreadcrumb([
                 { label: 'Home', route: '#/' },
                 { label: 'Takeaways', route: '#/takeaways' },
                 { label: type === 'franchises' ? 'Franchises' : 'Local Takeaways', route: `#/takeaway-list/${type}` },
@@ -990,7 +1013,7 @@
             if(mealLabel) fullName += ` (${mealLabel})`;
             if(extrasLabels.length > 0) fullName += ` + ${extrasLabels.join(', ')}`;
             
-            const sig = `${itemId}_${mealLabel}_${extrasLabels.sort().join(',')}`;
+            const sig = `${itemId}|${mealLabel}|${extrasLabels.sort().join('-')}`;
             const existing = cart.find(c => c.sig === sig && c.store === storeName); 
 
             if (existing) {
@@ -1003,7 +1026,7 @@
             
             saveCart();
             updateCartCount(); 
-            renderRoute(); // Re-render current page to show qty selector
+            renderRoute(); 
         }
 
         function changeQty(sig, storeName, delta) {
