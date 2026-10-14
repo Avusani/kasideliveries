@@ -44,16 +44,20 @@
         .category-card p { font-size: 12px; color: #eee; }
         
         .store-item { background: var(--white); padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); gap: 10px; }
-        .item-info { flex: 1; display: flex; align-items: center; gap: 10px; }
+        .item-info { flex: 1; display: flex; align-items: center; gap: 15px; }
         .item-info h4 { color: var(--forest); font-size: 16px; }
         .item-info p { color: #666; font-size: 12px; }
         .item-price { font-weight: bold; color: var(--forest); font-size: 14px; text-align: right; margin-top: 5px; }
         .add-btn { background-color: var(--gold); color: var(--forest); border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; }
         
+        /* Product Image Enhancement - No white space, object-fit cover */
+        .item-img { width: 70px; height: 70px; object-fit: cover; object-position: center; border-radius: 5px; background: #f2f4f1; flex-shrink: 0; }
+        
         .qty-selector { display: flex; align-items: center; gap: 8px; background: #f2f4f1; padding: 4px; border-radius: 20px; }
         .qty-btn { background: var(--gold); color: var(--forest); border: none; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .qty-display { font-weight: bold; color: var(--forest); min-width: 25px; text-align: center; }
-        .item-options { width: 100%; margin-top: 5px; padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 12px; }
+        .item-options, .item-extras { width: 100%; margin-top: 5px; padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 12px; }
+        .item-extras label { display: flex; align-items: center; gap: 5px; margin: 3px 0; font-size: 12px; color: #444; }
         
         .form-container { background: var(--white); padding: 20px; border-radius: 10px; max-width: 800px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .form-section { margin-bottom: 20px; border-bottom: 1px solid var(--light-grey); padding-bottom: 15px; }
@@ -72,7 +76,7 @@
         .total { font-size: 24px; font-weight: bold; color: var(--forest); border-top: 2px solid var(--forest); padding-top: 10px; }
         .wa-btn { background-color: #25D366; color: white; border: none; padding: 15px; font-size: 18px; border-radius: 30px; cursor: pointer; margin-top: 15px; width: 100%; font-weight: bold; }
         
-        .back-link { display: inline-block; margin-bottom: 15px; color: var(--forest); font-weight: bold; cursor: pointer; text-decoration: underline; font-size: 14px; text-decoration: none; padding: 5px 10px; background: #e6e8e4; border-radius: 5px; }
+        .back-link { display: inline-block; margin-bottom: 15px; color: var(--forest); font-weight: bold; cursor: pointer; font-size: 14px; text-decoration: none; padding: 5px 10px; background: #e6e8e4; border-radius: 5px; }
         .back-link:hover { background: #dfe2db; }
         
         footer { background-color: var(--forest); color: var(--white); padding: 30px 15px; margin-top: 30px; }
@@ -103,10 +107,10 @@
         .stat-box h3 { color: var(--gold); font-size: 28px; margin-bottom: 5px; }
         .stat-box p { color: var(--forest); font-weight: bold; font-size: 14px; }
         .text-content { white-space: pre-wrap; line-height: 1.6; font-size: 16px; }
-        .store-logo-img { width: 40px; height: 40px; object-fit: contain; border-radius: 50%; background: #eee; }
-        .item-img { width: 50px; height: 50px; object-fit: contain; border-radius: 5px; background: #eee; }
+        .store-logo-img { width: 40px; height: 40px; object-fit: cover; border-radius: 50%; background: #eee; }
         
         .menu-category-header { color: var(--forest); margin-top: 20px; border-bottom: 2px solid var(--gold); padding-bottom: 5px; font-size: 18px; font-weight: bold; }
+        .menu-subcategory-header { color: var(--forest); margin-top: 15px; font-size: 15px; font-weight: bold; text-decoration: underline; margin-bottom: 5px; }
         .sale-banner { color: red; font-weight: bold; margin-top: 20px; border-bottom: 2px solid red; padding-bottom: 5px; font-size: 18px; }
         .old-price { text-decoration: line-through; color: #999; font-size: 12px; margin-right: 5px; }
         
@@ -118,7 +122,7 @@
 
         .admin-item-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 15px; background: #fafafa; }
         .admin-item-card .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .admin-item-card .card-header img { width: 40px; height: 40px; object-fit: cover; border-radius: 5px; }
+        .admin-item-card .card-header img { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; }
         .admin-item-card .card-actions { display: flex; gap: 5px; flex-wrap: wrap; }
         .admin-item-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         
@@ -183,15 +187,22 @@
         function cleanId(id) {
             return String(id || '').replace(/[^a-zA-Z0-9]/g, '');
         }
-
         function escHtml(str) {
             return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        // --- DATA PARSING HELPERS ---
+        function parseOptions(str) {
+            if(!str) return [];
+            return str.split(',').map(s => {
+                const p = s.split('|');
+                return { label: p[0]?.trim() || '', price: parseFloat(p[1]||0), contents: p[2]?.trim() || '', enabled: p[3] === undefined ? true : (p[3] === '1' || p[3].toLowerCase() === 'true') };
+            }).filter(o => o.label && o.enabled);
         }
 
         async function fetchData() { 
             const res = await fetch('/api/data'); 
             appData = await res.json(); 
-            // Logged in already? The server knows from its cookie, so a refresh keeps you in.
             isAdmin = appData.isAdmin === true;
             if(!appData.sliderImages) appData.sliderImages = [];
             if(!appData.siteContent) appData.siteContent = {};
@@ -410,21 +421,30 @@
             let salePrice = parseFloat(item.salePrice) || 0;
             let isOnSale = item.onSale && salePrice > 0;
             let displayPrice = isOnSale ? salePrice : basePrice;
-            
             let oldPriceHtml = isOnSale ? `<span class="old-price">R${basePrice.toFixed(2)}</span>` : '';
             
             let optionsHtml = '';
-            if(item.options) {
-                const opts = item.options.split(',');
-                optionsHtml = `<select id="opt_${item.id}" class="item-options">`;
-                opts.forEach(opt => {
-                    const [name, addPrice] = opt.split('|');
-                    optionsHtml += `<option value="${name}" data-price="${addPrice}">${name} (+R${parseFloat(addPrice).toFixed(2)})</option>`;
+            const mealOptions = parseOptions(item.mealOptions);
+            const extras = parseOptions(item.extras);
+
+            if(mealOptions.length > 0) {
+                optionsHtml = `<select id="meal_${item.id}" class="item-options" onchange="updateDynamicPrice('${item.id}')">`;
+                mealOptions.forEach(opt => {
+                    optionsHtml += `<option value="${opt.label}" data-price="${opt.price}">${opt.label} (+R${opt.price.toFixed(2)})</option>`;
                 });
                 optionsHtml += '</select>';
             }
 
-            const cartItem = cart.find(ci => ci.id === item.id && ci.store === storeName);
+            let extrasHtml = '';
+            if(extras.length > 0) {
+                extrasHtml = `<div class="item-extras"><strong>Add Extras:</strong>`;
+                extras.forEach(ext => {
+                    extrasHtml += `<label><input type="checkbox" class="extra_${item.id}" data-price="${ext.price}" value="${ext.label}" onchange="updateDynamicPrice('${item.id}')"> ${ext.label} (+R${ext.price.toFixed(2)})</label>`;
+                });
+                extrasHtml += `</div>`;
+            }
+
+            const cartItem = cart.find(ci => ci.id === item.id && ci.store === storeName && !ci.mealLabel && mealOptions.length === 0 && !ci.extras.length);
             const currentQty = cartItem ? cartItem.qty : 0;
 
             let actionHtml = '';
@@ -432,26 +452,42 @@
                 actionHtml = `<div class="qty-selector">
                     <button class="qty-btn" onclick="changeQty('${safeStr(item.id)}', '${safeStr(storeName)}', -1)">−</button>
                     <span class="qty-display">×${currentQty}</span>
-                    <button class="qty-btn" onclick="changeQty('${safeStr(item.id)}', '${safeStr(storeName)}', 1)">+</button>
+                    <button class="qty-btn" onclick="addItemToCart('${safeStr(item.id)}', '${safeStr(storeName)}')">+</button>
                 </div>`;
             } else {
-                actionHtml = `<button class="add-btn" onclick="addItemToCart('${safeStr(item.id)}', '${safeStr(storeName)}', '${safeStr(item.name)}', ${displayPrice}, '${safeStr(item.size || '')}')">Add</button>`;
+                actionHtml = `<button class="add-btn" onclick="addItemToCart('${safeStr(item.id)}', '${safeStr(storeName)}')">Add</button>`;
             }
 
             return `<div class="store-item">
                 <div class="item-info">
-                    <img src="${item.img || 'https://via.placeholder.com/50'}" class="item-img">
+                    <img src="${item.img || 'https://via.placeholder.com/70'}" class="item-img">
                     <div style="flex:1;">
                         <h4>${item.name} ${item.size ? `<small>(${item.size})</small>` : ''}</h4>
                         ${item.flavor ? `<div style="font-size: 12px; color: #666;">${item.flavor}</div>` : ''}
                         ${optionsHtml}
-                        <div class="item-price">${oldPriceHtml} R${displayPrice.toFixed(2)}</div>
+                        ${extrasHtml}
+                        <div class="item-price" id="price_${item.id}">${oldPriceHtml} R${displayPrice.toFixed(2)}</div>
                     </div>
                 </div>
                 <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
                     ${actionHtml}
                 </div>
             </div>`;
+        }
+
+        function updateDynamicPrice(itemId) {
+            const priceEl = document.getElementById(`price_${itemId}`);
+            if(!priceEl) return;
+            let total = 0;
+            const mealSelect = document.getElementById(`meal_${itemId}`);
+            if(mealSelect) {
+                const opt = mealSelect.options[mealSelect.selectedIndex];
+                total += parseFloat(opt.getAttribute('data-price')) || 0;
+            }
+            document.querySelectorAll(`.extra_${itemId}:checked`).forEach(cb => {
+                total += parseFloat(cb.getAttribute('data-price')) || 0;
+            });
+            priceEl.innerText = `R${total.toFixed(2)}`;
         }
 
         function renderStoreItems(storeType, storeId, categoryName) {
@@ -478,7 +514,13 @@
                 html += onSaleItems.map(item => renderItemRow(item, store.name)).join('');
             }
 
-            html += regularItems.map(item => renderItemRow(item, store.name)).join('');
+            // Group by Sub-Category for Groceries (e.g. Baby -> Diapers, Lotions)
+            const subCats = [...new Set(regularItems.map(i => i.subCategory || 'General'))];
+            subCats.forEach(sub => {
+                if(sub !== 'General') html += `<div class="menu-subcategory-header">${sub}</div>`;
+                const subItems = regularItems.filter(i => (i.subCategory || 'General') === sub);
+                html += subItems.map(item => renderItemRow(item, store.name)).join('');
+            });
 
             if (filteredItems.length > publicItemLimit) {
                 html += `<div style="text-align: center; margin-top: 20px; margin-bottom: 20px;"><button class="btn-gold" onclick="loadMorePublicItems()">Load 50 More</button></div>`;
@@ -646,8 +688,6 @@
             return `<a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px; text-align: center;">Track My Driver</h2><div class="form-container" style="max-width: 500px; text-align: center;"><p style="margin-bottom: 20px;">May we have your Order Number?</p><div class="form-group"><input type="text" id="track-order-input" placeholder="e.g. KD-123456789" style="text-align: center; font-size: 18px; padding: 15px;"></div><button class="btn-gold" style="width: 100%; padding: 15px;" onclick="trackOrder()">Track my order</button><div id="track-result" style="margin-top: 20px;"></div></div>`;
         }
 
-        // Asks the server where the order has got to. Once a driver has it there is
-        // a live map; before that, what it is waiting for.
         async function trackOrder() {
             const orderNum = document.getElementById('track-order-input').value.trim();
             const box = document.getElementById('track-result');
@@ -686,9 +726,9 @@
                             <small>R${item.price.toFixed(2)} each</small>
                         </div>
                         <div class="qty-selector">
-                            <button class="qty-btn" onclick="changeQty('${safeStr(item.id)}', '${safeStr(item.store)}', -1)">−</button>
+                            <button class="qty-btn" onclick="changeQty('${safeStr(item.sig)}', '${safeStr(item.store)}', -1)">−</button>
                             <span class="qty-display">×${item.qty}</span>
-                            <button class="qty-btn" onclick="changeQty('${safeStr(item.id)}', '${safeStr(item.store)}', 1)">+</button>
+                            <button class="qty-btn" onclick="changeQty('${safeStr(item.sig)}', '${safeStr(item.store)}', 1)">+</button>
                         </div>
                         <div style="width: 80px; text-align: right;">R${(item.price * item.qty).toFixed(2)}</div>
                     </div>`
@@ -738,7 +778,7 @@
                         let price = res.item.onSale && res.item.salePrice ? res.item.salePrice : res.item.price;
                         return `<div class="store-item" onclick="navigate('${res.cat === 'takeaway' ? 'restaurant-menu' : 'grocery-menu'}', '${res.store.id}')" style="cursor: pointer;">
                             <div class="item-info">
-                                <img src="${res.item.img || 'https://via.placeholder.com/50'}" class="item-img">
+                                <img src="${res.item.img || 'https://via.placeholder.com/70'}" class="item-img">
                                 <div>
                                     <h4>${res.item.name}</h4>
                                     <p>From: ${res.store.name}</p>
@@ -752,32 +792,57 @@
             return html;
         }
 
-        function addItemToCart(itemId, storeName, baseName, basePrice, size) {
+        function findItem(itemId, storeName) {
+            let store = null;
+            appData.takeaways.franchises.forEach(s => { if(s.name === storeName) store = s; });
+            appData.takeaways.local.forEach(s => { if(s.name === storeName) store = s; });
+            appData.groceries.forEach(s => { if(s.name === storeName) store = s; });
+            return store ? store.menu.find(m => m.id === itemId) : null;
+        }
+
+        function addItemToCart(itemId, storeName) {
             if (cart.length > 0 && cart[0].store !== storeName) {
                 if (!confirm(`Your cart contains items from ${cart[0].store}. Do you want to clear your cart and add items from ${storeName}?`)) return;
                 cart = [];
             }
             
-            const selectEl = document.getElementById(`opt_${itemId}`);
-            let optionText = '';
-            let extraPrice = 0;
-            if(selectEl) {
-                const selectedOpt = selectEl.options[selectEl.selectedIndex];
-                optionText = selectedOpt.value;
-                extraPrice = parseFloat(selectedOpt.getAttribute('data-price')) || 0;
+            const item = findItem(itemId, storeName);
+            if(!item) return alert('Error: Item not found!');
+
+            const mealSelect = document.getElementById(`meal_${itemId}`);
+            const extrasBoxes = document.querySelectorAll(`.extra_${itemId}:checked`);
+            
+            let mealLabel = '';
+            let mealPrice = 0;
+            if(mealSelect) {
+                const opt = mealSelect.options[mealSelect.selectedIndex];
+                mealLabel = opt.value;
+                mealPrice = parseFloat(opt.getAttribute('data-price')) || 0;
             }
+
+            let extrasLabels = [];
+            let extrasPrice = 0;
+            extrasBoxes.forEach(box => {
+                extrasLabels.push(box.value);
+                extrasPrice += parseFloat(box.getAttribute('data-price')) || 0;
+            });
+
+            const basePrice = (item.onSale && parseFloat(item.salePrice) > 0) ? parseFloat(item.salePrice) : parseFloat(item.price);
+            const finalPrice = (mealLabel ? mealPrice : basePrice) + extrasPrice;
             
-            const finalPrice = basePrice + extraPrice;
-            const fullName = baseName + (optionText ? ` (${optionText})` : '') + (size ? ` ${size}` : '');
+            let fullName = item.name;
+            if(mealLabel) fullName += ` (${mealLabel})`;
+            if(extrasLabels.length > 0) fullName += ` + ${extrasLabels.join(', ')}`;
             
-            const existing = cart.find(item => item.id === itemId && item.store === storeName); 
+            const sig = `${itemId}_${mealLabel}_${extrasLabels.sort().join(',')}`;
+            const existing = cart.find(c => c.sig === sig && c.store === storeName); 
+
             if (existing) {
                 existing.qty++;
-                existing.name = fullName;
+                existing.name = fullName; // Update name just in case
                 existing.price = finalPrice;
-                existing.option = optionText;
             } else {
-                cart.push({ id: itemId, itemId: itemId, option: optionText, store: storeName, name: fullName, price: finalPrice, qty: 1 });
+                cart.push({ id: itemId, sig, store: storeName, name: fullName, price: finalPrice, qty: 1, mealLabel, extras: extrasLabels });
             }
             
             updateCartCount(); 
@@ -785,8 +850,8 @@
             app.innerHTML = renderStoreItems(activeMenuStoreType, activeMenuStoreId, activeMenuCategory);
         }
 
-        function changeQty(itemId, storeName, delta) {
-            const existing = cart.find(item => item.id === itemId && item.store === storeName);
+        function changeQty(sig, storeName, delta) {
+            const existing = cart.find(item => item.sig === sig && item.store === storeName);
             if (existing) {
                 existing.qty += delta;
                 if (existing.qty <= 0) {
@@ -814,15 +879,12 @@
             document.getElementById('cart-count').innerText = cart.reduce((sum, item) => sum + item.qty, 0); 
         }
         
-        // Checkout. The server looks the prices up in its own menus, hands the order
-        // to Kasi Delivery, and gives back a WhatsApp link for each shop. On WhatsApp
-        // the customer is asked where it goes and gets the invoice, delivery fee included.
         async function checkoutWhatsApp() {
             if (cart.length === 0) return;
             let data;
             try {
                 const res = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-                    items: cart.map(item => ({ store: item.store, itemId: item.itemId, option: item.option || '', qty: item.qty }))
+                    items: cart.map(item => ({ store: item.store, itemId: item.id, qty: item.qty, mealLabel: item.mealLabel, extras: item.extras }))
                 }) });
                 data = await res.json().catch(() => ({}));
                 if (!res.ok || !Array.isArray(data.orders)) { alert(data.error || 'Could not start your order. Please try again.'); return; }
@@ -832,19 +894,13 @@
             }
 
             const sent = data.orders.filter(o => !o.error);
-            // What went through leaves the cart. A shop that could not take the order
-            // keeps its items there, so nothing the customer chose is lost.
             cart = cart.filter(item => !sent.some(o => o.store === item.store));
             updateCartCount();
             document.getElementById('app-content').innerHTML = renderCheckoutResult(data.orders);
             window.scrollTo(0, 0);
-            // One shop and nothing wrong: straight to WhatsApp. The button on the page
-            // is still there for a phone that blocks the new tab.
             if (data.orders.length === 1 && sent.length === 1) window.open(orderLink(sent[0]), '_blank');
         }
 
-        // Where an order's button goes: Kasi Delivery's link when it is connected,
-        // otherwise WhatsApp with the order typed out, as before.
         function orderLink(order) {
             if (order.whatsappLink) return order.whatsappLink;
             let msg = `*NEW ORDER REQUEST — ${(appData.siteContent.websiteName || 'KASIDELIVERIES').toUpperCase()}*\n\n*Order Reference:* ${order.ref}\n\n*${order.store}*\n`;
@@ -980,8 +1036,6 @@
             return `<div class="form-container" style="max-width: 400px; margin-top: 50px;"><h2 style="color: var(--forest); text-align: center; margin-bottom: 20px;">Admin Login</h2><form onsubmit="handleLogin(event)"><div class="form-group"><label>Username</label><input type="text" id="login_user" required></div><div class="form-group"><label>Password</label><input type="password" id="login_pass" required></div><button type="submit" class="btn-gold" style="width: 100%;">Login</button></form></div>`; 
         }
         
-        // The password is checked by the server, which answers with a login cookie.
-        // Nothing about the admin users is in the page any more.
         async function handleLogin(e) {
             e.preventDefault();
             const u = document.getElementById('login_user').value;
@@ -992,7 +1046,7 @@
                 data = await res.json().catch(() => ({}));
             } catch (err) { alert('Could not reach the server. Please try again.'); return; }
             if (!res.ok) { alert(data.error || 'Invalid credentials'); return; }
-            await fetchData();          // now that we are logged in, this brings the orders and users
+            await fetchData();          
             if (data.mustChangePassword) {
                 alert('You are still using the default password. Please change it now: type a new one next to your username and tap Update Pass.');
                 adminTab = 'users';
@@ -1123,8 +1177,6 @@
             document.getElementById('admin-content').innerHTML = html;
         }
 
-        // Save a change to the users. A blank password means "leave it as it is", and
-        // the server is asked again afterwards so the page never keeps a password.
         async function saveUsers(done) {
             try { await saveConfig(); if (done) alert(done); } catch (e) {}
             await fetchData();
@@ -1304,27 +1356,25 @@
         }
 
         function renderAdminTakeawayMenu() {
-            const parts = adminStoreView.split('_'); // ['takeaway', 'franchises', '0']
+            const parts = adminStoreView.split('_'); 
             const type = parts[1];
             const storeIndex = parseInt(parts[2]);
             const store = appData.takeaways[type][storeIndex];
             
             let html = renderAdminStoreHeader(store, 'takeaway', type, storeIndex, "adminViewStore(null)", "Menu");
-            
-            // Category Images Section
             html += renderAdminCategoryImages(store, 'takeaway', type, storeIndex);
             
             html += `<div class="admin-card">
                 <div style="background: #e8f5e9; padding: 10px; border-radius: 5px;">
                     <strong style="color: var(--forest);">Bulk Upload Menu (Excel or Copy & Paste)</strong><br>
-                    <small>Columns needed: Category, Name, Size, Flavor, Price, OnSale, SalePrice, Options</small><br>
-                    <small style="color: blue;">Uploads ADD to existing items. You can upload .xlsx or just copy from Excel and paste below.</small>
+                    <small>Columns: Category, SubCategory, Name, Size, Flavor, Price, OnSale, SalePrice, MealOptions, Extras</small><br>
+                    <small style="color: blue;">MealOptions/Extras format: Label|Price|Contents|Enabled(1/0) separated by commas. e.g., "Regular Meal|55|Burger + Chips + Drink|1"</small>
                     <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
                         <input type="file" id="excel_input_takeaway_${type}_${storeIndex}" accept=".xlsx, .xls, .csv" style="font-size: 12px; flex:1;">
                         <button type="button" class="btn-gold" onclick="handleExcelUpload('takeaway', '${type}', ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:0;">Upload Excel</button>
                     </div>
                     <div style="margin-top:10px;">
-                        <textarea id="paste_input_takeaway_${type}_${storeIndex}" rows="4" style="width:100%; font-size: 12px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Category	Name	Size	Flavor	Price	OnSale	SalePrice	Options&#10;Toppings	Russian			25.00	false		&#10;Toppings	Cheese			7.00	false		"></textarea>
+                        <textarea id="paste_input_takeaway_${type}_${storeIndex}" rows="4" style="width:100%; font-size: 12px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Category  SubCategory  Name  Size  Flavor  Price  OnSale  SalePrice  MealOptions  Extras"></textarea>
                         <button type="button" class="btn-gold" onclick="handlePasteUpload('takeaway', '${type}', ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:5px 0 0 0;">Import Pasted Data</button>
                     </div>
                 </div>
@@ -1350,8 +1400,8 @@
             html += '<div class="admin-card"><h4>Add Item Manually</h4>';
             html += `<div class="form-row">
                 <input type="text" id="menu_name_takeaway_${type}_${storeIndex}" placeholder="Item Name" style="padding: 10px; font-size: 14px;">
-                <input type="text" id="menu_size_takeaway_${type}_${storeIndex}" placeholder="Size" style="padding: 10px; font-size: 14px;">
-                <input type="number" id="menu_price_takeaway_${type}_${storeIndex}" placeholder="Price (R)" style="padding: 10px; font-size: 14px;">
+                <input type="text" id="menu_subcat_takeaway_${type}_${storeIndex}" placeholder="Sub-Category (e.g. Beef)" style="padding: 10px; font-size: 14px;">
+                <input type="number" id="menu_price_takeaway_${type}_${storeIndex}" placeholder="Base Price (R)" style="padding: 10px; font-size: 14px;">
             </div>
             <button class="btn-gold" style="margin-top: 5px; padding: 8px; font-size: 14px;" onclick="adminAddMenuItem('takeaway', '${type}', ${storeIndex})">Add Item</button></div>`;
 
@@ -1361,7 +1411,7 @@
                 `<div class="admin-item-card">
                     <div class="card-header">
                         <div style="display:flex; gap:10px; align-items:center;">
-                            <img src="${item.img || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; object-fit:cover; border-radius:5px;">
+                            <img src="${item.img || 'https://via.placeholder.com/50'}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">
                             <strong>${item.name}</strong>
                         </div>
                         <div class="card-actions">
@@ -1369,18 +1419,20 @@
                                 📷 Pic
                                 <input type="file" accept="image/*" onchange="uploadItemImg(event, 'takeaway', '${type}', ${storeIndex}, ${itemIndex})" style="display:none;">
                             </label>
-                            <button class="add-btn" onclick="adminUpdateMenuItem('takeaway', '${type}', ${storeIndex}, ${itemIndex})" style="padding:5px 8px; font-size:12px;">Save</button>
+                            <button class="add-btn" onclick="adminUpdateMenuItem(event, 'takeaway', '${type}', ${storeIndex}, ${itemIndex})" style="padding:5px 8px; font-size:12px;">Save</button>
                             <button class="btn-delete" onclick="adminDeleteMenuItem('takeaway', '${type}', ${storeIndex}, ${itemIndex})">Delete</button>
                         </div>
                     </div>
                     <div class="admin-item-grid">
                         <input type="text" value="${safeStr(item.name)}" id="i_name_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Name" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.category || '')}" id="i_cat_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Category" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.subCategory || '')}" id="i_subcat_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Sub-Category" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.size || '')}" id="i_size_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
-                        <input type="number" value="${item.price}" id="i_price_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Price" style="padding: 5px; font-size: 12px;">
+                        <input type="number" value="${item.price}" id="i_price_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Base Price" style="padding: 5px; font-size: 12px;">
                         <input type="number" value="${item.salePrice || 0}" id="i_sale_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Sale Price" style="padding: 5px; font-size: 12px;">
-                        <input type="text" value="${safeStr(item.options || '')}" id="i_opt_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Options (Meal|30)" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.mealOptions || '')}" id="i_mealopt_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Meal Options (Label|Price|Contents|1)" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.extras || '')}" id="i_extras_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Extras (Label|Price|1)" style="padding: 5px; font-size: 12px;">
                         <div style="display: flex; align-items: center; gap: 5px;">
                             <input type="checkbox" id="i_onsale_takeaway_${type}_${storeIndex}_${itemIndex}" ${item.onSale ? 'checked' : ''}>
                             <label for="i_onsale_takeaway_${type}_${storeIndex}_${itemIndex}" style="font-size: 12px;">On Sale</label>
@@ -1453,21 +1505,19 @@
             const store = appData.groceries[storeIndex];
             
             let html = renderAdminStoreHeader(store, 'grocery', null, storeIndex, "adminViewStore(null)", "Catalogue");
-            
-            // Category Images Section
             html += renderAdminCategoryImages(store, 'grocery', null, storeIndex);
             
             html += `<div class="admin-card">
                 <div style="background: #e8f5e9; padding: 10px; border-radius: 5px;">
                     <strong style="color: var(--forest);">Bulk Upload Products (Excel or Copy & Paste)</strong><br>
-                    <small>Columns needed: Category, Name, Size, Flavor, Price, OnSale, SalePrice, Options</small><br>
-                    <small style="color: blue;">Uploads ADD to existing items. You can upload .xlsx or just copy from Excel and paste below.</small>
+                    <small>Columns: Category, SubCategory, Name, Size, Flavor, Price, OnSale, SalePrice</small><br>
+                    <small style="color: blue;">Uploads ADD to or UPDATE existing items. Duplicates are identified by Name + Size.</small>
                     <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
                         <input type="file" id="excel_input_grocery_g_${storeIndex}" accept=".xlsx, .xls, .csv" style="font-size: 12px; flex:1;">
                         <button type="button" class="btn-gold" onclick="handleExcelUpload('grocery', null, ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:0;">Upload Excel</button>
                     </div>
                     <div style="margin-top:10px;">
-                        <textarea id="paste_input_grocery_g_${storeIndex}" rows="4" style="width:100%; font-size: 12px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Category	Name	Size	Flavor	Price	OnSale	SalePrice	Options&#10;Drinks	Coke	500ml		15.00	false		&#10;Bread	Brown Loaf			12.00	false		"></textarea>
+                        <textarea id="paste_input_grocery_g_${storeIndex}" rows="4" style="width:100%; font-size: 12px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Category  SubCategory  Name  Size  Flavor  Price  OnSale  SalePrice"></textarea>
                         <button type="button" class="btn-gold" onclick="handlePasteUpload('grocery', null, ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:5px 0 0 0;">Import Pasted Data</button>
                     </div>
                 </div>
@@ -1493,7 +1543,8 @@
             html += '<div class="admin-card"><h4>Add Product Manually</h4>';
             html += `<div class="form-row">
                 <input type="text" id="menu_name_grocery_g_${storeIndex}" placeholder="Product Name" style="padding: 10px; font-size: 14px;">
-                <input type="text" id="menu_size_grocery_g_${storeIndex}" placeholder="Size" style="padding: 10px; font-size: 14px;">
+                <input type="text" id="menu_subcat_grocery_g_${storeIndex}" placeholder="Sub-Category (e.g. Diapers)" style="padding: 10px; font-size: 14px;">
+                <input type="text" id="menu_size_grocery_g_${storeIndex}" placeholder="Size (e.g. 500ml)" style="padding: 10px; font-size: 14px;">
                 <input type="number" id="menu_price_grocery_g_${storeIndex}" placeholder="Price (R)" style="padding: 10px; font-size: 14px;">
             </div>
             <button class="btn-gold" style="margin-top: 5px; padding: 8px; font-size: 14px;" onclick="adminAddMenuItem('grocery', null, ${storeIndex})">Add Product</button></div>`;
@@ -1504,7 +1555,7 @@
                 `<div class="admin-item-card">
                     <div class="card-header">
                         <div style="display:flex; gap:10px; align-items:center;">
-                            <img src="${item.img || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; object-fit:cover; border-radius:5px;">
+                            <img src="${item.img || 'https://via.placeholder.com/50'}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">
                             <strong>${item.name}</strong>
                         </div>
                         <div class="card-actions">
@@ -1512,22 +1563,20 @@
                                 📷 Pic
                                 <input type="file" accept="image/*" onchange="uploadItemImg(event, 'grocery', null, ${storeIndex}, ${itemIndex})" style="display:none;">
                             </label>
-                            <button class="add-btn" onclick="adminUpdateMenuItem('grocery', null, ${storeIndex}, ${itemIndex})" style="padding:5px 8px; font-size:12px;">Save</button>
+                            <button class="add-btn" onclick="adminUpdateMenuItem(event, 'grocery', null, ${storeIndex}, ${itemIndex})" style="padding:5px 8px; font-size:12px;">Save</button>
                             <button class="btn-delete" onclick="adminDeleteMenuItem('grocery', null, ${storeIndex}, ${itemIndex})">Delete</button>
                         </div>
                     </div>
                     <div class="admin-item-grid">
                         <input type="text" value="${safeStr(item.name)}" id="i_name_grocery_g_${storeIndex}_${itemIndex}" placeholder="Name" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.category || '')}" id="i_cat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Category" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.subCategory || '')}" id="i_subcat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Sub-Category" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.size || '')}" id="i_size_grocery_g_${storeIndex}_${itemIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_grocery_g_${storeIndex}_${itemIndex}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
                         <input type="number" value="${item.price}" id="i_price_grocery_g_${storeIndex}_${itemIndex}" placeholder="Price" style="padding: 5px; font-size: 12px;">
                         <input type="number" value="${item.salePrice || 0}" id="i_sale_grocery_g_${storeIndex}_${itemIndex}" placeholder="Sale Price" style="padding: 5px; font-size: 12px;">
-                        <input type="text" value="${safeStr(item.options || '')}" id="i_opt_grocery_g_${storeIndex}_${itemIndex}" placeholder="Options" style="padding: 5px; font-size: 12px;">
-                        <div style="display: flex; align-items: center; gap: 5px;">
-                            <input type="checkbox" id="i_onsale_grocery_g_${storeIndex}_${itemIndex}" ${item.onSale ? 'checked' : ''}>
-                            <label for="i_onsale_grocery_g_${storeIndex}_${itemIndex}" style="font-size: 12px;">On Sale</label>
-                        </div>
+                        <input type="checkbox" id="i_onsale_grocery_g_${storeIndex}_${itemIndex}" ${item.onSale ? 'checked' : ''}>
+                        <label for="i_onsale_grocery_g_${storeIndex}_${itemIndex}" style="font-size: 12px;">On Sale</label>
                     </div>
                 </div>`
             ).join('');
@@ -1554,11 +1603,8 @@
             }
 
             let store;
-            if(cat === 'takeaway') {
-                store = appData.takeaways[type][storeIndex];
-            } else {
-                store = appData.groceries[storeIndex];
-            }
+            if(cat === 'takeaway') store = appData.takeaways[type][storeIndex];
+            else store = appData.groceries[storeIndex];
             
             if(!store) { 
                 alert("Error: Store not found!"); 
@@ -1571,12 +1617,14 @@
             const idx = {
                 name: headers.findIndex(h => h.includes('name') || h.includes('item') || h.includes('product')),
                 category: headers.findIndex(h => h.includes('category') || h.includes('cat')),
+                subcat: headers.findIndex(h => h.includes('subcat') || h.includes('subcategory') || h.includes('sub-category')),
                 size: headers.findIndex(h => h.includes('size') || h.includes('weight') || h.includes('volume')),
                 flavor: headers.findIndex(h => h.includes('flavor') || h.includes('type')),
                 price: headers.findIndex(h => h.includes('price') || h.includes('cost')),
                 onSale: headers.findIndex(h => h.includes('onsale') || h.includes('sale')),
                 salePrice: headers.findIndex(h => h.includes('saleprice') || h.includes('specialprice')),
-                options: headers.findIndex(h => h.includes('options') || h.includes('extras'))
+                mealOptions: headers.findIndex(h => h.includes('mealoptions') || h.includes('meal_options')),
+                extras: headers.findIndex(h => h.includes('extras') || h.includes('extra'))
             };
 
             if(idx.name === -1) {
@@ -1591,21 +1639,30 @@
 
                 const name = String(row[idx.name] || '').trim();
                 if(name && name.toLowerCase() !== 'name') {
-                    const priceStr = idx.price !== -1 ? String(row[idx.price] || '0') : '0';
-                    const price = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
+                    const sizeStr = idx.size !== -1 ? String(row[idx.size] || '').trim() : '';
+                    // Duplicate Check: Match by Name AND Size
+                    const existingIndex = store.menu.findIndex(m => m.name.toLowerCase() === name.toLowerCase() && (m.size || '').toLowerCase() === sizeStr.toLowerCase());
                     
-                    store.menu.push({
-                        id: 'm' + Date.now() + Math.floor(Math.random() * 100000),
+                    const itemData = {
+                        id: existingIndex !== -1 ? store.menu[existingIndex].id : 'm' + Date.now() + Math.floor(Math.random() * 100000),
                         name: name,
                         category: idx.category !== -1 ? String(row[idx.category] || 'General').trim() : 'General',
-                        size: idx.size !== -1 ? String(row[idx.size] || '').trim() : '',
+                        subCategory: idx.subcat !== -1 ? String(row[idx.subcat] || 'General').trim() : 'General',
+                        size: sizeStr,
                         flavor: idx.flavor !== -1 ? String(row[idx.flavor] || '').trim() : '',
-                        options: idx.options !== -1 ? String(row[idx.options] || '').trim() : '',
-                        price: price,
+                        mealOptions: idx.mealOptions !== -1 ? String(row[idx.mealOptions] || '').trim() : '',
+                        extras: idx.extras !== -1 ? String(row[idx.extras] || '').trim() : '',
+                        price: parseFloat(String(idx.price !== -1 ? row[idx.price] : '0').replace(/[^0-9.]/g, '')) || 0,
                         onSale: idx.onSale !== -1 ? String(row[idx.onSale] || 'false').toLowerCase() === 'true' : false,
-                        salePrice: idx.salePrice !== -1 ? parseFloat(String(row[idx.salePrice] || '0').replace(/[^0-9.]/g, '')) || 0 : 0,
-                        img: null
-                    });
+                        salePrice: parseFloat(String(idx.salePrice !== -1 ? row[idx.salePrice] : '0').replace(/[^0-9.]/g, '')) || 0,
+                        img: existingIndex !== -1 ? store.menu[existingIndex].img : null
+                    };
+
+                    if (existingIndex !== -1) {
+                        store.menu[existingIndex] = { ...store.menu[existingIndex], ...itemData };
+                    } else {
+                        store.menu.push(itemData);
+                    }
                     importedCount++;
                 }
             }
@@ -1638,7 +1695,7 @@
                     const count = await processSheetData(rows, cat, type, storeIndex);
                     if(count > 0) {
                         await saveConfig();
-                        alert(count + ' products imported successfully! They will now show on your public menu.');
+                        alert(count + ' products imported/updated successfully! They will now show on your public menu.');
                         if(cat === 'takeaway') renderAdminTakeawayMenu();
                         else renderAdminGroceryMenu();
                     }
@@ -1671,7 +1728,7 @@
                 const count = await processSheetData(rows, cat, type, storeIndex);
                 if(count > 0) {
                     await saveConfig();
-                    alert(count + ' products imported successfully! They will now show on your public menu.');
+                    alert(count + ' products imported/updated successfully! They will now show on your public menu.');
                     if(cat === 'takeaway') renderAdminTakeawayMenu();
                     else renderAdminGroceryMenu();
                 }
@@ -1720,16 +1777,30 @@
             if(cat === 'takeaway') store = appData.takeaways[type][storeIndex];
             else store = appData.groceries[storeIndex];
             const name = document.getElementById(`menu_name_${cat}_${type ? type : 'g'}_${storeIndex}`).value;
+            const subCat = document.getElementById(`menu_subcat_${cat}_${type ? type : 'g'}_${storeIndex}`).value || 'General';
             const size = document.getElementById(`menu_size_${cat}_${type ? type : 'g'}_${storeIndex}`).value || '';
             const price = parseFloat(document.getElementById(`menu_price_${cat}_${type ? type : 'g'}_${storeIndex}`).value);
             if(!name || !price) { alert('Enter item name and price'); return; }
-            store.menu.push({ id: 'm' + Date.now().toString(), name, size, price, category: 'General', flavor: '', options: '', onSale: false, salePrice: 0, img: null });
+            
+            // Duplicate check
+            if(store.menu.some(m => m.name.toLowerCase() === name.toLowerCase() && (m.size || '').toLowerCase() === size.toLowerCase())) {
+                alert('An item with this name and size already exists. Please edit the existing item instead.');
+                return;
+            }
+
+            store.menu.push({ id: 'm' + Date.now().toString(), name, size, price, category: 'General', subCategory: subCat, flavor: '', mealOptions: '', extras: '', onSale: false, salePrice: 0, img: null });
             await saveConfig();
             if(cat === 'takeaway') renderAdminTakeawayMenu();
             else renderAdminGroceryMenu();
         }
 
-        async function adminUpdateMenuItem(cat, type, storeIndex, itemIndex) {
+        async function adminUpdateMenuItem(e, cat, type, storeIndex, itemIndex) {
+            e.preventDefault();
+            const btn = e.target;
+            if(btn.dataset.saving === '1') return;
+            btn.dataset.saving = '1';
+            btn.innerText = 'Saving...';
+
             let store;
             if(cat === 'takeaway') store = appData.takeaways[type][storeIndex];
             else store = appData.groceries[storeIndex];
@@ -1737,16 +1808,23 @@
             if(item) {
                 item.name = document.getElementById(`i_name_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value;
                 item.category = document.getElementById(`i_cat_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value;
+                item.subCategory = document.getElementById(`i_subcat_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value;
                 item.size = document.getElementById(`i_size_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value;
                 item.flavor = document.getElementById(`i_flav_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value;
                 item.price = parseFloat(document.getElementById(`i_price_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value);
                 item.salePrice = parseFloat(document.getElementById(`i_sale_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value);
-                item.options = document.getElementById(`i_opt_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value;
+                if(cat === 'takeaway') {
+                    item.mealOptions = document.getElementById(`i_mealopt_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value;
+                    item.extras = document.getElementById(`i_extras_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value;
+                }
                 item.onSale = document.getElementById(`i_onsale_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).checked;
                 await saveConfig();
                 alert('Item updated!');
                 if(cat === 'takeaway') renderAdminTakeawayMenu();
                 else renderAdminGroceryMenu();
+            } else {
+                btn.dataset.saving = '0';
+                btn.innerText = 'Save';
             }
         }
         
