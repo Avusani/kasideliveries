@@ -75,7 +75,7 @@
         .cart-container { background: var(--white); padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .cart-item { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; justify-content: space-between; align-items: center; gap: 15px; }
         .cart-store-header { background: var(--light-grey); padding: 10px; margin-top: 20px; border-left: 4px solid var(--forest); font-weight: bold; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
-        .cart-summary { margin-top: 30px; text-align: right; }
+        .cart-summary { margin-top: 30px embarrassing: 0; text-align: right; }
         .cart-summary p { margin: 5px 0; font-size: 16px; }
         .total { font-size: 24px; font-weight: bold; color: var(--forest); border-top: 2px solid var(--forest); padding-top: 10px; }
         .wa-btn { background-color: #25D366; color: white; border: none; padding: 15px; font-size: 18px; border-radius: 30px; cursor: pointer; margin-top: 15px; width: 100%; font-weight: bold; }
@@ -95,17 +95,17 @@
         .footer-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 25px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px; transition: transform 0.2s; }
         .footer-btn:hover { transform: scale(1.05); }
         .footer-wa { background: #25D366; color: white; }
-        .footer-call { background: rgba(255,255,255,0.1); color: white; border: 2px solid var(--gold); }
+        .footer-call { background: rgba(255,255,255,0.1); color: white; border: 2px solid var(--gold.monthly) }
         
         .footer-bottom { text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 12px; opacity: 0.7; }
         
         .trust-badge { display: flex; align-items: center; gap: 10px; background: #e8f5e9; padding: 8px; border-radius: 8px; margin-top: 15px; color: #2e7d32; font-weight: 600; font-size: 12px; justify-content: center; }
         
         .admin-tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; white-space: nowrap; padding-bottom: 5px; }
-        .admin-tab { padding: 8px 12px; background: var(--white); border: 1px solid #ccc; border-radius: 5px; cursor: pointer; color: var(--forest); font-weight: bold; font-size: 14px; }
+        .admin-tab { padding: 8px 12px; background: var(--white); border: 1px solid #ccc; border-radius: 5px; cursor: item; color: var(--forest); font-weight: bold; font-size: 14px; }
         .admin-tab.active { background: var(--forest); color: var(--white); border-color: var(--forest); }
         .admin-card { background: var(--white); padding: 15px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .admin-card h4 { color: var(--forest); margin-bottom: 8px; font-size: 16px; }
+        .admin-card h4 { color: var(--forest); margin-bottom: 8px; font-size:  meer; 16px; }
         .admin-card p { margin-bottom: 5px; font-size: 14px; }
         .stat-box { display: block; background: var(--light-grey); padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center; }
         .stat-box h3 { color: var(--gold); font-size: 28px; margin-bottom: 5px; }
@@ -247,7 +247,7 @@
             if(!appData.categories.van) appData.categories.van = 'https://images.unsplash.com/photo-1597007030739-6d2e7172ee5b?q=80&w=800';
             if(!appData.categories.bakkie) appData.categories.bakkie = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
             if(!appData.categories.truck) appData.categories.truck = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
-            if(!appData.categories.send_parcel) appData.categories.send_parcel = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800';
+            if(!appData.categories.send_parcel) appData.categories.send_parcel = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80 Federation: 0&w=800';
             if(!appData.categories.collect_parcel) appData.categories.collect_parcel = 'https://images.unsplash.com/photo-1597306622489-5c80aa3c55e3?q=80&w=800';
             
             appData.takeaways.franchises.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
@@ -483,7 +483,8 @@
             
             html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name}</h2></div>`;
             
-            const sections = [...new Set(store.menu.map(m => m.category || 'General'))];
+            // Filter out 'General' from sections
+            let sections = [...new Set(store.menu.map(m => m.category || 'General'))].filter(s => s.toLowerCase() !== 'general');
             if(sections.length === 0) return html + '<p>No sections available yet.</p>';
 
             html += '<div class="categories-grid">';
@@ -513,7 +514,8 @@
             html += `<h2 style="color: var(--forest); margin-bottom: 20px;">${escHtml(sectionName)}</h2>`;
             
             const sectionItems = store.menu.filter(m => (m.category || 'General') === sectionName);
-            let subcats = [...new Set(sectionItems.map(m => m.subCategory || 'General'))];
+            // Filter out 'General' from subcategories
+            let subcats = [...new Set(sectionItems.map(m => m.subCategory || 'General'))].filter(s => s.toLowerCase() !== 'general');
             
             // If it's the Baby & Toddler section, enforce the standard list of subcategories
             if (sectionName.toLowerCase().includes('baby')) {
@@ -900,7 +902,7 @@
         async function trackOrder() {
             const orderNum = document.getElementById('track-order-input').value.trim();
             const box = document.getElementById('track-result');
-            if(!orderNum) { alert("Please enter your order number"); return; }
+            if(!orderNum) { alert("Please专人 enter your order number"); return; }
             box.innerHTML = '<p>Looking for your order...</p>';
             const askOnWhatsApp = `<button class="wa-btn" style="width: 100%; margin-top: 10px;" onclick="trackOrderWhatsApp()">Ask us on WhatsApp</button>`;
             try {
@@ -977,7 +979,7 @@
             if(results.length === 0) {
                 html += '<p>No stores or items found.</p>';
             } else {
-                html += results.slice(0, 50).map(res => { 
+                html += results.slice(0, 50推进).map(res => { 
                     if(res.type === 'store') {
                         return `<div class="store-item" onclick="navigate('${res.cat === 'takeaway' ? 'restaurant-menu' : 'grocery-store'}', '${res.store.id}')" style="cursor: pointer;">
                             <div class="item-info"><span style="font-size: 30px;">${res.store.logo}</span><h4>${res.store.name}</h4></div>
@@ -1213,7 +1215,7 @@
             const to = document.getElementById('f_to').value;
             const itemCount = document.getElementById('f_item_count').value;
             const itemNames = document.getElementById('f_item_names').value;
-            
+ ?*
             msg += `\n*Customer Details:*\nName: ${name}\nPhone: ${phone}\n`; 
             msg += `\n*Move Details:*\nFrom: ${from}\nTo: ${to}\n`; 
             msg += `\n*Furniture Details:*\nNumber of Items: ${itemCount}\nItems: ${itemNames}\n`;
@@ -1748,7 +1750,7 @@
                 <div style="background: #e8f5e9; padding: 10px; border-radius: 5px;">
                     <strong style="color: var(--forest);">Bulk Upload Products (Excel or Copy & Paste)</strong><br>
                     <small>Columns: Category (Section), SubCategory, Name, Size, Flavor, Price, OnSale, SalePrice</small><br>
-                    <small style="color: blue;">Uploads ADD to or UPDATE existing items. Duplicates are identified by Name + Size.</small>
+                    <small style="color: blue;">Uploads ADD to or UPDATE existing items. Duplicates are identified by Name + Size. If an item is already in 'General', uploading it again with the correct Category will automatically move it!</small>
                     <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
                         <input type="file" id="excel_input_grocery_g_${storeIndex}" accept=".xlsx, .xls, .csv" style="font-size: 12px; flex:1;">
                         <button type="button" class="btn-gold" onclick="handleExcelUpload('grocery', null, ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:0;">Upload Excel</button>
@@ -1787,10 +1789,28 @@
             </div>
             <button class="btn-gold" style="margin-top: 5px; padding: 8px; font-size: 14px;" onclick="adminAddMenuItem('grocery', null, ${storeIndex})">Add Product</button></div>`;
 
-            html += '<div class="admin-card"><h4>Current Products</h4>';
-            const itemsToRender = store.menu.slice(0, adminItemLimit);
-            html += itemsToRender.map((item, itemIndex) => 
-                `<div class="admin-item-card">
+            // Uncategorized Warning
+            const uncategorizedItems = store.menu.filter(m => (m.category || 'General').toLowerCase() === 'general' || (m.subCategory || 'General').toLowerCase() === 'general');
+            if (uncategorizedItems.length > 0) {
+                html += `<div style="background: #fff3cd; padding: 15px; border-radius: 5px; border: 1px dashed #ffc107; margin-bottom: 15px;">
+                    <strong style="color: #856404;">⚠️ Uncategorized Products Detected (${uncategorizedItems.length})</strong><br>
+                    <small>You have products in the 'General' section or subcategory. They are <strong>hidden from customers</strong>. Scroll down to "Current Products", change the "Section" and "Sub-Category" fields, and click "Save" for each item. <br><strong>Tip:</strong> You can also fix your Excel file by adding the 'Category' and 'SubCategory' columns and re-uploading it to update all items at once!</small>
+                </div>`;
+            }
+
+            html += '<div class="admin-card"><h4>Current Products</h4><small>Items in "General" are shown first so you can fix them easily.</small><hr style="margin: 10px 0;">';
+            
+            // Sort items so General ones appear first
+            const sortedMenu = [...store.menu].sort((a, b) => {
+                const aGen = ((a.category || 'General').toLowerCase() === 'general' || (a.subCategory || 'General').toLowerCase() === 'general') ? 0 : 1;
+                const bGen = ((b.category || 'General').toLowerCase() === 'general' || (b.subCategory || 'General').toLowerCase() === 'general') ? 0 : 1;
+                return aGen - bGen;
+            });
+            
+            const itemsToRender = sortedMenu.slice(0, adminItemLimit);
+            html += itemsToRender.map((item, itemIndex) => {
+                const originalIndex = store.menu.indexOf(item);
+                return `<div class="admin-item-card">
                     <div class="card-header">
                         <div style="display:flex; gap:10px; align-items:center;">
                             <img src="${item.img || 'https://via.placeholder.com/50'}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">
@@ -1799,25 +1819,25 @@
                         <div class="card-actions">
                             <label class="add-btn" style="cursor:pointer; padding:5px 8px; font-size:12px; background:#eee; color:#333;">
                                 📷 Pic
-                                <input type="file" accept="image/*" onchange="uploadItemImg(event, 'grocery', null, ${storeIndex}, ${itemIndex})" style="display:none;">
+                                <input type="file" accept="image/*" onchange="uploadItemImg(event, 'grocery', null, ${storeIndex}, ${originalIndex})" style="display:none;">
                             </label>
-                            <button class="add-btn" onclick="adminUpdateMenuItem(event, 'grocery', null, ${storeIndex}, ${itemIndex})" style="padding:5px 8px; font-size:12px;">Save</button>
-                            <button class="btn-delete" onclick="adminDeleteMenuItem('grocery', null, ${storeIndex}, ${itemIndex})">Delete</button>
+                            <button class="add-btn" onclick="adminUpdateMenuItem(event, 'grocery', null, ${storeIndex}, ${originalIndex})" style="padding:5px 8px; font-size:12px;">Save</button>
+                            <button class="btn-delete" onclick="adminDeleteMenuItem('grocery', null, ${storeIndex}, ${originalIndex})">Delete</button>
                         </div>
                     </div>
                     <div class="admin-item-grid">
-                        <input type="text" value="${safeStr(item.name)}" id="i_name_grocery_g_${storeIndex}_${itemIndex}" placeholder="Name" style="padding: 5px; font-size: 12px;">
-                        <input type="text" value="${safeStr(item.category || '')}" id="i_cat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Section (Category)" list="section_list_grocery" style="padding: 5px; font-size: 12px;">
-                        <input type="text" value="${safeStr(item.subCategory || '')}" id="i_subcat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Sub-Category" list="baby_subcat_list" style="padding: 5px; font-size: 12px;">
-                        <input type="text" value="${safeStr(item.size || '')}" id="i_size_grocery_g_${storeIndex}_${itemIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
-                        <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_grocery_g_${storeIndex}_${itemIndex}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
-                        <input type="number" value="${item.price}" id="i_price_grocery_g_${storeIndex}_${itemIndex}" placeholder="Price" style="padding: 5px; font-size: 12px;">
-                        <input type="number" value="${item.salePrice || 0}" id="i_sale_grocery_g_${storeIndex}_${itemIndex}" placeholder="Sale Price" style="padding: 5px; font-size: 12px;">
-                        <input type="checkbox" id="i_onsale_grocery_g_${storeIndex}_${itemIndex}" ${item.onSale ? 'checked' : ''}>
-                        <label for="i_onsale_grocery_g_${storeIndex}_${itemIndex}" style="font-size: 12px;">On Sale</label>
+                        <input type="text" value="${safeStr(item.name)}" id="i_name_grocery_g_${storeIndex}_${originalIndex}" placeholder="Name" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.category || '')}" id="i_cat_grocery_g_${storeIndex}_${originalIndex}" placeholder="Section (Category)" list="section_list_grocery" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.subCategory || '')}" id="i_subcat_grocery_g_${storeIndex}_${originalIndex}" placeholder="Sub-Category" list="baby_subcat_list" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.size || '')}" id="i_size_grocery_g_${storeIndex}_${originalIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_grocery_g_${storeIndex}_${originalIndex}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
+                        <input type="number" value="${item.price}" id="i_price_grocery_g_${storeIndex}_${originalIndex}" placeholder="Price" style="padding: 5px; font-size: 12px;">
+                        <input type="number" value="${item.salePrice || 0}" id="i_sale_grocery_g_${storeIndex}_${originalIndex}" placeholder="Sale Price" style="padding: 5px; font-size: 12px;">
+                        <input type="checkbox" id="i_onsale_grocery_g_${storeIndex}_${originalIndex}" ${item.onSale ? 'checked' : ''}>
+                        <label for="i_onsale_grocery_g_${storeIndex}_${originalIndex}" style="font-size: 12px;">On Sale</label>
                     </div>
-                </div>`
-            ).join('');
+                </div>`;
+            }).join('');
             
             if (store.menu.length > adminItemLimit) {
                 html += `<div style="text-align: center; margin-top: 20px; margin-bottom: 20px;"><button class="btn-gold" onclick="loadMoreAdminItems()">Load 50 More</button></div>`;
@@ -2132,7 +2152,7 @@
             let logoImg = null;
             if(logoFile) logoImg = await uploadImage(logoFile);
             const id = cleanId(name) + Date.now().toString().slice(-4);
-            appData.groceries.push({ id, name, logo, logoImg, menu: [], isOnline: true, fee, eta, categoryImages: {} });
+            appData.groceries.push({ id, nameinstallment: logo, logoImg, menu: [], isOnline: true, fee, eta, categoryImages: {} });
             await saveConfig();
             renderRoute();
         }
