@@ -184,9 +184,15 @@
             return String(id || '').replace(/[^a-zA-Z0-9]/g, '');
         }
 
+        function escHtml(str) {
+            return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
         async function fetchData() { 
             const res = await fetch('/api/data'); 
             appData = await res.json(); 
+            // Logged in already? The server knows from its cookie, so a refresh keeps you in.
+            isAdmin = appData.isAdmin === true;
             if(!appData.sliderImages) appData.sliderImages = [];
             if(!appData.siteContent) appData.siteContent = {};
             if(!appData.siteContent.websiteName) appData.siteContent.websiteName = "KasiDeliveries";
@@ -231,9 +237,13 @@
             const config = { users: appData.users, siteContent: appData.siteContent, sliderImages: appData.sliderImages, categories: appData.categories, takeaways: appData.takeaways, groceries: appData.groceries };
             try {
                 const res = await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
-                if(!res.ok) throw new Error("Server responded with " + res.status);
+                if(!res.ok) {
+                    const problem = await res.json().catch(() => ({}));
+                    if(res.status === 401) isAdmin = false;
+                    throw new Error(problem.error || ("Server responded with " + res.status));
+                }
             } catch(e) {
-                alert("Error saving data to server: " + e.message + "\n\nPlease make sure your server is running.");
+                alert("Could not save: " + e.message);
                 throw e;
             }
         }
@@ -242,7 +252,11 @@
             const formData = new FormData();
             formData.append('file', file);
             const res = await fetch('/api/upload', { method: 'POST', body: formData });
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
+            if(!res.ok || !data.url) {
+                alert(data.error || 'That photo could not be uploaded.');
+                throw new Error(data.error || 'Upload failed');
+            }
             return data.url;
         }
 
@@ -416,12 +430,12 @@
             let actionHtml = '';
             if (currentQty > 0) {
                 actionHtml = `<div class="qty-selector">
-                    <button class="qty-btn" onclick="changeQty('${item.id}', '${storeName}', -1)">−</button>
+                    <button class="qty-btn" onclick="changeQty('${safeStr(item.id)}', '${safeStr(storeName)}', -1)">−</button>
                     <span class="qty-display">×${currentQty}</span>
-                    <button class="qty-btn" onclick="changeQty('${item.id}', '${storeName}', 1)">+</button>
+                    <button class="qty-btn" onclick="changeQty('${safeStr(item.id)}', '${safeStr(storeName)}', 1)">+</button>
                 </div>`;
             } else {
-                actionHtml = `<button class="add-btn" onclick="addItemToCart('${item.id}', '${storeName}', '${safeStr(item.name)}', ${displayPrice}, '${safeStr(item.size || '')}')">Add</button>`;
+                actionHtml = `<button class="add-btn" onclick="addItemToCart('${safeStr(item.id)}', '${safeStr(storeName)}', '${safeStr(item.name)}', ${displayPrice}, '${safeStr(item.size || '')}')">Add</button>`;
             }
 
             return `<div class="store-item">
@@ -628,10 +642,31 @@
             </form>`; 
         }
         
-        function renderTrackOrder() { 
-            return `<a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px; text-align: center;">Track My Driver</h2><div class="form-container" style="max-width: 500px; text-align: center;"><p style="margin-bottom: 20px;">May we have your Order Number?</p><div class="form-group"><input type="text" id="track-order-input" placeholder="e.g. KD-123456789" style="text-align: center; font-size: 18px; padding: 15px;"></div><button class="btn-gold" style="width: 100%; padding: 15px;" onclick="trackOrderWhatsApp()">Track on WhatsApp</button></div>`; 
+        function renderTrackOrder() {
+            return `<a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px; text-align: center;">Track My Driver</h2><div class="form-container" style="max-width: 500px; text-align: center;"><p style="margin-bottom: 20px;">May we have your Order Number?</p><div class="form-group"><input type="text" id="track-order-input" placeholder="e.g. KD-123456789" style="text-align: center; font-size: 18px; padding: 15px;"></div><button class="btn-gold" style="width: 100%; padding: 15px;" onclick="trackOrder()">Track my order</button><div id="track-result" style="margin-top: 20px;"></div></div>`;
         }
-        
+
+        // Asks the server where the order has got to. Once a driver has it there is
+        // a live map; before that, what it is waiting for.
+        async function trackOrder() {
+            const orderNum = document.getElementById('track-order-input').value.trim();
+            const box = document.getElementById('track-result');
+            if(!orderNum) { alert("Please enter your order number"); return; }
+            box.innerHTML = '<p>Looking for your order...</p>';
+            const askOnWhatsApp = `<button class="wa-btn" style="width: 100%; margin-top: 10px;" onclick="trackOrderWhatsApp()">Ask us on WhatsApp</button>`;
+            try {
+                const res = await fetch('/api/track/' + encodeURIComponent(orderNum));
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) { box.innerHTML = `<p style="color: #b00020;">${escHtml(data.error || 'We could not look that order up.')}</p>${askOnWhatsApp}`; return; }
+                let html = `<p style="font-size: 12px; color: #666;">${escHtml(data.ref)}${data.store ? ' · ' + escHtml(data.store) : ''}</p><h3 style="color: var(--forest); margin: 8px 0 14px;">${escHtml(data.status)}</h3>`;
+                if (data.trackingUrl) html += `<a class="btn-gold" style="display: block; padding: 15px; text-decoration: none; text-align: center;" href="${escHtml(data.trackingUrl)}" target="_blank" rel="noopener">Open the live map</a>`;
+                if (data.whatsappLink) html += `<a class="wa-btn" style="display: block; text-align: center; text-decoration: none;" href="${escHtml(data.whatsappLink)}" target="_blank" rel="noopener">Send the order on WhatsApp</a>`;
+                box.innerHTML = html + askOnWhatsApp;
+            } catch (e) {
+                box.innerHTML = `<p style="color: #b00020;">Could not reach the server. Please try again.</p>${askOnWhatsApp}`;
+            }
+        }
+
         function renderCart() { 
             if (cart.length === 0) return `<h2 style="color: var(--forest); text-align: center; margin-top: 50px;">Your cart is empty</h2>`; 
             const grouped = {}; 
@@ -651,15 +686,18 @@
                             <small>R${item.price.toFixed(2)} each</small>
                         </div>
                         <div class="qty-selector">
-                            <button class="qty-btn" onclick="changeQty('${item.id}', '${item.store}', -1)">−</button>
+                            <button class="qty-btn" onclick="changeQty('${safeStr(item.id)}', '${safeStr(item.store)}', -1)">−</button>
                             <span class="qty-display">×${item.qty}</span>
-                            <button class="qty-btn" onclick="changeQty('${item.id}', '${item.store}', 1)">+</button>
+                            <button class="qty-btn" onclick="changeQty('${safeStr(item.id)}', '${safeStr(item.store)}', 1)">+</button>
                         </div>
                         <div style="width: 80px; text-align: right;">R${(item.price * item.qty).toFixed(2)}</div>
                     </div>`
                 ).join(''); 
             }); 
-            html += `<div class="cart-summary"><p>Items subtotal: R${subtotal.toFixed(2)}</p><p>Additional-Store Fees: R${additionalStoreFee.toFixed(2)}</p><p class="total">Estimated Total: R${total.toFixed(2)}</p><p style="font-size: 12px; color: #666;">* Delivery fee will be confirmed on WhatsApp.</p><div class="trust-badge"><span>🔒</span> Trusted & Secure WhatsApp Checkout</div><button class="wa-btn" onclick="checkoutWhatsApp()">Checkout via WhatsApp</button></div>`; 
+            const priceLines = appData.kasiDelivery
+                ? `<p class="total">Items subtotal: R${subtotal.toFixed(2)}</p><p style="font-size: 12px; color: #666;">* The delivery fee is added on WhatsApp, where you get your invoice.</p>`
+                : `<p>Items subtotal: R${subtotal.toFixed(2)}</p><p>Additional-Store Fees: R${additionalStoreFee.toFixed(2)}</p><p class="total">Estimated Total: R${total.toFixed(2)}</p><p style="font-size: 12px; color: #666;">* Delivery fee will be confirmed on WhatsApp.</p>`;
+            html += `<div class="cart-summary">${priceLines}<div class="trust-badge"><span>🔒</span> Trusted & Secure WhatsApp Checkout</div><button class="wa-btn" onclick="checkoutWhatsApp()">Checkout via WhatsApp</button></div>`; 
             return html + `</div>`; 
         }
 
@@ -737,8 +775,9 @@
                 existing.qty++;
                 existing.name = fullName;
                 existing.price = finalPrice;
+                existing.option = optionText;
             } else {
-                cart.push({ id: itemId, store: storeName, name: fullName, price: finalPrice, qty: 1 });
+                cart.push({ id: itemId, itemId: itemId, option: optionText, store: storeName, name: fullName, price: finalPrice, qty: 1 });
             }
             
             updateCartCount(); 
@@ -775,38 +814,66 @@
             document.getElementById('cart-count').innerText = cart.reduce((sum, item) => sum + item.qty, 0); 
         }
         
-        async function checkoutWhatsApp() { 
-            const waNum = appData.siteContent.whatsappNumber || "27843689501";
-            const ref = `KD-${Date.now()}`; 
-            let msg = `🧾 *KASIDELIVERIES RECEIPT*\n`; 
-            msg += `Order No: ${ref}\n\n`;
-            
-            const grouped = {}; 
-            cart.forEach(item => { if (!grouped[item.store]) grouped[item.store] = []; grouped[item.store].push(item); }); 
-            
-            let itemCounter = 1;
-            Object.keys(grouped).forEach(store => { 
-                msg += `*${store}*\n`;
-                grouped[store].forEach(item => { 
-                    msg += `${itemCounter}. ${item.name} x ${item.qty} - R${(item.price * item.qty).toFixed(2)}\n`;
-                    itemCounter++;
-                }); 
-                msg += `\n`;
-            }); 
-            
-            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0); 
-            msg += `----------------------\n`;
-            msg += `Subtotal: R${subtotal.toFixed(2)}\n`;
-            msg += `Delivery Fee: To be confirmed\n`;
-            msg += `TOTAL: To be confirmed\n\n`;
-            msg += `Please confirm the final delivery fee and total amount to pay.`;
-            
-            const newOrder = { ref: ref, type: 'Food/Grocery Order', details: cart, total: subtotal, date: new Date().toLocaleString(), status: 'Awaiting WhatsApp Confirmation' }; 
-            await fetch('/api/order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newOrder) }); 
-            appData.orders.push(newOrder); 
-            window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank'); 
+        // Checkout. The server looks the prices up in its own menus, hands the order
+        // to Kasi Delivery, and gives back a WhatsApp link for each shop. On WhatsApp
+        // the customer is asked where it goes and gets the invoice, delivery fee included.
+        async function checkoutWhatsApp() {
+            if (cart.length === 0) return;
+            let data;
+            try {
+                const res = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+                    items: cart.map(item => ({ store: item.store, itemId: item.itemId, option: item.option || '', qty: item.qty }))
+                }) });
+                data = await res.json().catch(() => ({}));
+                if (!res.ok || !Array.isArray(data.orders)) { alert(data.error || 'Could not start your order. Please try again.'); return; }
+            } catch (e) {
+                alert('Could not reach the server. Please check your connection and try again.');
+                return;
+            }
+
+            const sent = data.orders.filter(o => !o.error);
+            // What went through leaves the cart. A shop that could not take the order
+            // keeps its items there, so nothing the customer chose is lost.
+            cart = cart.filter(item => !sent.some(o => o.store === item.store));
+            updateCartCount();
+            document.getElementById('app-content').innerHTML = renderCheckoutResult(data.orders);
+            window.scrollTo(0, 0);
+            // One shop and nothing wrong: straight to WhatsApp. The button on the page
+            // is still there for a phone that blocks the new tab.
+            if (data.orders.length === 1 && sent.length === 1) window.open(orderLink(sent[0]), '_blank');
         }
-        
+
+        // Where an order's button goes: Kasi Delivery's link when it is connected,
+        // otherwise WhatsApp with the order typed out, as before.
+        function orderLink(order) {
+            if (order.whatsappLink) return order.whatsappLink;
+            let msg = `*NEW ORDER REQUEST — ${(appData.siteContent.websiteName || 'KASIDELIVERIES').toUpperCase()}*\n\n*Order Reference:* ${order.ref}\n\n*${order.store}*\n`;
+            order.items.forEach(i => { msg += `- ${i.name} x ${i.qty}: R${(i.unitPrice * i.qty).toFixed(2)}\n`; });
+            msg += `\n*PRICE SUMMARY*\nProducts Subtotal: R${order.itemsTotal.toFixed(2)}\nPlease confirm final delivery fee and total.`;
+            return `https://wa.me/${appData.siteContent.whatsappNumber || "27843689501"}?text=${encodeURIComponent(msg)}`;
+        }
+
+        function renderCheckoutResult(orders) {
+            const sent = orders.filter(o => !o.error);
+            let html = `<a class="back-link" href="javascript:void(0)" onclick="navigate('home')">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 10px;">${sent.length ? 'One more step: send your order on WhatsApp' : 'We could not take this order'}</h2>`;
+            if (sent.length) html += `<p style="margin-bottom: 20px; color: #555;">Tap the green button${sent.length > 1 ? ' for each shop' : ''}. On WhatsApp we ask where to deliver, then send your invoice with the delivery fee.</p>`;
+            html += '<div class="cart-container">';
+            orders.forEach(order => {
+                html += `<div class="cart-store-header">📍 ${escHtml(order.store)}</div>`;
+                order.items.forEach(i => { html += `<div class="cart-item"><div><strong>${escHtml(i.name)}</strong> x ${i.qty}</div><div>R${(i.unitPrice * i.qty).toFixed(2)}</div></div>`; });
+                html += '<div class="cart-summary">';
+                if (order.error) {
+                    html += `<p style="color: #b00020; font-weight: bold;">${escHtml(order.error)}</p><p style="font-size: 12px; color: #666;">These items are still in your cart.</p>`;
+                } else {
+                    html += `<p class="total">Products: R${order.itemsTotal.toFixed(2)}</p>`;
+                    html += `<p style="font-size: 12px; color: #666;">Order number: <strong>${escHtml(order.ref)}</strong>. Keep it to track your order.</p>`;
+                    html += `<a class="wa-btn" style="display: block; text-align: center; text-decoration: none;" href="${escHtml(orderLink(order))}" target="_blank" rel="noopener">Send ${escHtml(order.store)} order on WhatsApp</a>`;
+                }
+                html += '</div>';
+            });
+            return html + '</div>';
+        }
+
         async function submitParcelRequest(type) { 
             event.preventDefault(); 
             const waNum = appData.siteContent.whatsappNumber || "27843689501";
@@ -913,16 +980,31 @@
             return `<div class="form-container" style="max-width: 400px; margin-top: 50px;"><h2 style="color: var(--forest); text-align: center; margin-bottom: 20px;">Admin Login</h2><form onsubmit="handleLogin(event)"><div class="form-group"><label>Username</label><input type="text" id="login_user" required></div><div class="form-group"><label>Password</label><input type="password" id="login_pass" required></div><button type="submit" class="btn-gold" style="width: 100%;">Login</button></form></div>`; 
         }
         
-        function handleLogin(e) { 
-            e.preventDefault(); 
-            const u = document.getElementById('login_user').value; 
-            const p = document.getElementById('login_pass').value; 
-            const user = appData.users.find(x => x.username === u && x.password === p); 
-            if(user) { isAdmin = true; navigate('admin'); } 
-            else { alert('Invalid credentials'); } 
+        // The password is checked by the server, which answers with a login cookie.
+        // Nothing about the admin users is in the page any more.
+        async function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('login_user').value;
+            const p = document.getElementById('login_pass').value;
+            let res, data;
+            try {
+                res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
+                data = await res.json().catch(() => ({}));
+            } catch (err) { alert('Could not reach the server. Please try again.'); return; }
+            if (!res.ok) { alert(data.error || 'Invalid credentials'); return; }
+            await fetchData();          // now that we are logged in, this brings the orders and users
+            if (data.mustChangePassword) {
+                alert('You are still using the default password. Please change it now: type a new one next to your username and tap Update Pass.');
+                adminTab = 'users';
+            }
+            navigate('admin');
         }
-        
-        function adminLogout() { isAdmin = false; navigate('home'); }
+
+        async function adminLogout() {
+            try { await fetch('/api/admin/logout', { method: 'POST' }); } catch (err) {}
+            await fetchData();
+            navigate('home');
+        }
 
         function renderAdmin() {
             let content = `
@@ -1026,42 +1108,49 @@
 
         function renderAdminUsers() {
             let html = '<div class="admin-card"><h4>Add New User (Max 20)</h4>';
-            if(appData.users.length >= 20) { html += '<p>User limit reached (20).</p>'; } 
+            if(appData.users.length >= 20) { html += '<p>User limit reached (20).</p>'; }
             else {
-                html += `<div class="form-row"><div class="form-group"><label>Username</label><input type="text" id="new_user"></div><div class="form-group"><label>Password</label><input type="text" id="new_pass"></div></div><button class="btn-gold" style="width: 100%;" onclick="adminAddUser()">Add User</button>`;
+                html += `<div class="form-row"><div class="form-group"><label>Username</label><input type="text" id="new_user" autocomplete="off"></div><div class="form-group"><label>Password (at least 8 characters)</label><input type="password" id="new_pass" autocomplete="new-password"></div></div><button class="btn-gold" style="width: 100%;" onclick="adminAddUser()">Add User</button>`;
             }
-            html += '</div><div class="admin-card"><h4>Current Users</h4>';
-            html += appData.users.map((u, i) => 
-                `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-                    <div><strong>${u.username}</strong><br><input type="text" value="${u.password}" id="pass_${i}" style="padding: 5px; border: 1px solid #ccc; border-radius: 4px; width: 100%;"></div>
-                    <div><button class="add-btn" onclick="adminUpdatePass(${i})">Update Pass</button> ${u.username !== 'admin' ? `<button class="btn-delete" onclick="adminDeleteUser(${i})">Delete</button>` : ''}</div>
-                </div>`
-            ).join('');
+            html += '</div><div class="admin-card"><h4>Current Users</h4><p style="font-size: 12px; color: #666; margin-bottom: 10px;">Passwords are not shown and cannot be read back. To change one, type the new password and tap Update Pass.</p>';
+            appData.users.forEach((u, i) => {
+                html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                    <div><strong>${escHtml(u.username)}</strong><br><input type="password" placeholder="New password" autocomplete="new-password" id="pass_${i}" style="padding: 5px; border: 1px solid #ccc; border-radius: 4px; width: 100%;"></div>
+                    <div><button class="add-btn" onclick="adminUpdatePass(${i})">Update Pass</button> ${u.username !== 'admin' && u.username !== appData.adminUser ? `<button class="btn-delete" onclick="adminDeleteUser(${i})">Delete</button>` : ''}</div>
+                </div>`;
+            });
             html += '</div>';
             document.getElementById('admin-content').innerHTML = html;
         }
-        
-        async function adminAddUser() { 
-            const u = document.getElementById('new_user').value; 
-            const p = document.getElementById('new_pass').value; 
-            if(!u || !p) { alert('Enter username and password'); return; } 
-            if(appData.users.length >= 20) { alert('Limit reached'); return; } 
-            appData.users.push({ username: u, password: p }); 
-            await saveConfig(); 
-            renderAdminUsers(); 
+
+        // Save a change to the users. A blank password means "leave it as it is", and
+        // the server is asked again afterwards so the page never keeps a password.
+        async function saveUsers(done) {
+            try { await saveConfig(); if (done) alert(done); } catch (e) {}
+            await fetchData();
+            if (isAdmin) renderAdminUsers(); else navigate('admin');
         }
-        
-        async function adminUpdatePass(i) { 
-            appData.users[i].password = document.getElementById('pass_'+i).value; 
-            await saveConfig(); 
-            alert('Password updated!'); 
+
+        async function adminAddUser() {
+            const u = document.getElementById('new_user').value.trim();
+            const p = document.getElementById('new_pass').value;
+            if(!u || !p) { alert('Enter username and password'); return; }
+            if(appData.users.length >= 20) { alert('Limit reached'); return; }
+            appData.users.push({ username: u, password: p });
+            await saveUsers();
         }
-        
-        async function adminDeleteUser(i) { 
+
+        async function adminUpdatePass(i) {
+            const p = document.getElementById('pass_'+i).value;
+            if(!p) { alert('Type the new password first'); return; }
+            appData.users[i].password = p;
+            await saveUsers('Password updated!');
+        }
+
+        async function adminDeleteUser(i) {
             if(!confirm('Are you sure you want to delete this user?')) return;
-            appData.users.splice(i, 1); 
-            await saveConfig(); 
-            renderAdminUsers(); 
+            appData.users.splice(i, 1);
+            await saveUsers();
         }
 
         function renderAdminImages() {
