@@ -483,8 +483,7 @@
             
             html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name}</h2></div>`;
             
-            // Filter out 'General' from sections completely
-            let sections = [...new Set(store.menu.map(m => m.category || 'General'))].filter(s => s.toLowerCase() !== 'general');
+            const sections = [...new Set(store.menu.map(m => m.category || 'General'))];
             if(sections.length === 0) return html + '<p>No sections available yet.</p>';
 
             html += '<div class="categories-grid">';
@@ -514,8 +513,7 @@
             html += `<h2 style="color: var(--forest); margin-bottom: 20px;">${escHtml(sectionName)}</h2>`;
             
             const sectionItems = store.menu.filter(m => (m.category || 'General') === sectionName);
-            // Filter out 'General' from subcategories completely
-            let subcats = [...new Set(sectionItems.map(m => m.subCategory || 'General'))].filter(s => s.toLowerCase() !== 'general');
+            let subcats = [...new Set(sectionItems.map(m => m.subCategory || 'General'))];
             
             // If it's the Baby & Toddler section, enforce the standard list of subcategories
             if (sectionName.toLowerCase().includes('baby')) {
@@ -1172,7 +1170,7 @@
                 await fetch('/api/parcel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newParcel) }); 
                 appData.parcelRequests.push(newParcel); 
             } else {
-                const collAddr = `${document.getElementById('c_coll_province').value}, ${document.getElementById('c_coll_city').value}, ${document.getElementById('c_coll_suburb').value}, ${document.getElementById('c_coll_street).value}, ${document.getElementById('c_coll_house').value}, ${document.getElementById('c_coll_unit').value}`;
+                const collAddr = `${document.getElementById('c_coll_province').value}, ${document.getElementById('c_coll_city').value}, ${document.getElementById('c_coll_suburb').value}, ${document.getElementById('c_coll_street').value}, ${document.getElementById('c_coll_house').value}, ${document.getElementById('c_coll_unit').value}`;
                 const collLandmark = document.getElementById('c_coll_landmark').value;
                 const collDirections = document.getElementById('c_coll_directions').value;
 
@@ -1381,14 +1379,7 @@
         }
 
         function renderAdminUsers() {
-            let html = '<div class="admin-card" style="background: #e8f5e9; border: 2px solid var(--gold);"><h4>Change My Password</h4><small>Use the box below to update your admin password instantly.</small>';
-            html += `<div class="form-row" style="margin-top: 10px;">
-                <div class="form-group"><label>New Password</label><input type="password" id="new_own_pass" autocomplete="new-password" placeholder="Enter new password"></div>
-                <div class="form-group"><label>Confirm Password</label><input type="password" id="confirm_own_pass" autocomplete="new-password" placeholder="Re-enter new password"></div>
-            </div>
-            <button class="btn-gold" onclick="adminChangeOwnPass()">Update My Password</button></div>`;
-
-            html += '<div class="admin-card"><h4>Add New User (Max 20)</h4>';
+            let html = '<div class="admin-card"><h4>Add New User (Max 20)</h4>';
             if(appData.users.length >= 20) { html += '<p>User limit reached (20).</p>'; }
             else {
                 html += `<div class="form-row"><div class="form-group"><label>Username</label><input type="text" id="new_user" autocomplete="off"></div><div class="form-group"><label>Password (at least 8 characters)</label><input type="password" id="new_pass" autocomplete="new-password"></div></div><button class="btn-gold" style="width: 100%;" onclick="adminAddUser()">Add User</button>`;
@@ -1408,21 +1399,6 @@
             try { await saveConfig(); if (done) alert(done); } catch (e) {}
             await fetchData();
             if (isAdmin) renderAdminUsers(); else navigate('admin');
-        }
-
-        async function adminChangeOwnPass() {
-            const p = document.getElementById('new_own_pass').value;
-            const c = document.getElementById('confirm_own_pass').value;
-            if(!p) { alert('Type the new password first'); return; }
-            if(p !== c) { alert('Passwords do not match!'); return; }
-            
-            let currentAdmin = appData.users.find(u => u.username === 'admin');
-            if(currentAdmin) {
-                currentAdmin.password = p;
-                await saveUsers('Password updated successfully!');
-            } else {
-                alert('Error: Could not find the admin user.');
-            }
         }
 
         async function adminAddUser() {
@@ -1642,7 +1618,6 @@
             html += '<div class="admin-card"><h4>Add Item Manually</h4>';
             html += `<div class="form-row">
                 <input type="text" id="menu_name_takeaway_${type}_${storeIndex}" placeholder="Item Name" style="padding: 10px; font-size: 14px;">
-                <input type="text" id="menu_cat_takeaway_${type}_${storeIndex}" placeholder="Category (e.g. Burgers)" style="padding: 10px; font-size: 14px;">
                 <input type="text" id="menu_subcat_takeaway_${type}_${storeIndex}" placeholder="Sub-Category (e.g. Beef)" style="padding: 10px; font-size: 14px;">
                 <input type="number" id="menu_price_takeaway_${type}_${storeIndex}" placeholder="Base Price (R)" style="padding: 10px; font-size: 14px;">
             </div>
@@ -1772,7 +1747,7 @@
                 <div style="background: #e8f5e9; padding: 10px; border-radius: 5px;">
                     <strong style="color: var(--forest);">Bulk Upload Products (Excel or Copy & Paste)</strong><br>
                     <small>Columns: Category (Section), SubCategory, Name, Size, Flavor, Price, OnSale, SalePrice</small><br>
-                    <small style="color: blue;">Uploads ADD to or UPDATE existing items. Duplicates are identified by Name + Size. If an item is already in 'General', uploading it again with the correct Category will automatically move it!</small>
+                    <small style="color: blue;">Uploads ADD to or UPDATE existing items. Duplicates are identified by Name + Size.</small>
                     <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
                         <input type="file" id="excel_input_grocery_g_${storeIndex}" accept=".xlsx, .xls, .csv" style="font-size: 12px; flex:1;">
                         <button type="button" class="btn-gold" onclick="handleExcelUpload('grocery', null, ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:0;">Upload Excel</button>
@@ -1804,35 +1779,16 @@
             html += '<div class="admin-card"><h4>Add Product Manually</h4>';
             html += `<div class="form-row">
                 <input type="text" id="menu_name_grocery_g_${storeIndex}" placeholder="Product Name" style="padding: 10px; font-size: 14px;">
-                <input type="text" id="menu_cat_grocery_g_${storeIndex}" placeholder="Section (e.g. Baby & Toddler)" list="section_list_grocery" style="padding: 10px; font-size: 14px;">
                 <input type="text" id="menu_subcat_grocery_g_${storeIndex}" placeholder="Sub-Category (e.g. Diapers)" list="baby_subcat_list" style="padding: 10px; font-size: 14px;">
                 <input type="text" id="menu_size_grocery_g_${storeIndex}" placeholder="Size (e.g. 500ml)" style="padding: 10px; font-size: 14px;">
                 <input type="number" id="menu_price_grocery_g_${storeIndex}" placeholder="Price (R)" style="padding: 10px; font-size: 14px;">
             </div>
             <button class="btn-gold" style="margin-top: 5px; padding: 8px; font-size: 14px;" onclick="adminAddMenuItem('grocery', null, ${storeIndex})">Add Product</button></div>`;
 
-            // Uncategorized Warning
-            const uncategorizedItems = store.menu.filter(m => (m.category || 'General').toLowerCase() === 'general' || (m.subCategory || 'General').toLowerCase() === 'general');
-            if (uncategorizedItems.length > 0) {
-                html += `<div style="background: #fff3cd; padding: 15px; border-radius: 5px; border: 1px dashed #ffc107; margin-bottom: 15px;">
-                    <strong style="color: #856404;">⚠️ Uncategorized Products Detected (${uncategorizedItems.length})</strong><br>
-                    <small>You have products in the 'General' section or subcategory. They are <strong>hidden from customers</strong>. Scroll down to "Current Products", change the "Section" and "Sub-Category" fields, and click "Save" for each item. <br><strong>Tip:</strong> You can also fix your Excel file by adding the 'Category' and 'SubCategory' columns and re-uploading it to update all items at once!</small>
-                </div>`;
-            }
-
-            html += '<div class="admin-card"><h4>Current Products</h4><small>Items in "General" are shown first so you can fix them easily.</small><hr style="margin: 10px 0;">';
-            
-            // Sort items so General ones appear first
-            const sortedMenu = [...store.menu].sort((a, b) => {
-                const aGen = ((a.category || 'General').toLowerCase() === 'general' || (a.subCategory || 'General').toLowerCase() === 'general') ? 0 : 1;
-                const bGen = ((b.category || 'General').toLowerCase() === 'general' || (b.subCategory || 'General').toLowerCase() === 'general') ? 0 : 1;
-                return aGen - bGen;
-            });
-            
-            const itemsToRender = sortedMenu.slice(0, adminItemLimit);
-            html += itemsToRender.map((item, itemIndex) => {
-                const originalIndex = store.menu.indexOf(item);
-                return `<div class="admin-item-card">
+            html += '<div class="admin-card"><h4>Current Products</h4>';
+            const itemsToRender = store.menu.slice(0, adminItemLimit);
+            html += itemsToRender.map((item, itemIndex) => 
+                `<div class="admin-item-card">
                     <div class="card-header">
                         <div style="display:flex; gap:10px; align-items:center;">
                             <img src="${item.img || 'https://via.placeholder.com/50'}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">
@@ -1841,25 +1797,25 @@
                         <div class="card-actions">
                             <label class="add-btn" style="cursor:pointer; padding:5px 8px; font-size:12px; background:#eee; color:#333;">
                                 📷 Pic
-                                <input type="file" accept="image/*" onchange="uploadItemImg(event, 'grocery', null, ${storeIndex}, ${originalIndex})" style="display:none;">
+                                <input type="file" accept="image/*" onchange="uploadItemImg(event, 'grocery', null, ${storeIndex}, ${itemIndex})" style="display:none;">
                             </label>
-                            <button class="add-btn" onclick="adminUpdateMenuItem(event, 'grocery', null, ${storeIndex}, ${originalIndex})" style="padding:5px 8px; font-size:12px;">Save</button>
-                            <button class="btn-delete" onclick="adminDeleteMenuItem('grocery', null, ${storeIndex}, ${originalIndex})">Delete</button>
+                            <button class="add-btn" onclick="adminUpdateMenuItem(event, 'grocery', null, ${storeIndex}, ${itemIndex})" style="padding:5px 8px; font-size:12px;">Save</button>
+                            <button class="btn-delete" onclick="adminDeleteMenuItem('grocery', null, ${storeIndex}, ${itemIndex})">Delete</button>
                         </div>
                     </div>
                     <div class="admin-item-grid">
-                        <input type="text" value="${safeStr(item.name)}" id="i_name_grocery_g_${storeIndex}_${originalIndex}" placeholder="Name" style="padding: 5px; font-size: 12px;">
-                        <input type="text" value="${safeStr(item.category || '')}" id="i_cat_grocery_g_${storeIndex}_${originalIndex}" placeholder="Section (Category)" list="section_list_grocery" style="padding: 5px; font-size: 12px;">
-                        <input type="text" value="${safeStr(item.subCategory || '')}" id="i_subcat_grocery_g_${storeIndex}_${originalIndex}" placeholder="Sub-Category" list="baby_subcat_list" style="padding: 5px; font-size: 12px;">
-                        <input type="text" value="${safeStr(item.size || '')}" id="i_size_grocery_g_${storeIndex}_${originalIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
-                        <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_grocery_g_${storeIndex}_${originalIndex}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
-                        <input type="number" value="${item.price}" id="i_price_grocery_g_${storeIndex}_${originalIndex}" placeholder="Price" style="padding: 5px; font-size: 12px;">
-                        <input type="number" value="${item.salePrice || 0}" id="i_sale_grocery_g_${storeIndex}_${originalIndex}" placeholder="Sale Price" style="padding: 5px; font-size: 12px;">
-                        <input type="checkbox" id="i_onsale_grocery_g_${storeIndex}_${originalIndex}" ${item.onSale ? 'checked' : ''}>
-                        <label for="i_onsale_grocery_g_${storeIndex}_${originalIndex}" style="font-size: 12px;">On Sale</label>
+                        <input type="text" value="${safeStr(item.name)}" id="i_name_grocery_g_${storeIndex}_${itemIndex}" placeholder="Name" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.category || '')}" id="i_cat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Section (Category)" list="section_list_grocery" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.subCategory || '')}" id="i_subcat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Sub-Category" list="baby_subcat_list" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.size || '')}" id="i_size_grocery_g_${storeIndex}_${itemIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_grocery_g_${storeIndex}_${itemIndex}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
+                        <input type="number" value="${item.price}" id="i_price_grocery_g_${storeIndex}_${itemIndex}" placeholder="Price" style="padding: 5px; font-size: 12px;">
+                        <input type="number" value="${item.salePrice || 0}" id="i_sale_grocery_g_${storeIndex}_${itemIndex}" placeholder="Sale Price" style="padding: 5px; font-size: 12px;">
+                        <input type="checkbox" id="i_onsale_grocery_g_${storeIndex}_${itemIndex}" ${item.onSale ? 'checked' : ''}>
+                        <label for="i_onsale_grocery_g_${storeIndex}_${itemIndex}" style="font-size: 12px;">On Sale</label>
                     </div>
-                </div>`;
-            }).join('');
+                </div>`
+            ).join('');
             
             if (store.menu.length > adminItemLimit) {
                 html += `<div style="text-align: center; margin-top: 20px; margin-bottom: 20px;"><button class="btn-gold" onclick="loadMoreAdminItems()">Load 50 More</button></div>`;
@@ -2054,13 +2010,10 @@
             let store;
             if(cat === 'takeaway') store = appData.takeaways[type][storeIndex];
             else store = appData.groceries[storeIndex];
-            
             const name = document.getElementById(`menu_name_${cat}_${type ? type : 'g'}_${storeIndex}`).value;
-            const category = document.getElementById(`menu_cat_${cat}_${type ? type : 'g'}_${storeIndex}`).value || 'General';
             const subCat = document.getElementById(`menu_subcat_${cat}_${type ? type : 'g'}_${storeIndex}`).value || 'General';
             const size = document.getElementById(`menu_size_${cat}_${type ? type : 'g'}_${storeIndex}`).value || '';
             const price = parseFloat(document.getElementById(`menu_price_${cat}_${type ? type : 'g'}_${storeIndex}`).value);
-            
             if(!name || !price) { alert('Enter item name and price'); return; }
             
             if(store.menu.some(m => m.name.toLowerCase() === name.toLowerCase() && (m.size || '').toLowerCase() === size.toLowerCase())) {
@@ -2068,7 +2021,7 @@
                 return;
             }
 
-            store.menu.push({ id: 'm' + Date.now().toString(), name, size, price, category: category, subCategory: subCat, flavor: '', mealOptions: '', extras: '', onSale: false, salePrice: 0, img: null });
+            store.menu.push({ id: 'm' + Date.now().toString(), name, size, price, category: 'General', subCategory: subCat, flavor: '', mealOptions: '', extras: '', onSale: false, salePrice: 0, img: null });
             await saveConfig();
             renderRoute();
         }
