@@ -9,6 +9,7 @@
         :root { --forest: #123B2A; --gold: #F5B82E; --white: #FFFFFF; --light-grey: #F2F4F1; --text-dark: #123B2A; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: var(--light-grey); color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; }
+        
         header { background-color: var(--forest); color: var(--white); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         .brand-container { display: flex; align-items: center; gap: 10px; cursor: pointer; }
         .brand-logo-img { height: 35px; width: auto; object-fit: contain; background: white; padding: 2px; border-radius: 5px; }
@@ -18,7 +19,9 @@
         nav a:hover, nav button:hover { color: var(--gold); }
         .cart-btn { border: 1px solid var(--gold); padding: 4px 8px; border-radius: 5px; font-size: 14px; }
         #search-input { padding: 5px 10px; border-radius: 20px; border: none; font-size: 14px; width: 150px; }
+        
         main { max-width: 1200px; margin: 0 auto; padding: 15px; flex: 1; width: 100%; }
+        
         .hero-slider { position: relative; border-radius: 10px; overflow: hidden; margin-bottom: 20px; height: 250px; background-color: var(--forest); }
         .hero-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; opacity: 0; transition: opacity 1s ease-in-out; background-size: cover; background-repeat: no-repeat; background-position: center; }
         .hero-slide.active { opacity: 1; }
@@ -27,9 +30,11 @@
         .slider-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 3; }
         .dot { height: 10px; width: 10px; background-color: rgba(255,255,255,0.5); border-radius: 50%; cursor: pointer; }
         .dot.active { background-color: var(--gold); }
+        
         .btn-gold { background-color: var(--gold); color: var(--forest); border: none; padding: 10px 20px; font-size: 16px; font-weight: bold; border-radius: 20px; cursor: pointer; transition: transform 0.2s; margin: 5px; z-index: 2; }
         .btn-gold:hover { transform: scale(1.05); }
         .btn-outline { background: transparent; color: #fff; border: 2px solid #fff; padding: 9px 20px; font-size: 16px; border-radius: 20px; cursor: pointer; margin: 5px; z-index: 2; text-shadow: 1px 1px 4px rgba(0,0,0,1); }
+        
         .categories-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 30px; }
         .category-card { position: relative; min-height: 160px; border-radius: 10px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; padding: 15px; color: var(--white); background-color: var(--forest); background-size: cover; background-repeat: no-repeat; background-position: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: transform 0.3s; border: 1px solid #ccc; }
         .category-card:hover { transform: translateY(-5px); }
@@ -37,22 +42,27 @@
         .category-card h3, .category-card p { position: relative; z-index: 2; }
         .category-card h3 { color: var(--gold); margin-bottom: 5px; font-size: 20px; }
         .category-card p { font-size: 12px; color: #eee; }
+        
         .store-item { background: var(--white); padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); gap: 10px; }
         .item-info { flex: 1; display: flex; align-items: center; gap: 15px; }
         .item-info h4 { color: var(--forest); font-size: 16px; }
         .item-info p { color: #666; font-size: 12px; }
         .item-price { font-weight: bold; color: var(--forest); font-size: 14px; text-align: right; margin-top: 5px; }
         .add-btn { background-color: var(--gold); color: var(--forest); border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        
         .item-img { width: 70px; height: 70px; object-fit: cover; object-position: center; border-radius: 5px; background: #f2f4f1; flex-shrink: 0; }
+        
         .qty-selector { display: flex; align-items: center; gap: 8px; background: #f2f4f1; padding: 4px; border-radius: 20px; }
         .qty-btn { background: var(--gold); color: var(--forest); border: none; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .qty-display { font-weight: bold; color: var(--forest); min-width: 25px; text-align: center; }
         .item-options, .item-extras { width: 100%; margin-top: 5px; padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 12px; }
         .item-extras label { display: flex; align-items: center; gap: 5px; margin: 3px 0; font-size: 12px; color: #444; }
+        
         .breadcrumb { margin-bottom: 15px; font-size: 14px; color: #666; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
         .breadcrumb a { color: var(--forest); text-decoration: underline; cursor: pointer; }
         .breadcrumb span { margin: 0 5px; color: #999; }
         .breadcrumb strong { color: var(--forest); }
+
         .form-container { background: var(--white); padding: 20px; border-radius: 10px; max-width: 800px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .form-section { margin-bottom: 20px; border-bottom: 1px solid var(--light-grey); padding-bottom: 15px; }
         .form-section:last-child { border-bottom: none; }
@@ -61,6 +71,7 @@
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--forest); font-size: 14px; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: inherit; font-size: 16px; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
         .cart-container { background: var(--white); padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .cart-item { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; justify-content: space-between; align-items: center; gap: 15px; }
         .cart-store-header { background: var(--light-grey); padding: 10px; margin-top: 20px; border-left: 4px solid var(--forest); font-weight: bold; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
@@ -68,8 +79,10 @@
         .cart-summary p { margin: 5px 0; font-size: 16px; }
         .total { font-size: 24px; font-weight: bold; color: var(--forest); border-top: 2px solid var(--forest); padding-top: 10px; }
         .wa-btn { background-color: #25D366; color: white; border: none; padding: 15px; font-size: 18px; border-radius: 30px; cursor: pointer; margin-top: 15px; width: 100%; font-weight: bold; }
+        
         .back-link { display: inline-block; margin-bottom: 15px; color: var(--forest); font-weight: bold; cursor: pointer; font-size: 14px; text-decoration: none; padding: 5px 10px; background: #e6e8e4; border-radius: 5px; }
         .back-link:hover { background: #dfe2db; }
+        
         footer { background-color: var(--forest); color: var(--white); padding: 30px 15px; margin-top: 30px; }
         .footer-content { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 20px; text-align: center; }
         .footer-col h4 { color: var(--gold); margin-bottom: 10px; }
@@ -77,13 +90,17 @@
         .footer-col ul li { margin-bottom: 8px; }
         .footer-col ul li a { color: var(--white); text-decoration: none; cursor: pointer; opacity: 0.8; transition: opacity 0.3s; font-size: 14px; }
         .footer-col ul li a:hover { opacity: 1; color: var(--gold); }
+        
         .footer-contact-btns { text-align: center; margin: 25px 0; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
         .footer-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 25px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px; transition: transform 0.2s; }
         .footer-btn:hover { transform: scale(1.05); }
         .footer-wa { background: #25D366; color: white; }
         .footer-call { background: rgba(255,255,255,0.1); color: white; border: 2px solid var(--gold); }
+        
         .footer-bottom { text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 12px; opacity: 0.7; }
+        
         .trust-badge { display: flex; align-items: center; gap: 10px; background: #e8f5e9; padding: 8px; border-radius: 8px; margin-top: 15px; color: #2e7d32; font-weight: 600; font-size: 12px; justify-content: center; }
+        
         .admin-tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; white-space: nowrap; padding-bottom: 5px; }
         .admin-tab { padding: 8px 12px; background: var(--white); border: 1px solid #ccc; border-radius: 5px; cursor: pointer; color: var(--forest); font-weight: bold; font-size: 14px; }
         .admin-tab.active { background: var(--forest); color: var(--white); border-color: var(--forest); }
@@ -95,20 +112,26 @@
         .stat-box p { color: var(--forest); font-weight: bold; font-size: 14px; }
         .text-content { white-space: pre-wrap; line-height: 1.6; font-size: 16px; }
         .store-logo-img { width: 40px; height: 40px; object-fit: cover; border-radius: 50%; background: #eee; }
+        
         .menu-category-header { color: var(--forest); margin-top: 20px; border-bottom: 2px solid var(--gold); padding-bottom: 5px; font-size: 18px; font-weight: bold; }
         .menu-subcategory-header { color: var(--forest); margin-top: 15px; font-size: 15px; font-weight: bold; text-decoration: underline; margin-bottom: 5px; }
         .sale-banner { color: red; font-weight: bold; margin-top: 20px; border-bottom: 2px solid red; padding-bottom: 5px; font-size: 18px; }
         .old-price { text-decoration: line-through; color: #999; font-size: 12px; margin-right: 5px; }
+        
         .upload-box { background: #f8f9fa; border: 2px dashed #ccc; padding: 15px; border-radius: 8px; text-align: center; margin-top: 10px; }
+        
         .btn-delete { background-color: #ff4d4d; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
         .btn-online { background-color: #4CAF50; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
         .btn-offline { background-color: #999; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+
         .admin-item-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 15px; background: #fafafa; }
         .admin-item-card .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .admin-item-card .card-header img { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; }
         .admin-item-card .card-actions { display: flex; gap: 5px; flex-wrap: wrap; }
         .admin-item-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
         .store-status-offline { opacity: 0.5; background: #eee; pointer-events: none; }
+
         @media (min-width: 768px) {
             header { padding: 15px 20px; } .logo { font-size: 24px; } .brand-logo-img { height: 45px; }
             nav a, nav button, .cart-btn { font-size: 16px; } main { padding: 20px; }
@@ -148,18 +171,21 @@
             <div class="footer-col"><h4>Legal</h4><ul><li><a onclick="navigate('terms')" href="javascript:void(0)">Terms & Conditions</a></li><li><a onclick="navigate('privacy')" href="javascript:void(0)">Privacy Policy</a></li></ul></div>
             <div class="footer-col"><h4>Admin</h4><ul><li><a onclick="navigate('admin')" href="javascript:void(0)">Admin Portal</a></li></ul></div>
         </div>
+        
         <div class="footer-contact-btns">
             <a id="footer-whatsapp" href="#" target="_blank" class="footer-btn footer-wa">💬 WhatsApp Support</a>
             <a id="footer-call" href="#" class="footer-btn footer-call">📞 Call Us</a>
         </div>
+
         <div class="footer-bottom">&copy; 2024 <span id="footer-copy-name">KasiDeliveries</span>. All rights reserved.</div>
     </footer>
 
     <script>
         const BABY_SUBCATEGORIES = [
-            "Diapers & Nappies", "Baby Milk & Formula", "Baby Food & Purees", "Baby Wipes",
-            "Baby Oils & Powders", "Baby Soaps, Shampoo & Body Wash", "Baby Bottles & Feeding Accessories",
-            "Baby Clothing", "Baby Health & Care", "Potty Training", "Other Baby Products"
+            "Diapers & Nappies", "Baby Milk & Formula", "Baby Food & Purees", "Baby Cereals & Snacks",
+            "Baby Wipes", "Baby Lotions & Moisturisers", "Baby Soap, Shampoo & Body Wash",
+            "Baby Oils & Powders", "Baby Bottles & Feeding Accessories", "Baby Clothing",
+            "Baby Health & Care", "Potty Training", "Other Baby Products"
         ];
 
         let cart = [];
@@ -235,32 +261,6 @@
             });
 
             updateBranding();
-
-            // FIX MEMORY ONLY - DO NOT SAVE TO SERVER AUTOMATICALLY
-            if (appData.groceries) {
-                appData.groceries.forEach(store => {
-                    if(!store.menu) return;
-                    store.menu.forEach(item => {
-                        const isBaby = item.category && item.category.toLowerCase().includes('baby');
-                        const isGeneral = !item.subCategory || item.subCategory.toLowerCase() === 'general';
-                        if (isBaby && isGeneral) {
-                            const name = (item.name || '').toLowerCase();
-                            let newSub = 'Other Baby Products';
-                            if (/diaper|nappy|pampers|huggies|pull.?up|liner|changing pad/.test(name)) newSub = 'Diapers & Nappies';
-                            else if (/wipe/.test(name)) newSub = 'Baby Wipes';
-                            else if (/oil|powder|talc|massage|lotion|moisturis|moisturiz/.test(name)) newSub = 'Baby Oils & Powders';
-                            else if (/soap|shampoo|conditioner|body wash|bath/.test(name)) newSub = 'Baby Soaps, Shampoo & Body Wash';
-                            else if (/bottle|teat|brush|bib|sippy|cup|breast pump|storage bag/.test(name)) newSub = 'Baby Bottles & Feeding Accessories';
-                            else if (/potty|toilet|training seat|step stool/.test(name)) newSub = 'Potty Training';
-                            else if (/thermometer|grooming|nail|clipper|rash|first.?aid/.test(name)) newSub = 'Baby Health & Care';
-                            else if (/toy|rattle|teething|doll|block|plush/.test(name)) newSub = 'Other Baby Products';
-                            else if (/cereal|food|puree|purity|snack|rusk|biscuit|puffs/.test(name)) newSub = 'Baby Food & Purees';
-                            else if (/milk|formula|lactogen|nan\s|sma|novalac|similac|infacare|s26/.test(name)) newSub = 'Baby Milk & Formula';
-                            item.subCategory = newSub;
-                        }
-                    });
-                });
-            }
         }
         
         function updateBranding() {
@@ -745,8 +745,14 @@
             }
             const item = findItem(itemId, storeName);
             if(!item) return alert('Error: Item not found!');
-            const mealSelect = document.getElementById(`meal_g_${cleanId(item.name)}`); 
-            const extrasBoxes = document.querySelectorAll(`.extra_g_${cleanId(item.name)}:checked`); 
+            
+            let gid = null;
+            for(const key in itemGroups) {
+                if(itemGroups[key].some(i => i.id === itemId)) { gid = key; break; }
+            }
+
+            const mealSelect = gid ? document.getElementById(`meal_${gid}`) : null; 
+            const extrasBoxes = gid ? document.querySelectorAll(`.extra_${gid}:checked`) : []; 
             
             let mealLabel = ''; let mealPrice = 0;
             if(mealSelect) { const opt = mealSelect.options[mealSelect.selectedIndex]; mealLabel = opt.value; mealPrice = parseFloat(opt.getAttribute('data-price')) || 0; }
@@ -819,14 +825,14 @@
             if (type === 'send') {
                 const collAddr = `${document.getElementById('p_coll_province').value}, ${document.getElementById('p_coll_city').value}, ${document.getElementById('p_coll_suburb').value}, ${document.getElementById('p_coll_street').value}, ${document.getElementById('p_coll_house').value}, ${document.getElementById('p_coll_unit').value}`;
                 const delAddr = `${document.getElementById('p_del_province').value}, ${document.getElementById('p_del_city').value}, ${document.getElementById('p_del_suburb').value}, ${document.getElementById('p_del_street').value}, ${document.getElementById('p_del_house').value}, ${document.getElementById('p_del_unit').value}`;
-                msg += `*SENDER DETAILS*\nName: ${document.getElementById('p_sender_name').value}\nPhone: ${document.getElementById('p_sender_phone').value}\n\n*COLLECTION ADDRESS*\n${collAddr}\n*Nearest Landmark:* ${document.getElementById('p_coll_landmark').value}\n*Directions:* ${document.getElementById('p_coll_directions').value || 'None'}\n\n*RECIPIENT DETAILS*\nName: ${document.getElementById('p_rec_name').value}\nPhone: ${document.getElementById('p_rec_phone').value}\n\n*DELIVERY ADDRESS*\n${delAddr}\n*Nearest Landmark:* ${document.getElementById('p_del_landmark').value}\n*Directions:* ${document.getElementById('p_del_directions').value || 'None'}\n\n*PARCEL DETAILS*\nDesc: ${document.getElementById('p_desc').value}\n`;
+                msg += `*SENDER DETAILS*\nName: ${document.getElementById('p_sender_name').value\nPhone: ${document.getElementById('p_sender_phone').value\n\n*COLLECTION ADDRESS*\n${collAddr}\n*Nearest Landmark:* ${document.getElementById('p_coll_landmark').value\n*Directions:* ${document.getElementById('p_coll_directions').value || 'None'}\n\n*RECIPIENT DETAILS*\nName: ${document.getElementById('p_rec_name').value\nPhone: ${document.getElementById('p_rec_phone').value\n\n*DELIVERY ADDRESS*\n${delAddr}\n*Nearest Landmark:* ${document.getElementById('p_del_landmark').value\n*Directions:* ${document.getElementById('p_del_directions').value || 'None'}\n\n*PARCEL DETAILS*\nDesc: ${document.getElementById('p_desc').value\n`;
                 const reqData = { sender: { name: document.getElementById('p_sender_name').value, phone: document.getElementById('p_sender_phone').value, address: collAddr, landmark: document.getElementById('p_coll_landmark').value, directions: document.getElementById('p_coll_directions').value }, recipient: { name: document.getElementById('p_rec_name').value, phone: document.getElementById('p_rec_phone').value, address: delAddr, landmark: document.getElementById('p_del_landmark').value, directions: document.getElementById('p_del_directions').value }, desc: document.getElementById('p_desc').value, images: imageUrls }; 
                 const newParcel = { ref: ref, type: 'Send Parcel', details: reqData, date: new Date().toLocaleString(), status: 'New Request' }; 
                 await fetch('/api/parcel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newParcel) }); appData.parcelRequests.push(newParcel); 
             } else {
                 const collAddr = `${document.getElementById('c_coll_province').value}, ${document.getElementById('c_coll_city').value}, ${document.getElementById('c_coll_suburb').value}, ${document.getElementById('c_coll_street').value}, ${document.getElementById('c_coll_house').value}, ${document.getElementById('c_coll_unit').value}`;
                 const delAddr = `${document.getElementById('c_del_province').value}, ${document.getElementById('c_del_city').value}, ${document.getElementById('c_del_suburb').value}, ${document.getElementById('c_del_street').value}, ${document.getElementById('c_del_house').value}, ${document.getElementById('c_del_unit').value}`;
-                msg += `*COLLECTOR DETAILS*\nName: ${document.getElementById('c_coll_name').value}\nPhone: ${document.getElementById('c_coll_phone').value}\n\n*COLLECTION ADDRESS*\n${collAddr}\n*Nearest Landmark:* ${document.getElementById('c_coll_landmark').value}\n*Directions:* ${document.getElementById('c_coll_directions').value || 'None'}\n\n*RECIPIENT DETAILS*\nName: ${document.getElementById('c_rec_name').value}\nPhone: ${document.getElementById('c_rec_phone').value}\n\n*DELIVERY ADDRESS*\n${delAddr}\n*Nearest Landmark:* ${document.getElementById('c_del_landmark').value}\n*Directions:* ${document.getElementById('c_del_directions').value || 'None'}\n\n`;
+                msg += `*COLLECTOR DETAILS*\nName: ${document.getElementById('c_coll_name').value\nPhone: ${document.getElementById('c_coll_phone').value\n\n*COLLECTION ADDRESS*\n${collAddr}\n*Nearest Landmark:* ${document.getElementById('c_coll_landmark').value\n*Directions:* ${document.getElementById('c_coll_directions').value || 'None'}\n\n*RECIPIENT DETAILS*\nName: ${document.getElementById('c_rec_name').value\nPhone: ${document.getElementById('c_rec_phone').value\n\n*DELIVERY ADDRESS*\n${delAddr}\n*Nearest Landmark:* ${document.getElementById('c_del_landmark').value\n*Directions:* ${document.getElementById('c_del_directions').value || 'None'}\n\n`;
                 const reqData = { collector: { name: document.getElementById('c_coll_name').value, phone: document.getElementById('c_coll_phone').value, address: collAddr, landmark: document.getElementById('c_coll_landmark').value, directions: document.getElementById('c_coll_directions').value }, recipient: { name: document.getElementById('c_rec_name').value, phone: document.getElementById('c_rec_phone').value, address: delAddr, landmark: document.getElementById('c_del_landmark').value, directions: document.getElementById('c_del_directions').value }, images: imageUrls }; 
                 const newParcel = { ref: ref, type: 'Collect Parcel', details: reqData, date: new Date().toLocaleString(), status: 'New Request' }; 
                 await fetch('/api/parcel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newParcel) }); appData.parcelRequests.push(newParcel); 
@@ -860,15 +866,13 @@
             catch (err) { alert('Could not reach the server. Please try again.'); return; }
             if (!res.ok) { alert(data.error || 'Invalid credentials'); return; }
             
-            isAdmin = true; // Force admin state immediately
+            isAdmin = true; 
             await fetchData(); 
             
             if (data.mustChangePassword) { alert('You are still using the default password. Please change it now.'); adminTab = 'users'; }
             
             localStorage.removeItem('redirectHash');
             navigate('admin');
-            
-            // Force render if hash didn't change
             if (window.location.hash === '#/admin') renderRoute(); 
         }
 
@@ -1014,7 +1018,7 @@
             const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
             if(cats.length > 0) html += cats.map(c => `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px; background:#fff; padding: 5px; border-radius: 4px;"><span>${escHtml(c)}</span><button class="btn-delete" onclick="adminDeleteCategory('grocery', null, ${storeIndex}, '${safeStr(c)}')">Delete Category</button></div>`).join('');
             else html += '<small>No categories yet.</small>';
-            html += `</div></div></div><div class="admin-card"><h4>Add Product Manually</h4><div class="form-row"><input type="text" id="menu_name_grocery_g_${storeIndex}" placeholder="Product Name" style="padding: 10px; font-size: 14px;"><input type="text" id="menu_subcat_grocery_g_${storeIndex}" placeholder="Sub-Category (e.g. Diapers)" list="baby_subcat_list" style="padding: 10px; font-size: 14px;"><input type="text" id="menu_size_grocery_g_${storeIndex}" placeholder="Size (e.g. 500ml)" style="padding: 10px; font-size: 14px;"><input type="text" id="menu_flavor_grocery_g_${storeIndex}" placeholder="Flavor/Type" style="padding: 10px; font-size: 14px;"><input type="number" id="menu_price_grocery_g_${storeIndex}" placeholder="Price (R)" style="padding: 10px; font-size: 14px;"></div><button class="btn-gold" style="margin-top: 5px; padding: 8px; font-size: 14px;" onclick="adminAddMenuItem('grocery', null, ${storeIndex})">Add Product</button></div>`;
+            html += `</div></div></div><div class="admin-card"><h4>Add Product Manually</h4><div class="form-row"><input type="text" id="menu_name_grocery_g_${storeIndex}" placeholder="Product Name" style="padding: 10px; font-size: 14px;"><input type="text" id="menu_subcat_grocery_g_${storeIndex}" placeholder="Sub-Category (e.g. Diapers)" list="baby_subcat_list" style="padding: 10px; font-size: 14px;"><input type="text" id="menu_size_grocery_g_${storeIndex}" placeholder="Size (e.g. 500ml)" style="padding: 10px; font-size: 14px;"><input type="text" id="menu_flavor_grocery_g_${storeIndex}" placeholder="Flavor/Type" style="padding: 10px; font-size: 14px;"><input type="text" id="menu_content_grocery_g_${storeIndex}" placeholder="Contents (e.g. 2 pcs, chips)" style="padding: 10px; font-size: 14px;"><input type="number" id="menu_price_grocery_g_${storeIndex}" placeholder="Price (R)" style="padding: 10px; font-size: 14px;"></div><button class="btn-gold" style="margin-top: 5px; padding: 8px; font-size: 14px;" onclick="adminAddMenuItem('grocery', null, ${storeIndex})">Add Product</button></div>`;
             html += '<div class="admin-card"><h4>Current Products</h4>';
             const itemsToRender = store.menu.slice(0, adminItemLimit);
             html += itemsToRender.map((item, itemIndex) => `<div class="admin-item-card"><div class="card-header"><div style="display:flex; gap:10px; align-items:center;"><img src="${item.img || 'https://via.placeholder.com/50'}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;"><strong>${escHtml(item.name)}</strong></div><div class="card-actions"><label class="add-btn" style="cursor:pointer; padding:5px 8px; font-size:12px; background:#eee; color:#333;">📷 Pic<input type="file" accept="image/*" onchange="uploadItemImg(event, 'grocery', null, ${storeIndex}, ${itemIndex})" style="display:none;"></label><button class="add-btn" onclick="adminUpdateMenuItem(event, 'grocery', null, ${storeIndex}, ${itemIndex})" style="padding:5px 8px; font-size:12px;">Save</button><button class="btn-delete" onclick="adminDeleteMenuItem('grocery', null, ${storeIndex}, ${itemIndex})">Delete</button></div></div><div class="admin-item-grid"><input type="text" value="${safeStr(item.name)}" id="i_name_grocery_g_${storeIndex}_${itemIndex}" placeholder="Name" style="padding: 5px; font-size: 12px;"><input type="text" value="${safeStr(item.category || '')}" id="i_cat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Section (Category)" list="section_list_grocery" style="padding: 5px; font-size: 12px;"><input type="text" value="${safeStr(item.subCategory || '')}" id="i_subcat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Sub-Category" list="baby_subcat_list" style="padding: 5px; font-size: 12px;"><input type="text" value="${safeStr(item.size || '')}" id="i_size_grocery_g_${storeIndex}_${itemIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;"><input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_grocery_g_${storeIndex}_${itemIndex}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;"><input type="text" value="${safeStr(item.contents || '')}" id="i_content_grocery_g_${storeIndex}_${itemIndex}" placeholder="Contents/Description" style="padding: 5px; font-size: 12px;"><input type="number" value="${item.price}" id="i_price_grocery_g_${storeIndex}_${itemIndex}" placeholder="Price" style="padding: 5px; font-size: 12px;"><input type="number" value="${item.salePrice || 0}" id="i_sale_grocery_g_${storeIndex}_${itemIndex}" placeholder="Sale Price" style="padding: 5px; font-size: 12px;"><input type="checkbox" id="i_onsale_grocery_g_${storeIndex}_${itemIndex}" ${item.onSale ? 'checked' : ''}><label for="i_onsale_grocery_g_${storeIndex}_${itemIndex}" style="font-size: 12px;">On Sale</label></div></div>`).join('');
