@@ -181,15 +181,14 @@
     </footer>
 
     <script>
-        // Standard Subcategories for Baby & Toddler
+        // Standard Subcategories for Baby & Toddler (Cereals moved to Food & Purees)
         const BABY_SUBCATEGORIES = [
             "Diapers & Nappies",
             "Baby Milk & Formula",
             "Baby Food & Purees",
-            "Baby Cereals & Snacks",
             "Baby Wipes",
             "Baby Lotions & Moisturisers",
-            "Baby Soap, Shampoo & Body Wash",
+            "Baby Soaps, Shampoo & Body Wash",
             "Baby Oils & Powders",
             "Baby Bottles & Feeding Accessories",
             "Baby Clothing",
@@ -249,10 +248,29 @@
             if(!appData.categories.truck) appData.categories.truck = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
             if(!appData.categories.send_parcel) appData.categories.send_parcel = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800';
             if(!appData.categories.collect_parcel) appData.categories.collect_parcel = 'https://images.unsplash.com/photo-1597306622489-5c80aa3c55e3?q=80&w=800';
-            
-            appData.takeaways.franchises.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
-            appData.takeaways.local.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
-            appData.groceries.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
+            if(!appData.categories.takeaways) appData.categories.takeaways = 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800';
+            if(!appData.categories.groceries) appData.categories.groceries = 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=800';
+            if(!appData.categories.parcels) appData.categories.parcels = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800';
+            if(!appData.categories.furniture) appData.categories.furniture = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=800';
+            if(!appData.categories.track) appData.categories.track = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
+
+            // Safety Checks for Takeaways & Groceries to prevent rendering errors
+            if(!appData.takeaways) appData.takeaways = { franchises: [], local: [] };
+            if(!Array.isArray(appData.takeaways.franchises)) appData.takeaways.franchises = [];
+            if(!Array.isArray(appData.takeaways.local)) appData.takeaways.local = [];
+            if(!Array.isArray(appData.groceries)) appData.groceries = [];
+            if(!appData.orders) appData.orders = [];
+            if(!appData.parcelRequests) appData.parcelRequests = [];
+            if(!appData.furnitureRequests) appData.furnitureRequests = [];
+            if(!appData.users) appData.users = [];
+
+            // Ensure every store has a valid menu array and categoryImages object
+            [...appData.takeaways.franchises, ...appData.takeaways.local, ...appData.groceries].forEach(s => {
+                if(!s) return;
+                if(!s.menu || !Array.isArray(s.menu)) s.menu = [];
+                if(!s.categoryImages) s.categoryImages = {};
+                if(s.isOnline === undefined) s.isOnline = true;
+            });
 
             updateBranding();
 
@@ -268,18 +286,17 @@
                             const name = (item.name || '').toLowerCase();
                             let newSub = 'Other Baby Products';
                             
-                            if (/diaper|nappy|pampers|huggies|pull.?up/.test(name)) newSub = 'Diapers & Nappies';
-                            else if (/milk|formula|lactogen|nan\s|sma|novalac|similac|infacare|s26/.test(name)) newSub = 'Baby Milk & Formula';
-                            else if (/food|puree|purity|sweet potato|butternut/.test(name)) newSub = 'Baby Food & Purees';
-                            else if (/cereal|snack|rusk|biscuit|puffs/.test(name)) newSub = 'Baby Cereals & Snacks';
+                            if (/diaper|nappy|pampers|huggies|pull.?up|liner|changing pad/.test(name)) newSub = 'Diapers & Nappies';
                             else if (/wipe/.test(name)) newSub = 'Baby Wipes';
+                            else if (/oil|powder|talc|massage/.test(name)) newSub = 'Baby Oils & Powders';
+                            else if (/soap|shampoo|conditioner|body wash|bath/.test(name)) newSub = 'Baby Soaps, Shampoo & Body Wash';
+                            else if (/bottle|teat|brush|bib|sippy|cup|breast pump|storage bag/.test(name)) newSub = 'Baby Bottles & Feeding Accessories';
+                            else if (/potty|toilet|training seat|step stool/.test(name)) newSub = 'Potty Training';
+                            else if (/thermometer|grooming|nail|clipper|rash|first.?aid/.test(name)) newSub = 'Baby Health & Care';
+                            else if (/cereal|food|puree|purity|snack|rusk|biscuit|puffs/.test(name)) newSub = 'Baby Food & Purees';
+                            else if (/milk|formula|lactogen|nan\s|sma|novalac|similac|infacare|s26/.test(name)) newSub = 'Baby Milk & Formula';
                             else if (/lotion|moisturis|moisturiz|cream|barrier|aqueous/.test(name)) newSub = 'Baby Lotions & Moisturisers';
-                            else if (/soap|shampoo|wash|bath/.test(name)) newSub = 'Baby Soap, Shampoo & Body Wash';
-                            else if (/oil|powder|talc/.test(name)) newSub = 'Baby Oils & Powders';
-                            else if (/bottle|teat|sippy|sterilis|breast pump|soother|dummy|pacifier/.test(name)) newSub = 'Baby Bottles & Feeding Accessories';
-                            else if (/clothes|vest|grow|bib|beanie|sock|romper|towel/.test(name)) newSub = 'Baby Clothing';
-                            else if (/syrup|medicine|thermometer|dropper|nose|ears|ointment|spray|vapor/.test(name)) newSub = 'Baby Health & Care';
-                            else if (/potty|toilet/.test(name)) newSub = 'Potty Training';
+                            else if (/toy|rattle|teething|doll|block|plush/.test(name)) newSub = 'Other Baby Products';
                             
                             item.subCategory = newSub;
                             fixedItemsCount++;
@@ -520,8 +537,13 @@
             
             html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name}</h2></div>`;
             
-            const sections = [...new Set(store.menu.map(m => m.category || 'General'))];
-            if(sections.length === 0) return html + '<p>No sections available yet.</p>';
+            const sections = [...new Set(store.menu.map(m => m.category || 'General'))].filter(c => c && c.toLowerCase() !== 'general');
+            if(sections.length === 0 && store.menu.length === 0) return html + '<p>No sections available yet.</p>';
+            
+            // If there are no explicit sections, but items exist, display items directly
+            if (sections.length === 0 && store.menu.length > 0) {
+                return html + renderGroceryItemsDirect(store);
+            }
 
             html += '<div class="categories-grid">';
             sections.forEach(section => {
@@ -533,6 +555,19 @@
                 </div>`;
             });
             return html + '</div>';
+        }
+
+        function renderGroceryItemsDirect(store) {
+            const items = store.menu;
+            const onSaleItems = items.filter(item => item.onSale && parseFloat(item.salePrice) > 0);
+            const regularItems = items.filter(item => !item.onSale || parseFloat(item.salePrice) <= 0);
+            let html = '';
+            if(onSaleItems.length > 0) {
+                html += '<div class="sale-banner">🔥 Items on Sale</div>';
+                html += onSaleItems.map(item => renderItemRow(item, store.name)).join('');
+            }
+            html += regularItems.map(item => renderItemRow(item, store.name)).join('');
+            return html;
         }
 
         function renderGrocerySection(storeId, sectionName) {
@@ -552,9 +587,11 @@
             const sectionItems = store.menu.filter(m => (m.category || 'General') === sectionName);
             let subcats = [...new Set(sectionItems.map(m => m.subCategory || 'General'))];
             
-            // If it's the Baby & Toddler section, enforce the standard list of subcategories and hide General
+            // Filter out "General" globally so it never shows as a card
+            subcats = subcats.filter(sc => sc && sc.toLowerCase() !== 'general');
+
+            // If it's the Baby & Toddler section, enforce the standard list of subcategories
             if (sectionName.toLowerCase().includes('baby')) {
-                subcats = subcats.filter(sc => sc && sc.toLowerCase() !== 'general');
                 const allBabySubcats = [...new Set([...BABY_SUBCATEGORIES, ...subcats])];
                 // Sort them according to the standard list order
                 subcats = allBabySubcats.sort((a, b) => {
@@ -567,7 +604,11 @@
                 });
             }
 
-            if(subcats.length === 0) return html + '<p>No subcategories available yet.</p>';
+            // If no subcategories exist, list items directly
+            if(subcats.length === 0) {
+                if(sectionItems.length === 0) return html + '<p>No products in this section yet.</p>';
+                return html + renderGroceryItemsDirect(store);
+            }
 
             html += '<div class="categories-grid">';
             subcats.forEach(subcat => {
@@ -669,7 +710,19 @@
             
             if(store.menu.length === 0) return html + '<p>No categories available yet.</p>';
 
-            const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
+            let cats = [...new Set(store.menu.map(m => m.category || 'General'))].filter(c => c && c.toLowerCase() !== 'general');
+            
+            // If there are no explicit categories, display items directly instead of showing a broken "General" category card
+            if(cats.length === 0) {
+                const onSaleItems = store.menu.filter(item => item.onSale && parseFloat(item.salePrice) > 0);
+                const regularItems = store.menu.filter(item => !item.onSale || parseFloat(item.salePrice) <= 0);
+                if(onSaleItems.length > 0) {
+                    html += '<div class="sale-banner">🔥 Items on Sale</div>';
+                    html += onSaleItems.map(item => renderItemRow(item, store.name)).join('');
+                }
+                html += regularItems.map(item => renderItemRow(item, store.name)).join('');
+                return html;
+            }
             
             html += '<div class="categories-grid">';
             cats.forEach(cat => {
@@ -791,9 +844,15 @@
                 html += onSaleItems.map(item => renderItemRow(item, store.name)).join('');
             }
 
-            const subCats = [...new Set(regularItems.map(i => i.subCategory || 'General'))];
+            const subCats = [...new Set(regularItems.map(i => i.subCategory || 'General'))].filter(sc => sc && sc.toLowerCase() !== 'general');
+            
+            // If no subcategories exist, just list the items directly
+            if (subCats.length === 0) {
+                return html + regularItems.map(item => renderItemRow(item, store.name)).join('');
+            }
+
             subCats.forEach(sub => {
-                if(sub !== 'General') html += `<div class="menu-subcategory-header">${escHtml(sub)}</div>`;
+                html += `<div class="menu-subcategory-header">${escHtml(sub)}</div>`;
                 const subItems = regularItems.filter(i => (i.subCategory || 'General') === sub);
                 html += subItems.map(item => renderItemRow(item, store.name)).join('');
             });
@@ -1299,15 +1358,11 @@
             const redirect = localStorage.getItem('redirectHash');
             localStorage.removeItem('redirectHash');
             const before = window.location.hash;
-            // A default password goes to User Management, not back where they were.
             if (redirect && !data.mustChangePassword) {
                 window.location.hash = redirect;
             } else {
                 navigate('admin');
             }
-            // Going to the address already showing changes nothing, so the browser
-            // fires no hashchange and nothing redraws: after a good login the form
-            // just stayed there, with no error. Draw it ourselves in that case.
             if (window.location.hash === before) renderRoute();
         }
 
@@ -1924,6 +1979,9 @@
                     const sizeStr = idx.size !== -1 ? String(row[idx.size] || '').trim() : '';
                     const existingIndex = store.menu.findIndex(m => m.name.toLowerCase() === name.toLowerCase() && (m.size || '').toLowerCase() === sizeStr.toLowerCase());
                     
+                    const parsedPrice = parseFloat(String(idx.price !== -1 ? row[idx.price] : '0').replace(/[^0-9.]/g, '')) || 0;
+                    const parsedSalePrice = parseFloat(String(idx.salePrice !== -1 ? row[idx.salePrice] : '0').replace(/[^0-9.]/g, '')) || 0;
+
                     const itemData = {
                         id: existingIndex !== -1 ? store.menu[existingIndex].id : 'm' + Date.now() + Math.floor(Math.random() * 100000),
                         name: name,
@@ -1933,13 +1991,20 @@
                         flavor: idx.flavor !== -1 ? String(row[idx.flavor] || '').trim() : '',
                         mealOptions: idx.mealOptions !== -1 ? String(row[idx.mealOptions] || '').trim() : '',
                         extras: idx.extras !== -1 ? String(row[idx.extras] || '').trim() : '',
-                        price: parseFloat(String(idx.price !== -1 ? row[idx.price] : '0').replace(/[^0-9.]/g, '')) || 0,
+                        price: parsedPrice,
                         onSale: idx.onSale !== -1 ? String(row[idx.onSale] || 'false').toLowerCase() === 'true' : false,
-                        salePrice: parseFloat(String(idx.salePrice !== -1 ? row[idx.salePrice] : '0').replace(/[^0-9.]/g, '')) || 0,
+                        salePrice: parsedSalePrice,
                         img: existingIndex !== -1 ? store.menu[existingIndex].img : null
                     };
 
                     if (existingIndex !== -1) {
+                        // Preserve price if imported price is 0 or invalid
+                        if(itemData.price === 0 && store.menu[existingIndex].price > 0) {
+                            itemData.price = store.menu[existingIndex].price;
+                        }
+                        if(itemData.salePrice === 0 && store.menu[existingIndex].salePrice > 0) {
+                            itemData.salePrice = store.menu[existingIndex].salePrice;
+                        }
                         store.menu[existingIndex] = { ...store.menu[existingIndex], ...itemData };
                     } else {
                         store.menu.push(itemData);
