@@ -211,9 +211,20 @@
         }
 
         async function fetchData() { 
-            const res = await fetch('/api/data'); 
-            appData = await res.json(); 
-            isAdmin = appData.isAdmin === true;
+            try {
+                const res = await fetch('/api/data'); 
+                if (!res.ok) throw new Error('Server response was not OK');
+                let data = await res.json(); 
+                if(!data || typeof data !== 'object' || Array.isArray(data)) data = {};
+                appData = data;
+                isAdmin = appData.isAdmin === true;
+            } catch(e) {
+                console.error("Fetch error:", e);
+                appData = {};
+                isAdmin = false;
+            }
+            
+            // SAFETY NET: Ensure all required data structures exist so the site never crashes
             if(!appData.sliderImages) appData.sliderImages = [];
             if(!appData.siteContent) appData.siteContent = {};
             if(!appData.siteContent.websiteName) appData.siteContent.websiteName = "KasiDeliveries";
@@ -228,16 +239,27 @@
             if(!appData.categories.truck) appData.categories.truck = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
             if(!appData.categories.send_parcel) appData.categories.send_parcel = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800';
             if(!appData.categories.collect_parcel) appData.categories.collect_parcel = 'https://images.unsplash.com/photo-1597306622489-5c80aa3c55e3?q=80&w=800';
-            
-            if(appData.takeaways && Array.isArray(appData.takeaways.franchises)) {
-                appData.takeaways.franchises.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
-            }
-            if(appData.takeaways && Array.isArray(appData.takeaways.local)) {
-                appData.takeaways.local.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
-            }
-            if(Array.isArray(appData.groceries)) {
-                appData.groceries.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
-            }
+            if(!appData.categories.takeaways) appData.categories.takeaways = 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800';
+            if(!appData.categories.groceries) appData.categories.groceries = 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=800';
+            if(!appData.categories.parcels) appData.categories.parcels = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800';
+            if(!appData.categories.furniture) appData.categories.furniture = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=800';
+            if(!appData.categories.track) appData.categories.track = 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800';
+
+            if(!appData.takeaways) appData.takeaways = { franchises: [], local: [] };
+            if(!Array.isArray(appData.takeaways.franchises)) appData.takeaways.franchises = [];
+            if(!Array.isArray(appData.takeaways.local)) appData.takeaways.local = [];
+            if(!Array.isArray(appData.groceries)) appData.groceries = [];
+            if(!appData.orders) appData.orders = [];
+            if(!appData.parcelRequests) appData.parcelRequests = [];
+            if(!appData.furnitureRequests) appData.furnitureRequests = [];
+            if(!appData.users) appData.users = [];
+
+            [...appData.takeaways.franchises, ...appData.takeaways.local, ...appData.groceries].forEach(s => {
+                if(!s) return;
+                if(!s.menu || !Array.isArray(s.menu)) s.menu = [];
+                if(!s.categoryImages) s.categoryImages = {};
+                if(s.isOnline === undefined) s.isOnline = true;
+            });
 
             updateBranding();
         }
@@ -252,7 +274,6 @@
             const logoContainer = document.getElementById('brand-logo-container');
             if(logo) logoContainer.innerHTML = `<img src="${logo}" class="brand-logo-img" alt="Logo">`;
             else logoContainer.innerHTML = '';
-            
             const waNum = appData.siteContent.whatsappNumber;
             const callNum = appData.siteContent.callNumber;
             document.getElementById('nav-whatsapp').href = `https://wa.me/${waNum}`;
@@ -334,34 +355,20 @@
             const hash = window.location.hash || '#/';
             const parts = hash.substring(2).split('/').filter(p => p.length > 0);
             const app = document.getElementById('app-content');
+            if(!app) return;
             clearInterval(slideInterval);
             itemGroups = {}; 
 
             try {
                 if (parts.length === 0) { app.innerHTML = renderHome(); initSlider(); }
                 else if (parts[0] === 'groceries') { app.innerHTML = renderGroceryHub(); }
-                else if (parts[0] === 'grocery-store' && parts[1]) { 
-                    activeStoreId = decodeURIComponent(parts[1]); activeStoreType = 'grocery';
-                    app.innerHTML = renderGroceryStore(activeStoreId); 
-                }
-                else if (parts[0] === 'grocery-section' && parts[1] && parts[2]) { 
-                    activeStoreId = decodeURIComponent(parts[1]); activeStoreType = 'grocery'; activeSection = decodeURIComponent(parts[2]);
-                    app.innerHTML = renderGrocerySection(activeStoreId, activeSection); 
-                }
-                else if (parts[0] === 'grocery-subcategory' && parts[1] && parts[2] && parts[3]) { 
-                    activeStoreId = decodeURIComponent(parts[1]); activeStoreType = 'grocery'; activeSection = decodeURIComponent(parts[2]); activeSubcat = decodeURIComponent(parts[3]);
-                    app.innerHTML = renderGrocerySubcategory(activeStoreId, activeSection, activeSubcat); 
-                }
+                else if (parts[0] === 'grocery-store' && parts[1]) { activeStoreId = decodeURIComponent(parts[1]); activeStoreType = 'grocery'; app.innerHTML = renderGroceryStore(activeStoreId); }
+                else if (parts[0] === 'grocery-section' && parts[1] && parts[2]) { activeStoreId = decodeURIComponent(parts[1]); activeStoreType = 'grocery'; activeSection = decodeURIComponent(parts[2]); app.innerHTML = renderGrocerySection(activeStoreId, activeSection); }
+                else if (parts[0] === 'grocery-subcategory' && parts[1] && parts[2] && parts[3]) { activeStoreId = decodeURIComponent(parts[1]); activeStoreType = 'grocery'; activeSection = decodeURIComponent(parts[2]); activeSubcat = decodeURIComponent(parts[3]); app.innerHTML = renderGrocerySubcategory(activeStoreId, activeSection, activeSubcat); }
                 else if (parts[0] === 'takeaways') { app.innerHTML = renderTakeawaysHub(); }
                 else if (parts[0] === 'takeaway-list' && parts[1]) { app.innerHTML = renderTakeawayList(parts[1]); }
-                else if (parts[0] === 'restaurant-menu' && parts[1]) { 
-                    activeStoreId = parts[1]; activeStoreType = 'takeaway'; 
-                    app.innerHTML = renderStoreCategories('takeaway', parts[1]); 
-                }
-                else if (parts[0] === 'restaurant-menu-items' && parts[1] && parts[2] && parts[3]) { 
-                    activeTakeawayType = parts[1]; activeStoreId = parts[2]; activeStoreType = 'takeaway'; activeSection = decodeURIComponent(parts[3]);
-                    app.innerHTML = renderStoreItems('takeaway', activeStoreId, activeSection); 
-                }
+                else if (parts[0] === 'restaurant-menu' && parts[1]) { activeStoreId = decodeURIComponent(parts[1]); activeStoreType = 'takeaway'; app.innerHTML = renderStoreCategories('takeaway', activeStoreId); }
+                else if (parts[0] === 'restaurant-menu-items' && parts[1] && parts[2] && parts[3]) { activeTakeawayType = parts[1]; activeStoreId = decodeURIComponent(parts[2]); activeStoreType = 'takeaway'; activeSection = decodeURIComponent(parts[3]); app.innerHTML = renderStoreItems('takeaway', activeStoreId, activeSection); }
                 else if (parts[0] === 'parcels') { app.innerHTML = renderParcelOptions(); }
                 else if (parts[0] === 'send-parcel') { app.innerHTML = renderSendParcel(); }
                 else if (parts[0] === 'collect-parcel') { app.innerHTML = renderCollectParcel(); }
@@ -377,45 +384,26 @@
                 else if (parts[0] === 'admin') { 
                     if (parts[1]) adminTab = parts[1];
                     if (parts[2]) adminStoreView = parts[2]; else adminStoreView = null;
-                    if (!isAdmin) {
-                        localStorage.setItem('redirectHash', window.location.hash);
-                        app.innerHTML = renderAdminLogin();
-                    } else {
-                        app.innerHTML = renderAdmin();
-                    }
+                    if (!isAdmin) { localStorage.setItem('redirectHash', window.location.hash); app.innerHTML = renderAdminLogin(); } 
+                    else { app.innerHTML = renderAdmin(); }
                 }
                 else { app.innerHTML = renderHome(); initSlider(); }
-            } catch (e) {
-                console.error("Routing error:", e);
-                app.innerHTML = '<h2>Something went wrong.</h2><a href="#/">Go Home</a>';
-            }
+            } catch (e) { console.error("Routing error:", e); app.innerHTML = '<h2>Something went wrong.</h2><a href="#/">Go Home</a>'; }
             window.scrollTo(0, 0);
         }
 
-        function renderTextPage(title, content) {
-            return `<a class="back-link" href="#/">← Back to Home</a><div class="form-container"><h2 style="color: var(--forest); margin-bottom: 20px;">${title}</h2><div class="text-content">${content}</div></div>`;
-        }
+        function renderTextPage(title, content) { return `<a class="back-link" href="#/">← Back to Home</a><div class="form-container"><h2 style="color: var(--forest); margin-bottom: 20px;">${title}</h2><div class="text-content">${content}</div></div>`; }
 
         function renderBreadcrumb(crumbs) {
             let html = '<div class="breadcrumb">';
-            crumbs.forEach((c, i) => {
-                if(i < crumbs.length - 1) {
-                    html += `<a href="${c.route}">${escHtml(c.label)}</a> <span>›</span> `;
-                } else {
-                    html += `<strong>${escHtml(c.label)}</strong>`;
-                }
-            });
+            crumbs.forEach((c, i) => { if(i < crumbs.length - 1) { html += `<a href="${c.route}">${escHtml(c.label)}</a> <span>›</span> `; } else { html += `<strong>${escHtml(c.label)}</strong>`; } });
             return html + '</div>';
         }
 
-        function initSlider() { 
-            currentSlide = 0; showSlide(currentSlide); 
-            slideInterval = setInterval(() => { currentSlide = (currentSlide + 1) % slides.length; showSlide(currentSlide); }, 5000); 
-        }
+        function initSlider() { currentSlide = 0; showSlide(currentSlide); slideInterval = setInterval(() => { currentSlide = (currentSlide + 1) % slides.length; showSlide(currentSlide); }, 5000); }
         function showSlide(index) {
             const slidesHtml = slides.map((slide, i) => {
-                let bg = slide.bg;
-                if(appData.sliderImages && appData.sliderImages[i]) bg = `url('${appData.sliderImages[i]}')`;
+                let bg = slide.bg; if(appData.sliderImages && appData.sliderImages[i]) bg = `url('${appData.sliderImages[i]}')`;
                 return `<div class="hero-slide ${i === index ? 'active' : ''}" style="background: ${bg}; background-size: cover; background-repeat: no-repeat; background-position: center;"><h1>${slide.title}</h1><p>${slide.text}</p><button class="btn-gold" onclick="${slide.action}">${slide.btnText}</button><button class="btn-outline" onclick="document.getElementById('categories').scrollIntoView({ behavior: 'smooth' })">Explore Services</button></div>`;
             }).join('');
             const dotsHtml = slides.map((_, i) => `<div class="dot ${i === index ? 'active' : ''}" onclick="changeSlide(${i})"></div>`).join('');
@@ -439,15 +427,8 @@
             appData.groceries.forEach(store => { 
                 const isOnline = store.isOnline !== false;
                 html += `<div class="store-item ${!isOnline ? 'store-status-offline' : ''}" onclick="${isOnline ? `navigate('grocery-store', '${safeStr(store.id)}')` : ''}" style="cursor: ${isOnline ? 'pointer' : 'not-allowed'};">
-                    <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
-                        ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
-                        <div>
-                            <h4>${store.name}</h4>
-                            <p>${isOnline ? '✅ Available Now' : '❌ Currently Offline'}</p>
-                        </div>
-                    </div>
-                    <span style="color: ${isOnline ? 'var(--gold)' : '#999'}; font-weight: bold;">${isOnline ? 'Shop Now →' : 'Offline'}</span>
-                </div>`; 
+                    <div class="item-info" style="display: flex; align-items: center; gap: 15px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}<div><h4>${store.name}</h4><p>${isOnline ? '✅ Available Now' : '❌ Currently Offline'}</p></div></div>
+                    <span style="color: ${isOnline ? 'var(--gold)' : '#999'}; font-weight: bold;">${isOnline ? 'Shop Now →' : 'Offline'}</span></div>`; 
             }); 
             return html; 
         }
@@ -458,21 +439,22 @@
             const { store } = result;
             
             let html = `<a class="back-link" href="#/groceries">← Back to Groceries</a>`;
-            html += renderBreadcrumb([
-                { label: 'Home', route: '#/' },
-                { label: 'Groceries', route: '#/groceries' },
-                { label: store.name, route: `#/grocery-store/${store.id}` }
-            ]);
-            
+            html += renderBreadcrumb([{ label: 'Home', route: '#/' }, { label: 'Groceries', route: '#/groceries' }, { label: store.name, route: `#/grocery-store/${store.id}` }]);
             html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name}</h2></div>`;
             
-            const sections = [...new Set(store.menu.map(m => m.category || 'General'))].filter(c => c && c.toLowerCase() !== 'general');
-            if (sections.length === 0 && store.menu.length > 0) return html + renderItemsList(store.menu, store.name);
+            const sections = [...new Set(store.menu.map(m => {
+                let c = m.category || 'General';
+                if (!c || c.toLowerCase() === 'general') return 'Other Items';
+                return c;
+            }))];
+            
+            if (sections.length === 1 && sections[0] === 'Other Items') return html + renderItemsList(store.menu, store.name);
             if (sections.length === 0) return html + '<p>No sections available yet.</p>';
 
             html += '<div class="categories-grid">';
             sections.forEach(section => {
-                const itemCount = store.menu.filter(m => (m.category || 'General') === section).length;
+                const searchSec = section === 'Other Items' ? 'General' : section;
+                const itemCount = store.menu.filter(m => (m.category || 'General') === searchSec).length;
                 const catImg = store.categoryImages && store.categoryImages[section] ? store.categoryImages[section] : 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800'; 
                 html += `<div class="category-card" style="background-image: url('${catImg}');" onclick="navigate('grocery-section', { storeId: '${safeStr(store.id)}', section: '${safeStr(section)}' })">
                     <h3>${escHtml(section)}</h3>
@@ -488,16 +470,16 @@
             const { store } = result;
             
             let html = `<a class="back-link" href="#/grocery-store/${store.id}">← Back to Sections</a>`;
-            html += renderBreadcrumb([
-                { label: 'Home', route: '#/' },
-                { label: 'Groceries', route: '#/groceries' },
-                { label: store.name, route: `#/grocery-store/${store.id}` },
-                { label: sectionName, route: `#/grocery-section/${store.id}/${encodeURIComponent(sectionName)}` }
-            ]);
+            html += renderBreadcrumb([{ label: 'Home', route: '#/' }, { label: 'Groceries', route: '#/groceries' }, { label: store.name, route: `#/grocery-store/${store.id}` }, { label: sectionName, route: `#/grocery-section/${store.id}/${encodeURIComponent(sectionName)}` }]);
             html += `<h2 style="color: var(--forest); margin-bottom: 20px;">${escHtml(sectionName)}</h2>`;
             
-            const sectionItems = store.menu.filter(m => (m.category || 'General') === sectionName);
-            let subcats = [...new Set(sectionItems.map(m => m.subCategory || 'General'))].filter(sc => sc && sc.toLowerCase() !== 'general');
+            const searchSec = sectionName === 'Other Items' ? 'General' : sectionName;
+            const sectionItems = store.menu.filter(m => (m.category || 'General') === searchSec);
+            let subcats = [...new Set(sectionItems.map(m => {
+                let sc = m.subCategory || 'General';
+                if (!sc || sc.toLowerCase() === 'general') return 'Other Items';
+                return sc;
+            }))];
 
             if (sectionName.toLowerCase().includes('baby')) {
                 const allBabySubcats = [...new Set([...BABY_SUBCATEGORIES, ...subcats])];
@@ -507,11 +489,13 @@
                 });
             }
 
-            if (subcats.length === 0) return html + renderItemsList(sectionItems, store.name);
+            if (subcats.length === 1 && subcats[0] === 'Other Items') return html + renderItemsList(sectionItems, store.name);
+            if (subcats.length === 0) return html + '<p>No subcategories available yet.</p>';
 
             html += '<div class="categories-grid">';
             subcats.forEach(subcat => {
-                const itemCount = sectionItems.filter(m => (m.subCategory || 'General') === subcat).length;
+                const searchSub = subcat === 'Other Items' ? 'General' : subcat;
+                const itemCount = sectionItems.filter(m => (m.subCategory || 'General') === searchSub).length;
                 const catImg = store.categoryImages && store.categoryImages[`${sectionName}_${subcat}`] ? store.categoryImages[`${sectionName}_${subcat}`] : 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?q=80&w=800'; 
                 html += `<div class="category-card" style="background-image: url('${catImg}');" onclick="navigate('grocery-subcategory', { storeId: '${safeStr(store.id)}', section: '${safeStr(sectionName)}', subcat: '${safeStr(subcat)}' })">
                     <h3>${escHtml(subcat)}</h3>
@@ -527,16 +511,12 @@
             const { store } = result;
             
             let html = `<a class="back-link" href="#/grocery-section/${store.id}/${encodeURIComponent(sectionName)}">← Back to Subcategories</a>`;
-            html += renderBreadcrumb([
-                { label: 'Home', route: '#/' },
-                { label: 'Groceries', route: '#/groceries' },
-                { label: store.name, route: `#/grocery-store/${store.id}` },
-                { label: sectionName, route: `#/grocery-section/${store.id}/${encodeURIComponent(sectionName)}` },
-                { label: subcatName, route: `#/grocery-subcategory/${store.id}/${encodeURIComponent(sectionName)}/${encodeURIComponent(subcatName)}` }
-            ]);
+            html += renderBreadcrumb([{ label: 'Home', route: '#/' }, { label: 'Groceries', route: '#/groceries' }, { label: store.name, route: `#/grocery-store/${store.id}` }, { label: sectionName, route: `#/grocery-section/${store.id}/${encodeURIComponent(sectionName)}` }, { label: subcatName, route: `#/grocery-subcategory/${store.id}/${encodeURIComponent(sectionName)}/${encodeURIComponent(subcatName)}` }]);
             html += `<h2 style="color: var(--forest); margin-bottom: 20px;">${escHtml(subcatName)}</h2>`;
             
-            const items = store.menu.filter(m => (m.category || 'General') === sectionName && (m.subCategory || 'General') === subcatName);
+            const searchSec = sectionName === 'Other Items' ? 'General' : sectionName;
+            const searchSub = subcatName === 'Other Items' ? 'General' : subcatName;
+            const items = store.menu.filter(m => (m.category || 'General') === searchSec && (m.subCategory || 'General') === searchSub);
             if(items.length === 0) return html + '<p>No products in this subcategory yet.</p>';
             return html + renderItemsList(items, store.name);
         }
@@ -555,29 +535,19 @@
             stores.forEach(store => { 
                 const isOnline = store.isOnline !== false;
                 html += `<div class="store-item ${!isOnline ? 'store-status-offline' : ''}" onclick="${isOnline ? `navigate('restaurant-menu', '${safeStr(store.id)}')` : ''}" style="cursor: ${isOnline ? 'pointer' : 'not-allowed'};">
-                    <div class="item-info" style="display: flex; align-items: center; gap: 15px;">
-                        ${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}
-                        <div>
-                            <h4>${store.name}</h4>
-                            <p>${isOnline ? '✅ Available Now' : '❌ Currently Offline'}</p>
-                        </div>
-                    </div>
-                    <span style="color: ${isOnline ? 'var(--gold)' : '#999'}; font-weight: bold;">${isOnline ? 'View Menu →' : 'Offline'}</span>
-                </div>`; 
+                    <div class="item-info" style="display: flex; align-items: center; gap: 15px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img">` : `<span style="font-size: 30px;">${store.logo}</span>`}<div><h4>${store.name}</h4><p>${isOnline ? '✅ Available Now' : '❌ Currently Offline'}</p></div></div>
+                    <span style="color: ${isOnline ? 'var(--gold)' : '#999'}; font-weight: bold;">${isOnline ? 'View Menu →' : 'Offline'}</span></div>`; 
             }); 
             return html; 
         }
 
         function findStore(storeType, storeId) {
             if (storeType === 'takeaway') {
-                let s = appData.takeaways.franchises.find(s => s.id === storeId);
-                if(s) return { store: s, type: 'franchises' };
-                s = appData.takeaways.local.find(s => s.id === storeId);
-                if(s) return { store: s, type: 'local' };
+                let s = appData.takeaways.franchises.find(s => s.id === storeId); if(s) return { store: s, type: 'franchises' };
+                s = appData.takeaways.local.find(s => s.id === storeId); if(s) return { store: s, type: 'local' };
                 return null;
             } else {
-                const s = appData.groceries.find(s => s.id === storeId);
-                return s ? { store: s, type: 'grocery' } : null;
+                const s = appData.groceries.find(s => s.id === storeId); return s ? { store: s, type: 'grocery' } : null;
             }
         }
         
@@ -587,22 +557,23 @@
             const { store, type } = result;
 
             let html = `<a class="back-link" href="#/takeaway-list/${type}">← Back to Stores</a>`;
-            html += renderBreadcrumb([
-                { label: 'Home', route: '#/' },
-                { label: 'Takeaways', route: '#/takeaways' },
-                { label: type === 'franchises' ? 'Franchises' : 'Local Takeaways', route: `#/takeaway-list/${type}` },
-                { label: store.name, route: `#/restaurant-menu/${store.id}` }
-            ]);
+            html += renderBreadcrumb([{ label: 'Home', route: '#/' }, { label: 'Takeaways', route: '#/takeaways' }, { label: type === 'franchises' ? 'Franchises' : 'Local Takeaways', route: `#/takeaway-list/${type}` }, { label: store.name, route: `#/restaurant-menu/${store.id}` }]);
 
             html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<div><h2 style="color: var(--forest); margin:0;">${store.name}</h2></div></div>`; 
             
             if(store.menu.length === 0) return html + '<p>No categories available yet.</p>';
-            let cats = [...new Set(store.menu.map(m => m.category || 'General'))].filter(c => c && c.toLowerCase() !== 'general');
-            if(cats.length === 0) return html + renderItemsList(store.menu, store.name);
+            let cats = [...new Set(store.menu.map(m => {
+                let c = m.category || 'General';
+                if (!c || c.toLowerCase() === 'general') return 'Other Items';
+                return c;
+            }))];
+            
+            if (cats.length === 1 && cats[0] === 'Other Items') return html + renderItemsList(store.menu, store.name);
             
             html += '<div class="categories-grid">';
             cats.forEach(cat => {
-                const itemCount = store.menu.filter(m => (m.category || 'General') === cat).length;
+                const searchCat = cat === 'Other Items' ? 'General' : cat;
+                const itemCount = store.menu.filter(m => (m.category || 'General') === searchCat).length;
                 const catImg = store.categoryImages && store.categoryImages[cat] ? store.categoryImages[cat] : 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=800'; 
                 activeTakeawayType = type;
                 html += `<div class="category-card" style="background-image: url('${catImg}');" onclick="navigate('restaurant-menu-items', '${safeStr(cat)}')">
@@ -737,17 +708,12 @@
             const { store, type } = result;
 
             let html = `<a class="back-link" href="#/restaurant-menu/${store.id}">← Back to Categories</a>`;
-            html += renderBreadcrumb([
-                { label: 'Home', route: '#/' },
-                { label: 'Takeaways', route: '#/takeaways' },
-                { label: type === 'franchises' ? 'Franchises' : 'Local Takeaways', route: `#/takeaway-list/${type}` },
-                { label: store.name, route: `#/restaurant-menu/${store.id}` },
-                { label: categoryName, route: `#/restaurant-menu-items/${type}/${store.id}/${encodeURIComponent(categoryName)}` }
-            ]);
+            html += renderBreadcrumb([{ label: 'Home', route: '#/' }, { label: 'Takeaways', route: '#/takeaways' }, { label: type === 'franchises' ? 'Franchises' : 'Local Takeaways', route: `#/takeaway-list/${type}` }, { label: store.name, route: `#/restaurant-menu/${store.id}` }, { label: categoryName, route: `#/restaurant-menu-items/${type}/${store.id}/${encodeURIComponent(categoryName)}` }]);
 
             html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name}</h2></div>`; 
 
-            const filteredItems = store.menu.filter(item => (item.category || 'General') === categoryName);
+            const searchCat = categoryName === 'Other Items' ? 'General' : categoryName;
+            const filteredItems = store.menu.filter(item => (item.category || 'General') === searchCat);
             if(filteredItems.length === 0) return html + '<p>No items in this category yet.</p>';
             html += `<div class="menu-category-header">${escHtml(categoryName)}</div>`;
             return html + renderItemsList(filteredItems, store.name);
@@ -1324,25 +1290,11 @@
         }
 
         function renderAdminSiteContent() {
-            let html = '<div class="form-container">';
-            html += '<h3>Branding & Contact</h3>';
-            html += '<div class="form-group"><label>Website Name (Shows in Header, Footer, Browser Tab)</label><input type="text" id="content_website_name" value="' + appData.siteContent.websiteName + '"></div>';
-            html += '<div class="form-group"><label>Website Logo (Shows in Header)</label><input type="file" id="content_website_logo" accept="image/*">';
+            let html = '<div class="form-container"><h3>Branding & Contact</h3><div class="form-group"><label>Website Name (Shows in Header, Footer, Browser Tab)</label><input type="text" id="content_website_name" value="' + appData.siteContent.websiteName + '"></div><div class="form-group"><label>Website Logo (Shows in Header)</label><input type="file" id="content_website_logo" accept="image/*">';
             if(appData.siteContent.websiteLogo) {
                 html += '<div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;"><img src="'+appData.siteContent.websiteLogo+'" style="height: 40px; background: #eee; padding: 2px; border-radius: 5px;"><button type="button" class="btn-delete" onclick="removeWebsiteLogo()">Remove Logo</button></div>';
             }
-            html += '</div>';
-            html += '<div class="form-row" style="margin-top:15px;">';
-            html += '<div class="form-group"><label>WhatsApp Number (e.g. 27843689501)</label><input type="text" id="content_whatsapp" value="' + appData.siteContent.whatsappNumber + '"></div>';
-            html += '<div class="form-group"><label>Call Number (e.g. 0613642449)</label><input type="text" id="content_call" value="' + appData.siteContent.callNumber + '"></div>';
-            html += '</div>';
-            html += '<div class="form-group"><label>Email Address</label><input type="email" id="content_email" value="' + appData.siteContent.email + '"></div>';
-            html += '<hr style="margin: 20px 0;"><h3>Public Content</h3>';
-            html += '<div class="form-group"><label>About Us</label><textarea id="content_about" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.about + '</textarea></div>';
-            html += '<div class="form-group"><label>Contact Us (Text format)</label><textarea id="content_contact" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.contact + '</textarea></div>';
-            html += '<div class="form-group"><label>Terms & Conditions</label><textarea id="content_terms" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.terms + '</textarea></div>';
-            html += '<div class="form-group"><label>Privacy Policy</label><textarea id="content_privacy" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.privacy + '</textarea></div>';
-            html += '<button class="btn-gold" onclick="saveSiteContent()">Save Content</button></div>';
+            html += '</div><div class="form-row" style="margin-top:15px;"><div class="form-group"><label>WhatsApp Number (e.g. 27843689501)</label><input type="text" id="content_whatsapp" value="' + appData.siteContent.whatsappNumber + '"></div><div class="form-group"><label>Call Number (e.g. 0613642449)</label><input type="text" id="content_call" value="' + appData.siteContent.callNumber + '"></div></div><div class="form-group"><label>Email Address</label><input type="email" id="content_email" value="' + appData.siteContent.email + '"></div><hr style="margin: 20px 0;"><h3>Public Content</h3><div class="form-group"><label>About Us</label><textarea id="content_about" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.about + '</textarea></div><div class="form-group"><label>Contact Us (Text format)</label><textarea id="content_contact" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.contact + '</textarea></div><div class="form-group"><label>Terms & Conditions</label><textarea id="content_terms" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.terms + '</textarea></div><div class="form-group"><label>Privacy Policy</label><textarea id="content_privacy" rows="4" style="width:100%; margin-bottom: 15px;">' + appData.siteContent.privacy + '</textarea></div><button class="btn-gold" onclick="saveSiteContent()">Save Content</button></div>';
             document.getElementById('admin-content').innerHTML = html;
         }
         
@@ -1528,7 +1480,11 @@
 
         function renderAdminCategoryImages(store, cat, type, storeIndex) {
             let html = '<div class="admin-card"><h4>Category Images</h4><small>Upload a picture for each category. It will show when customers view the store categories.</small><div style="margin-top:10px;">';
-            const cats = [...new Set(store.menu.map(m => m.category || 'General'))].filter(c => c && c.toLowerCase() !== 'general');
+            const cats = [...new Set(store.menu.map(m => {
+                let c = m.category || 'General';
+                if (!c || c.toLowerCase() === 'general') return 'Other Items';
+                return c;
+            }))];
             if (cats.length === 0) {
                 html += '<p>No categories found. Add items first.</p>';
             } else {
@@ -1593,7 +1549,11 @@
                 <div style="margin-top: 20px; background: #fff3cd; padding: 10px; border-radius: 5px; border: 1px dashed #ffc107;">
                     <strong style="color: #856404;">Delete Categories</strong><br>
                     <small>Use this to delete an entire category and all its items.</small><div style="margin-top:10px;">`;
-                    const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
+                    const cats = [...new Set(store.menu.map(m => {
+                        let c = m.category || 'General';
+                        if (!c || c.toLowerCase() === 'general') return 'Other Items';
+                        return c;
+                    }))];
                     if(cats.length > 0) {
                         html += cats.map(c => 
                             `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px; background:#fff; padding: 5px; border-radius: 4px;">
@@ -1756,7 +1716,11 @@
                 <div style="margin-top: 20px; background: #fff3cd; padding: 10px; border-radius: 5px; border: 1px dashed #ffc107;">
                     <strong style="color: #856404;">Delete Categories</strong><br>
                     <small>Use this to delete an entire category (Section) and all its items.</small><div style="margin-top:10px;">`;
-                    const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
+                    const cats = [...new Set(store.menu.map(m => {
+                        let c = m.category || 'General';
+                        if (!c || c.toLowerCase() === 'general') return 'Other Items';
+                        return c;
+                    }))];
                     if(cats.length > 0) {
                         html += cats.map(c => 
                             `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; font-size: 12px; background:#fff; padding: 5px; border-radius: 4px;">
@@ -2102,7 +2066,11 @@
             let store;
             if(cat === 'takeaway') store = appData.takeaways[type][storeIndex];
             else store = appData.groceries[storeIndex];
-            store.menu = store.menu.filter(item => (item.category || 'General') !== categoryName);
+            
+            // Map 'Other Items' back to 'General' for deletion logic
+            const searchCat = categoryName === 'Other Items' ? 'General' : categoryName;
+            
+            store.menu = store.menu.filter(item => (item.category || 'General') !== searchCat);
             if(store.categoryImages && store.categoryImages[categoryName]) {
                 delete store.categoryImages[categoryName];
             }
@@ -2136,9 +2104,15 @@
         }
 
         (async () => { 
-            await fetchData(); 
-            updateCartCount();
-            renderRoute(); 
+            try {
+                await fetchData(); 
+                updateCartCount();
+                renderRoute(); 
+            } catch(e) {
+                console.error("Initialization error:", e);
+                const app = document.getElementById('app-content');
+                if(app) app.innerHTML = '<h2>Server Error. Please try again later.</h2>';
+            }
         })();
     </script>
 </body>
