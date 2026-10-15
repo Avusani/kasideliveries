@@ -1297,12 +1297,18 @@
                 adminTab = 'users';
             }
             const redirect = localStorage.getItem('redirectHash');
-            if (redirect) {
-                localStorage.removeItem('redirectHash');
+            localStorage.removeItem('redirectHash');
+            const before = window.location.hash;
+            // A default password goes to User Management, not back where they were.
+            if (redirect && !data.mustChangePassword) {
                 window.location.hash = redirect;
             } else {
                 navigate('admin');
             }
+            // Going to the address already showing changes nothing, so the browser
+            // fires no hashchange and nothing redraws: after a good login the form
+            // just stayed there, with no error. Draw it ourselves in that case.
+            if (window.location.hash === before) renderRoute();
         }
 
         async function adminLogout() {
