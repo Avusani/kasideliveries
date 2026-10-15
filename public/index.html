@@ -255,6 +255,43 @@
             appData.groceries.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
 
             updateBranding();
+
+            // --- AUTO-FIX ITEMS IN 'GENERAL' FOR BABY & TODDLER ---
+            let fixedItemsCount = 0;
+            if (appData.groceries) {
+                appData.groceries.forEach(store => {
+                    if(!store.menu) return;
+                    store.menu.forEach(item => {
+                        const isBaby = item.category && item.category.toLowerCase().includes('baby');
+                        const isGeneral = !item.subCategory || item.subCategory.toLowerCase() === 'general';
+                        if (isBaby && isGeneral) {
+                            const name = (item.name || '').toLowerCase();
+                            let newSub = 'Other Baby Products';
+                            
+                            if (/diaper|nappy|pampers|huggies|pull.?up/.test(name)) newSub = 'Diapers & Nappies';
+                            else if (/milk|formula|lactogen|nan\s|sma|novalac|similac|infacare|s26/.test(name)) newSub = 'Baby Milk & Formula';
+                            else if (/food|puree|purity|sweet potato|butternut/.test(name)) newSub = 'Baby Food & Purees';
+                            else if (/cereal|snack|rusk|biscuit|puffs/.test(name)) newSub = 'Baby Cereals & Snacks';
+                            else if (/wipe/.test(name)) newSub = 'Baby Wipes';
+                            else if (/lotion|moisturis|moisturiz|cream|barrier|aqueous/.test(name)) newSub = 'Baby Lotions & Moisturisers';
+                            else if (/soap|shampoo|wash|bath/.test(name)) newSub = 'Baby Soap, Shampoo & Body Wash';
+                            else if (/oil|powder|talc/.test(name)) newSub = 'Baby Oils & Powders';
+                            else if (/bottle|teat|sippy|sterilis|breast pump|soother|dummy|pacifier/.test(name)) newSub = 'Baby Bottles & Feeding Accessories';
+                            else if (/clothes|vest|grow|bib|beanie|sock|romper|towel/.test(name)) newSub = 'Baby Clothing';
+                            else if (/syrup|medicine|thermometer|dropper|nose|ears|ointment|spray|vapor/.test(name)) newSub = 'Baby Health & Care';
+                            else if (/potty|toilet/.test(name)) newSub = 'Potty Training';
+                            
+                            item.subCategory = newSub;
+                            fixedItemsCount++;
+                        }
+                    });
+                });
+            }
+            if (fixedItemsCount > 0 && isAdmin) {
+                await saveConfig();
+                console.log(`Auto-categorized ${fixedItemsCount} baby items.`);
+            }
+            // ------------------------------------------------------
         }
         
         function updateBranding() {
@@ -515,8 +552,9 @@
             const sectionItems = store.menu.filter(m => (m.category || 'General') === sectionName);
             let subcats = [...new Set(sectionItems.map(m => m.subCategory || 'General'))];
             
-            // If it's the Baby & Toddler section, enforce the standard list of subcategories
+            // If it's the Baby & Toddler section, enforce the standard list of subcategories and hide General
             if (sectionName.toLowerCase().includes('baby')) {
+                subcats = subcats.filter(sc => sc && sc.toLowerCase() !== 'general');
                 const allBabySubcats = [...new Set([...BABY_SUBCATEGORIES, ...subcats])];
                 // Sort them according to the standard list order
                 subcats = allBabySubcats.sort((a, b) => {
