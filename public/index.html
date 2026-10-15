@@ -218,9 +218,18 @@
         }
 
         async function fetchData() { 
-            const res = await fetch('/api/data'); 
-            appData = await res.json(); 
-            isAdmin = appData.isAdmin === true;
+            try {
+                const res = await fetch('/api/data'); 
+                if (!res.ok) throw new Error('Server response was not OK');
+                let data = await res.json(); 
+                if(!data || typeof data !== 'object' || Array.isArray(data)) data = {};
+                appData = data;
+                isAdmin = appData.isAdmin === true;
+            } catch(e) {
+                console.error("Fetch error:", e);
+                appData = {};
+                isAdmin = false;
+            }
             
             if(!appData.sliderImages) appData.sliderImages = [];
             if(!appData.siteContent) appData.siteContent = {};
@@ -378,6 +387,7 @@
             const hash = window.location.hash || '#/';
             const parts = hash.substring(2).split('/').filter(p => p.length > 0);
             const app = document.getElementById('app-content');
+            if(!app) return;
             clearInterval(slideInterval);
             itemGroups = {}; 
 
@@ -800,7 +810,7 @@
 
         function changeQty(sig, storeName, delta) { const existing = cart.find(item => item.sig === sig && item.store === storeName); if (existing) { existing.qty += delta; if (existing.qty <= 0) cart = cart.filter(item => item !== existing); } saveCart(); updateCartCount(); renderRoute(); }
         function clearCart() { if(confirm('Are you sure you want to clear your cart?')) { cart = []; saveCart(); updateCartCount(); navigate('cart'); } }
-        function updateCartCount() { document.getElementById('cart-count').innerText = cart.reduce((sum, item) => sum + item.qty, 0); }
+        function updateCartCount() { const el = document.getElementById('cart-count'); if(el) el.innerText = cart.reduce((sum, item) => sum + item.qty, 0); }
         
         async function checkoutWhatsApp() {
             if (cart.length === 0) return; let data;
