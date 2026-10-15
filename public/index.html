@@ -181,47 +181,26 @@
     </footer>
 
     <script>
-        // Standard Subcategories for Baby & Toddler
         const BABY_SUBCATEGORIES = [
-            "Diapers & Nappies",
-            "Baby Milk & Formula",
-            "Baby Food & Purees",
-            "Baby Cereals & Snacks",
-            "Baby Wipes",
-            "Baby Lotions & Moisturisers",
-            "Baby Soap, Shampoo & Body Wash",
-            "Baby Oils & Powders",
-            "Baby Bottles & Feeding Accessories",
-            "Baby Clothing",
-            "Baby Health & Care",
-            "Potty Training",
-            "Other Baby Products"
+            "Diapers & Nappies", "Baby Milk & Formula", "Baby Food & Purees", "Baby Cereals & Snacks",
+            "Baby Wipes", "Baby Lotions & Moisturisers", "Baby Soap, Shampoo & Body Wash",
+            "Baby Oils & Powders", "Baby Bottles & Feeding Accessories", "Baby Clothing",
+            "Baby Health & Care", "Potty Training", "Other Baby Products"
         ];
 
-        // Safely load cart from localStorage to survive refreshes
         let cart = [];
-        try {
-            cart = JSON.parse(localStorage.getItem('kd_cart') || '[]');
-        } catch(e) {
-            localStorage.removeItem('kd_cart');
-        }
+        try { cart = JSON.parse(localStorage.getItem('kd_cart') || '[]'); } catch(e) { localStorage.removeItem('kd_cart'); }
 
         let currentSlide = 0, slideInterval, appData = {}, adminTab = 'dashboard', isAdmin = false;
         let adminStoreView = sessionStorage.getItem('adminStoreView') || null;
         let adminItemLimit = 50;
-        
         let activeStoreId = null, activeStoreType = null, activeSection = null, activeSubcat = null, activeTakeawayType = null;
+        let itemGroups = {}; 
 
         function safeStr(str) { return String(str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
         function cleanId(id) { return String(id || '').replace(/[^a-zA-Z0-9]/g, ''); }
         function escHtml(str) { return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-        function saveCart() { 
-            try {
-                localStorage.setItem('kd_cart', JSON.stringify(cart)); 
-            } catch(e) {
-                console.error("Failed to save cart", e);
-            }
-        }
+        function saveCart() { try { localStorage.setItem('kd_cart', JSON.stringify(cart)); } catch(e) { console.error("Failed to save cart", e); } }
 
         function parseOptions(str) {
             if(!str) return [];
@@ -250,48 +229,17 @@
             if(!appData.categories.send_parcel) appData.categories.send_parcel = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800';
             if(!appData.categories.collect_parcel) appData.categories.collect_parcel = 'https://images.unsplash.com/photo-1597306622489-5c80aa3c55e3?q=80&w=800';
             
-            appData.takeaways.franchises.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
-            appData.takeaways.local.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
-            appData.groceries.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
+            if(appData.takeaways && Array.isArray(appData.takeaways.franchises)) {
+                appData.takeaways.franchises.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
+            }
+            if(appData.takeaways && Array.isArray(appData.takeaways.local)) {
+                appData.takeaways.local.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
+            }
+            if(Array.isArray(appData.groceries)) {
+                appData.groceries.forEach(s => { if(!s.categoryImages) s.categoryImages = {}; });
+            }
 
             updateBranding();
-
-            // --- AUTO-FIX ITEMS IN 'GENERAL' FOR BABY & TODDLER ---
-            let fixedItemsCount = 0;
-            if (appData.groceries) {
-                appData.groceries.forEach(store => {
-                    if(!store.menu) return;
-                    store.menu.forEach(item => {
-                        const isBaby = item.category && item.category.toLowerCase().includes('baby');
-                        const isGeneral = !item.subCategory || item.subCategory.toLowerCase() === 'general';
-                        if (isBaby && isGeneral) {
-                            const name = (item.name || '').toLowerCase();
-                            let newSub = 'Other Baby Products';
-                            
-                            if (/diaper|nappy|pampers|huggies|pull.?up/.test(name)) newSub = 'Diapers & Nappies';
-                            else if (/milk|formula|lactogen|nan\s|sma|novalac|similac|infacare|s26/.test(name)) newSub = 'Baby Milk & Formula';
-                            else if (/food|puree|purity|sweet potato|butternut/.test(name)) newSub = 'Baby Food & Purees';
-                            else if (/cereal|snack|rusk|biscuit|puffs/.test(name)) newSub = 'Baby Cereals & Snacks';
-                            else if (/wipe/.test(name)) newSub = 'Baby Wipes';
-                            else if (/lotion|moisturis|moisturiz|cream|barrier|aqueous/.test(name)) newSub = 'Baby Lotions & Moisturisers';
-                            else if (/soap|shampoo|wash|bath/.test(name)) newSub = 'Baby Soap, Shampoo & Body Wash';
-                            else if (/oil|powder|talc/.test(name)) newSub = 'Baby Oils & Powders';
-                            else if (/bottle|teat|sippy|sterilis|breast pump|soother|dummy|pacifier/.test(name)) newSub = 'Baby Bottles & Feeding Accessories';
-                            else if (/clothes|vest|grow|bib|beanie|sock|romper|towel/.test(name)) newSub = 'Baby Clothing';
-                            else if (/syrup|medicine|thermometer|dropper|nose|ears|ointment|spray|vapor/.test(name)) newSub = 'Baby Health & Care';
-                            else if (/potty|toilet/.test(name)) newSub = 'Potty Training';
-                            
-                            item.subCategory = newSub;
-                            fixedItemsCount++;
-                        }
-                    });
-                });
-            }
-            if (fixedItemsCount > 0 && isAdmin) {
-                await saveConfig();
-                console.log(`Auto-categorized ${fixedItemsCount} baby items.`);
-            }
-            // ------------------------------------------------------
         }
         
         function updateBranding() {
@@ -353,7 +301,6 @@
             { title: 'Shop Multiple Stores in One Order', text: 'Groceries delivered to your door', btnText: 'Shop Groceries', action: "navigate('groceries')", bg: 'linear-gradient(45deg, #123B2A, #3b2d1e)' }
         ];
 
-        // --- URL ROUTING ---
         function navigate(page, param) {
             let hash = '#/';
             if (page === 'home') hash = '#/';
@@ -378,7 +325,6 @@
             else if (page === 'privacy') hash = '#/privacy';
             else if (page === 'cart') hash = '#/cart';
             else if (page === 'admin') hash = adminStoreView ? `#/admin/${adminTab}/${adminStoreView}` : `#/admin/${adminTab}`;
-            
             window.location.hash = hash;
         }
 
@@ -389,6 +335,7 @@
             const parts = hash.substring(2).split('/').filter(p => p.length > 0);
             const app = document.getElementById('app-content');
             clearInterval(slideInterval);
+            itemGroups = {}; 
 
             try {
                 if (parts.length === 0) { app.innerHTML = renderHome(); initSlider(); }
@@ -486,7 +433,6 @@
             </div>`;
         }
         
-        // --- GROCERY JOURNEY ---
         function renderGroceryHub() { 
             let html = `<a class="back-link" href="#/">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">Grocery Stores</h2>`; 
             if(appData.groceries.length === 0) html += '<p>No stores available yet.</p>'; 
@@ -520,8 +466,9 @@
             
             html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<h2 style="color: var(--forest); margin:0;">${store.name}</h2></div>`;
             
-            const sections = [...new Set(store.menu.map(m => m.category || 'General'))];
-            if(sections.length === 0) return html + '<p>No sections available yet.</p>';
+            const sections = [...new Set(store.menu.map(m => m.category || 'General'))].filter(c => c && c.toLowerCase() !== 'general');
+            if (sections.length === 0 && store.menu.length > 0) return html + renderItemsList(store.menu, store.name);
+            if (sections.length === 0) return html + '<p>No sections available yet.</p>';
 
             html += '<div class="categories-grid">';
             sections.forEach(section => {
@@ -550,24 +497,17 @@
             html += `<h2 style="color: var(--forest); margin-bottom: 20px;">${escHtml(sectionName)}</h2>`;
             
             const sectionItems = store.menu.filter(m => (m.category || 'General') === sectionName);
-            let subcats = [...new Set(sectionItems.map(m => m.subCategory || 'General'))];
-            
-            // If it's the Baby & Toddler section, enforce the standard list of subcategories and hide General
+            let subcats = [...new Set(sectionItems.map(m => m.subCategory || 'General'))].filter(sc => sc && sc.toLowerCase() !== 'general');
+
             if (sectionName.toLowerCase().includes('baby')) {
-                subcats = subcats.filter(sc => sc && sc.toLowerCase() !== 'general');
                 const allBabySubcats = [...new Set([...BABY_SUBCATEGORIES, ...subcats])];
-                // Sort them according to the standard list order
                 subcats = allBabySubcats.sort((a, b) => {
-                    const ia = BABY_SUBCATEGORIES.indexOf(a);
-                    const ib = BABY_SUBCATEGORIES.indexOf(b);
-                    if (ia !== -1 && ib !== -1) return ia - ib;
-                    if (ia !== -1) return -1;
-                    if (ib !== -1) return 1;
-                    return 0;
+                    const ia = BABY_SUBCATEGORIES.indexOf(a); const ib = BABY_SUBCATEGORIES.indexOf(b);
+                    if (ia !== -1 && ib !== -1) return ia - ib; if (ia !== -1) return -1; if (ib !== -1) return 1; return 0;
                 });
             }
 
-            if(subcats.length === 0) return html + '<p>No subcategories available yet.</p>';
+            if (subcats.length === 0) return html + renderItemsList(sectionItems, store.name);
 
             html += '<div class="categories-grid">';
             subcats.forEach(subcat => {
@@ -598,20 +538,9 @@
             
             const items = store.menu.filter(m => (m.category || 'General') === sectionName && (m.subCategory || 'General') === subcatName);
             if(items.length === 0) return html + '<p>No products in this subcategory yet.</p>';
-
-            const onSaleItems = items.filter(item => item.onSale && parseFloat(item.salePrice) > 0);
-            const regularItems = items.filter(item => !item.onSale || parseFloat(item.salePrice) <= 0);
-
-            if(onSaleItems.length > 0) {
-                html += '<div class="sale-banner">🔥 Items on Sale</div>';
-                html += onSaleItems.map(item => renderItemRow(item, store.name)).join('');
-            }
-
-            html += regularItems.map(item => renderItemRow(item, store.name)).join('');
-            return html;
+            return html + renderItemsList(items, store.name);
         }
 
-        // --- TAKEAWAYS ---
         function renderTakeawaysHub() { 
             return `<a class="back-link" href="#/">← Back to Home</a><h2 style="color: var(--forest); margin-bottom: 20px;">Takeaways</h2><div class="categories-grid">
                 <div class="category-card" style="background-image: url('${appData.categories.takeaways}'); background-size: cover; background-repeat: no-repeat; background-position: center;" onclick="navigate('takeaway-list', 'franchises')"><h3>🍗 Franchises</h3><p>Popular fast-food brands.</p></div>
@@ -668,8 +597,8 @@
             html += `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">${store.logoImg ? `<img src="${store.logoImg}" class="store-logo-img" style="width:50px;height:50px;">` : `<span style="font-size: 40px;">${store.logo}</span>`}<div><h2 style="color: var(--forest); margin:0;">${store.name}</h2></div></div>`; 
             
             if(store.menu.length === 0) return html + '<p>No categories available yet.</p>';
-
-            const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
+            let cats = [...new Set(store.menu.map(m => m.category || 'General'))].filter(c => c && c.toLowerCase() !== 'general');
+            if(cats.length === 0) return html + renderItemsList(store.menu, store.name);
             
             html += '<div class="categories-grid">';
             cats.forEach(cat => {
@@ -684,82 +613,122 @@
             return html + '</div>';
         }
 
-        function renderItemRow(item, storeName) {
-            let basePrice = parseFloat(item.price) || 0;
-            let salePrice = parseFloat(item.salePrice) || 0;
-            let isOnSale = item.onSale && salePrice > 0;
+        function renderItemsList(items, storeName) {
+            if (!items || items.length === 0) return '<p>No items available.</p>';
+            let html = '';
+            const hasSale = items.some(item => item.onSale && parseFloat(item.salePrice) > 0);
+            if (hasSale) html += '<div class="sale-banner">🔥 Items on Sale</div>';
+
+            const groups = {};
+            items.forEach(item => {
+                const key = item.name.toLowerCase().trim();
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(item);
+            });
+
+            Object.values(groups).forEach(group => {
+                html += renderGroupCard(group, storeName);
+            });
+            return html;
+        }
+
+        function renderGroupCard(group, storeName) {
+            group.sort((a, b) => ((b.onSale && parseFloat(b.salePrice) > 0) ? 1 : 0) - ((a.onSale && parseFloat(a.salePrice) > 0) ? 1 : 0));
+            const initialItem = group[0];
+            const gid = `g_${cleanId(initialItem.name)}_${Math.random().toString(36).substr(2, 5)}`;
+            itemGroups[gid] = group;
+
+            const sizes = [...new Set(group.map(i => i.size).filter(s => s && s.trim() !== ''))];
+            const flavors = [...new Set(group.map(i => i.flavor).filter(f => f && f.trim() !== ''))];
+
+            let basePrice = parseFloat(initialItem.price) || 0;
+            let salePrice = parseFloat(initialItem.salePrice) || 0;
+            let isOnSale = initialItem.onSale && salePrice > 0;
             let displayPrice = isOnSale ? salePrice : basePrice;
             let oldPriceHtml = isOnSale ? `<span class="old-price">R${basePrice.toFixed(2)}</span>` : '';
-            
+
+            let sizeHtml = sizes.length > 0 ? `<select id="size_${gid}" class="item-options" onchange="updateGroupSelection('${gid}')">${sizes.map(s => `<option value="${s}" ${s === initialItem.size ? 'selected' : ''}>${s}</option>`).join('')}</select>` : '';
+            let flavorHtml = flavors.length > 0 ? `<select id="flavor_${gid}" class="item-options" onchange="updateGroupSelection('${gid}')">${flavors.map(f => `<option value="${f}" ${f === initialItem.flavor ? 'selected' : ''}>${f}</option>`).join('')}</select>` : '';
+
             let optionsHtml = '';
-            const mealOptions = parseOptions(item.mealOptions);
-            const extras = parseOptions(item.extras);
+            const mealOptions = parseOptions(initialItem.mealOptions);
+            const extras = parseOptions(initialItem.extras);
 
             if(mealOptions.length > 0) {
-                optionsHtml = `<select id="meal_${item.id}" class="item-options" onchange="updateDynamicPrice('${item.id}')">`;
-                mealOptions.forEach(opt => {
-                    optionsHtml += `<option value="${opt.label}" data-price="${opt.price}">${opt.label} (+R${opt.price.toFixed(2)})</option>`;
-                });
+                optionsHtml = `<select id="meal_${gid}" class="item-options" onchange="updateDynamicPrice('${gid}')">`;
+                mealOptions.forEach(opt => { optionsHtml += `<option value="${opt.label}" data-price="${opt.price}">${opt.label} (+R${opt.price.toFixed(2)})</option>`; });
                 optionsHtml += '</select>';
             }
 
             let extrasHtml = '';
             if(extras.length > 0) {
                 extrasHtml = `<div class="item-extras"><strong>Add Extras:</strong>`;
-                extras.forEach(ext => {
-                    extrasHtml += `<label><input type="checkbox" class="extra_${item.id}" data-price="${ext.price}" value="${ext.label}" onchange="updateDynamicPrice('${item.id}')"> ${ext.label} (+R${ext.price.toFixed(2)})</label>`;
-                });
+                extras.forEach(ext => { extrasHtml += `<label><input type="checkbox" class="extra_${gid}" data-price="${ext.price}" value="${ext.label}" onchange="updateDynamicPrice('${gid}')"> ${ext.label} (+R${ext.price.toFixed(2)})</label>`; });
                 extrasHtml += `</div>`;
             }
 
-            const cartItem = (!mealOptions.length && !extras.length) 
-                ? cart.find(ci => ci.id === item.id && ci.store === storeName) 
-                : null;
-            
+            const cartItem = (!mealOptions.length && !extras.length && sizes.length <= 1 && flavors.length <= 1) 
+                ? cart.find(ci => ci.id === initialItem.id && ci.store === storeName) : null;
             const currentQty = cartItem ? cartItem.qty : 0;
             const currentSig = cartItem ? cartItem.sig : '';
 
-            let actionHtml = '';
-            if (currentQty > 0) {
-                actionHtml = `<div class="qty-selector">
-                    <button class="qty-btn" onclick="changeQty('${safeStr(currentSig)}', '${safeStr(storeName)}', -1)">−</button>
-                    <span class="qty-display">×${currentQty}</span>
-                    <button class="qty-btn" onclick="addItemToCart('${safeStr(item.id)}', '${safeStr(storeName)}')">+</button>
-                </div>`;
-            } else {
-                actionHtml = `<button class="add-btn" onclick="addItemToCart('${safeStr(item.id)}', '${safeStr(storeName)}')">Add</button>`;
-            }
+            let actionHtml = currentQty > 0 
+                ? `<div class="qty-selector"><button class="qty-btn" onclick="changeQty('${safeStr(currentSig)}', '${safeStr(storeName)}', -1)">−</button><span class="qty-display">×${currentQty}</span><button class="qty-btn" onclick="addGroupToCart('${gid}', '${safeStr(storeName)}')">+</button></div>`
+                : `<button class="add-btn" onclick="addGroupToCart('${gid}', '${safeStr(storeName)}')">Add</button>`;
 
             return `<div class="store-item">
                 <div class="item-info">
-                    <img src="${item.img || 'https://via.placeholder.com/70'}" class="item-img">
+                    <img src="${initialItem.img || 'https://via.placeholder.com/70'}" class="item-img" id="img_${gid}">
                     <div style="flex:1;">
-                        <h4>${item.name} ${item.size ? `<small>(${item.size})</small>` : ''}</h4>
-                        ${item.flavor ? `<div style="font-size: 12px; color: #666;">${item.flavor}</div>` : ''}
+                        <h4>${initialItem.name}</h4>
+                        ${initialItem.contents ? `<div style="font-size: 12px; color: #666;">${initialItem.contents}</div>` : ''}
+                        ${flavorHtml}
+                        ${sizeHtml}
                         ${optionsHtml}
                         ${extrasHtml}
-                        <div class="item-price" id="price_${item.id}">${oldPriceHtml} R${displayPrice.toFixed(2)}</div>
+                        <div class="item-price" id="price_${gid}">${oldPriceHtml} R${displayPrice.toFixed(2)}</div>
                     </div>
                 </div>
-                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
-                    ${actionHtml}
-                </div>
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">${actionHtml}</div>
             </div>`;
         }
 
-        function updateDynamicPrice(itemId) {
-            const priceEl = document.getElementById(`price_${itemId}`);
-            if(!priceEl) return;
-            let total = 0;
-            const mealSelect = document.getElementById(`meal_${itemId}`);
-            if(mealSelect) {
-                const opt = mealSelect.options[mealSelect.selectedIndex];
-                total += parseFloat(opt.getAttribute('data-price')) || 0;
-            }
-            document.querySelectorAll(`.extra_${itemId}:checked`).forEach(cb => {
-                total += parseFloat(cb.getAttribute('data-price')) || 0;
-            });
-            priceEl.innerText = `R${total.toFixed(2)}`;
+        function updateGroupSelection(gid) {
+            const group = itemGroups[gid]; if(!group) return;
+            const sizeSelect = document.getElementById(`size_${gid}`); const flavorSelect = document.getElementById(`flavor_${gid}`);
+            const selectedSize = sizeSelect ? sizeSelect.value : ''; const selectedFlavor = flavorSelect ? flavorSelect.value : '';
+            
+            const matchingItem = group.find(i => (i.size || '') === selectedSize && (i.flavor || '') === selectedFlavor) || group.find(i => (i.size || '') === selectedSize) || group.find(i => (i.flavor || '') === selectedFlavor) || group[0];
+            
+            const imgEl = document.getElementById(`img_${gid}`); if(imgEl && matchingItem.img) imgEl.src = matchingItem.img;
+            updateDynamicPrice(gid);
+        }
+
+        function updateDynamicPrice(gid) {
+            const priceEl = document.getElementById(`price_${gid}`); if(!priceEl) return;
+            const group = itemGroups[gid]; if(!group) return;
+            const sizeSelect = document.getElementById(`size_${gid}`); const flavorSelect = document.getElementById(`flavor_${gid}`);
+            const selectedSize = sizeSelect ? sizeSelect.value : ''; const selectedFlavor = flavorSelect ? flavorSelect.value : '';
+            
+            const matchingItem = group.find(i => (i.size || '') === selectedSize && (i.flavor || '') === selectedFlavor) || group.find(i => (i.size || '') === selectedSize) || group.find(i => (i.flavor || '') === selectedFlavor) || group[0];
+            
+            let basePrice = parseFloat(matchingItem.price) || 0; let salePrice = parseFloat(matchingItem.salePrice) || 0;
+            let isOnSale = matchingItem.onSale && salePrice > 0; let currentPrice = isOnSale ? salePrice : basePrice;
+            
+            const mealSelect = document.getElementById(`meal_${gid}`);
+            if(mealSelect) { const opt = mealSelect.options[mealSelect.selectedIndex]; currentPrice += parseFloat(opt.getAttribute('data-price')) || 0; }
+            document.querySelectorAll(`.extra_${gid}:checked`).forEach(cb => { currentPrice += parseFloat(cb.getAttribute('data-price')) || 0; });
+            
+            let oldPriceHtml = isOnSale ? `<span class="old-price">R${basePrice.toFixed(2)}</span>` : '';
+            priceEl.innerHTML = `${oldPriceHtml} R${currentPrice.toFixed(2)}`;
+        }
+
+        function addGroupToCart(gid, storeName) {
+            const group = itemGroups[gid]; if(!group) return;
+            const sizeSelect = document.getElementById(`size_${gid}`); const flavorSelect = document.getElementById(`flavor_${gid}`);
+            const selectedSize = sizeSelect ? sizeSelect.value : ''; const selectedFlavor = flavorSelect ? flavorSelect.value : '';
+            const matchingItem = group.find(i => (i.size || '') === selectedSize && (i.flavor || '') === selectedFlavor) || group.find(i => (i.size || '') === selectedSize) || group.find(i => (i.flavor || '') === selectedFlavor) || group[0];
+            addItemToCart(matchingItem.id, storeName);
         }
 
         function renderStoreItems(storeType, storeId, categoryName) {
@@ -780,25 +749,8 @@
 
             const filteredItems = store.menu.filter(item => (item.category || 'General') === categoryName);
             if(filteredItems.length === 0) return html + '<p>No items in this category yet.</p>';
-
-            const onSaleItems = filteredItems.filter(item => item.onSale && parseFloat(item.salePrice) > 0);
-            const regularItems = filteredItems.filter(item => !item.onSale || parseFloat(item.salePrice) <= 0);
-
             html += `<div class="menu-category-header">${escHtml(categoryName)}</div>`;
-
-            if(onSaleItems.length > 0) {
-                html += '<div class="sale-banner">🔥 Items on Sale</div>';
-                html += onSaleItems.map(item => renderItemRow(item, store.name)).join('');
-            }
-
-            const subCats = [...new Set(regularItems.map(i => i.subCategory || 'General'))];
-            subCats.forEach(sub => {
-                if(sub !== 'General') html += `<div class="menu-subcategory-header">${escHtml(sub)}</div>`;
-                const subItems = regularItems.filter(i => (i.subCategory || 'General') === sub);
-                html += subItems.map(item => renderItemRow(item, store.name)).join('');
-            });
-            
-            return html; 
+            return html + renderItemsList(filteredItems, store.name);
         }
 
         function renderParcelOptions() { 
@@ -1056,8 +1008,13 @@
             const item = findItem(itemId, storeName);
             if(!item) return alert('Error: Item not found!');
 
-            const mealSelect = document.getElementById(`meal_${itemId}`);
-            const extrasBoxes = document.querySelectorAll(`.extra_${itemId}:checked`);
+            let gid = null;
+            for(const key in itemGroups) {
+                if(itemGroups[key].some(i => i.id === itemId)) { gid = key; break; }
+            }
+
+            const mealSelect = gid ? document.getElementById(`meal_${gid}`) : null; 
+            const extrasBoxes = gid ? document.querySelectorAll(`.extra_${gid}:checked`) : []; 
             
             let mealLabel = '';
             let mealPrice = 0;
@@ -1078,7 +1035,9 @@
             const finalPrice = (mealLabel ? mealPrice : basePrice) + extrasPrice;
             
             let fullName = item.name;
-            if(mealLabel) fullName += ` (${mealLabel})`;
+            if(item.size) fullName += ` (${item.size})`;
+            if(item.flavor) fullName += ` - ${item.flavor}`;
+            if(mealLabel) fullName += ` [${mealLabel}]`;
             if(extrasLabels.length > 0) fullName += ` + ${extrasLabels.join(', ')}`;
             
             const sig = `${itemId}|${mealLabel}|${extrasLabels.sort().join('-')}`;
@@ -1276,7 +1235,6 @@
             window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank'); 
         }
 
-        // --- ADMIN PORTAL ---
         function renderAdminLogin() { 
             return `<div class="form-container" style="max-width: 400px; margin-top: 50px;"><h2 style="color: var(--forest); text-align: center; margin-bottom: 20px;">Admin Login</h2><form onsubmit="handleLogin(event)"><div class="form-group"><label>Username</label><input type="text" id="login_user" required></div><div class="form-group"><label>Password</label><input type="password" id="login_pass" required></div><button type="submit" class="btn-gold" style="width: 100%;">Login</button></form></div>`; 
         }
@@ -1299,15 +1257,7 @@
             const redirect = localStorage.getItem('redirectHash');
             localStorage.removeItem('redirectHash');
             const before = window.location.hash;
-            // A default password goes to User Management, not back where they were.
-            if (redirect && !data.mustChangePassword) {
-                window.location.hash = redirect;
-            } else {
-                navigate('admin');
-            }
-            // Going to the address already showing changes nothing, so the browser
-            // fires no hashchange and nothing redraws: after a good login the form
-            // just stayed there, with no error. Draw it ourselves in that case.
+            if (redirect) window.location.hash = redirect; else navigate('admin');
             if (window.location.hash === before) renderRoute();
         }
 
@@ -1524,7 +1474,6 @@
             renderAdminImages();
         }
 
-        // --- TAKEAWAYS ADMIN ---
         function renderAdminTakeaways() {
             if (adminStoreView && adminStoreView.startsWith('takeaway_')) {
                 return renderAdminTakeawayMenu();
@@ -1579,7 +1528,7 @@
 
         function renderAdminCategoryImages(store, cat, type, storeIndex) {
             let html = '<div class="admin-card"><h4>Category Images</h4><small>Upload a picture for each category. It will show when customers view the store categories.</small><div style="margin-top:10px;">';
-            const cats = [...new Set(store.menu.map(m => m.category || 'General'))];
+            const cats = [...new Set(store.menu.map(m => m.category || 'General'))].filter(c => c && c.toLowerCase() !== 'general');
             if (cats.length === 0) {
                 html += '<p>No categories found. Add items first.</p>';
             } else {
@@ -1629,14 +1578,14 @@
             html += `<div class="admin-card">
                 <div style="background: #e8f5e9; padding: 10px; border-radius: 5px;">
                     <strong style="color: var(--forest);">Bulk Upload Menu (Excel or Copy & Paste)</strong><br>
-                    <small>Columns: Category, SubCategory, Name, Size, Flavor, Price, OnSale, SalePrice, MealOptions, Extras</small><br>
+                    <small>Columns: Category, SubCategory, Name, Size, Flavor, Contents, Price, OnSale, SalePrice, MealOptions, Extras</small><br>
                     <small style="color: blue;">MealOptions/Extras format: Label|Price|Contents|Enabled(1/0) separated by commas. e.g., "Regular Meal|55|Burger + Chips + Drink|1"</small>
                     <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
                         <input type="file" id="excel_input_takeaway_${type}_${storeIndex}" accept=".xlsx, .xls, .csv" style="font-size: 12px; flex:1;">
                         <button type="button" class="btn-gold" onclick="handleExcelUpload('takeaway', '${type}', ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:0;">Upload Excel</button>
                     </div>
                     <div style="margin-top:10px;">
-                        <textarea id="paste_input_takeaway_${type}_${storeIndex}" rows="4" style="width:100%; font-size: 12px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Category  SubCategory  Name  Size  Flavor  Price  OnSale  SalePrice  MealOptions  Extras"></textarea>
+                        <textarea id="paste_input_takeaway_${type}_${storeIndex}" rows="4" style="width:100%; font-size: 12px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Category  SubCategory  Name  Size  Flavor  Contents  Price  OnSale  SalePrice  MealOptions  Extras"></textarea>
                         <button type="button" class="btn-gold" onclick="handlePasteUpload('takeaway', '${type}', ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:5px 0 0 0;">Import Pasted Data</button>
                     </div>
                 </div>
@@ -1663,6 +1612,9 @@
             html += `<div class="form-row">
                 <input type="text" id="menu_name_takeaway_${type}_${storeIndex}" placeholder="Item Name" style="padding: 10px; font-size: 14px;">
                 <input type="text" id="menu_subcat_takeaway_${type}_${storeIndex}" placeholder="Sub-Category (e.g. Beef)" style="padding: 10px; font-size: 14px;">
+                <input type="text" id="menu_size_takeaway_${type}_${storeIndex}" placeholder="Size (e.g. Large)" style="padding: 10px; font-size: 14px;">
+                <input type="text" id="menu_flavor_takeaway_${type}_${storeIndex}" placeholder="Flavor (e.g. BBQ)" style="padding: 10px; font-size: 14px;">
+                <input type="text" id="menu_content_takeaway_${type}_${storeIndex}" placeholder="Contents (e.g. 2 pcs, chips)" style="padding: 10px; font-size: 14px;">
                 <input type="number" id="menu_price_takeaway_${type}_${storeIndex}" placeholder="Base Price (R)" style="padding: 10px; font-size: 14px;">
             </div>
             <button class="btn-gold" style="margin-top: 5px; padding: 8px; font-size: 14px;" onclick="adminAddMenuItem('takeaway', '${type}', ${storeIndex})">Add Item</button></div>`;
@@ -1691,6 +1643,7 @@
                         <input type="text" value="${safeStr(item.subCategory || '')}" id="i_subcat_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Sub-Category" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.size || '')}" id="i_size_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.contents || '')}" id="i_content_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Contents/Meal Desc" style="padding: 5px; font-size: 12px;">
                         <input type="number" value="${item.price}" id="i_price_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Base Price" style="padding: 5px; font-size: 12px;">
                         <input type="number" value="${item.salePrice || 0}" id="i_sale_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Sale Price" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.mealOptions || '')}" id="i_mealopt_takeaway_${type}_${storeIndex}_${itemIndex}" placeholder="Meal Options (Label|Price|Contents|1)" style="padding: 5px; font-size: 12px;">
@@ -1718,7 +1671,6 @@
             window.scrollTo(0, scrollY);
         }
         
-        // --- GROCERIES ADMIN ---
         function renderAdminGroceries() {
             if (adminStoreView && adminStoreView.startsWith('grocery_')) {
                 return renderAdminGroceryMenu();
@@ -1768,7 +1720,6 @@
             let html = renderAdminStoreHeader(store, "adminViewStore(null)", "Catalogue");
             html += renderAdminCategoryImages(store, 'grocery', null, storeIndex);
             
-            // Datalists for structured dropdowns
             html += `<datalist id="section_list_grocery">
                 <option value="Baby & Toddler">
                 <option value="Fresh Produce">
@@ -1790,14 +1741,14 @@
             html += `<div class="admin-card">
                 <div style="background: #e8f5e9; padding: 10px; border-radius: 5px;">
                     <strong style="color: var(--forest);">Bulk Upload Products (Excel or Copy & Paste)</strong><br>
-                    <small>Columns: Category (Section), SubCategory, Name, Size, Flavor, Price, OnSale, SalePrice</small><br>
+                    <small>Columns: Category (Section), SubCategory, Name, Size, Flavor, Contents, Price, OnSale, SalePrice</small><br>
                     <small style="color: blue;">Uploads ADD to or UPDATE existing items. Duplicates are identified by Name + Size.</small>
                     <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
                         <input type="file" id="excel_input_grocery_g_${storeIndex}" accept=".xlsx, .xls, .csv" style="font-size: 12px; flex:1;">
                         <button type="button" class="btn-gold" onclick="handleExcelUpload('grocery', null, ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:0;">Upload Excel</button>
                     </div>
                     <div style="margin-top:10px;">
-                        <textarea id="paste_input_grocery_g_${storeIndex}" rows="4" style="width:100%; font-size: 12px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Category  SubCategory  Name  Size  Flavor  Price  OnSale  SalePrice"></textarea>
+                        <textarea id="paste_input_grocery_g_${storeIndex}" rows="4" style="width:100%; font-size: 12px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Category  SubCategory  Name  Size  Flavor  Contents  Price  OnSale  SalePrice"></textarea>
                         <button type="button" class="btn-gold" onclick="handlePasteUpload('grocery', null, ${storeIndex})" style="padding: 5px 10px; font-size: 12px; margin:5px 0 0 0;">Import Pasted Data</button>
                     </div>
                 </div>
@@ -1825,6 +1776,8 @@
                 <input type="text" id="menu_name_grocery_g_${storeIndex}" placeholder="Product Name" style="padding: 10px; font-size: 14px;">
                 <input type="text" id="menu_subcat_grocery_g_${storeIndex}" placeholder="Sub-Category (e.g. Diapers)" list="baby_subcat_list" style="padding: 10px; font-size: 14px;">
                 <input type="text" id="menu_size_grocery_g_${storeIndex}" placeholder="Size (e.g. 500ml)" style="padding: 10px; font-size: 14px;">
+                <input type="text" id="menu_flavor_grocery_g_${storeIndex}" placeholder="Flavor/Type" style="padding: 10px; font-size: 14px;">
+                <input type="text" id="menu_content_grocery_g_${storeIndex}" placeholder="Contents (e.g. 2 pcs, chips)" style="padding: 10px; font-size: 14px;">
                 <input type="number" id="menu_price_grocery_g_${storeIndex}" placeholder="Price (R)" style="padding: 10px; font-size: 14px;">
             </div>
             <button class="btn-gold" style="margin-top: 5px; padding: 8px; font-size: 14px;" onclick="adminAddMenuItem('grocery', null, ${storeIndex})">Add Product</button></div>`;
@@ -1853,6 +1806,7 @@
                         <input type="text" value="${safeStr(item.subCategory || '')}" id="i_subcat_grocery_g_${storeIndex}_${itemIndex}" placeholder="Sub-Category" list="baby_subcat_list" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.size || '')}" id="i_size_grocery_g_${storeIndex}_${itemIndex}" placeholder="Size" style="padding: 5px; font-size: 12px;">
                         <input type="text" value="${safeStr(item.flavor || '')}" id="i_flav_grocery_g_${storeIndex}_${itemIndex}" placeholder="Flavor/Type" style="padding: 5px; font-size: 12px;">
+                        <input type="text" value="${safeStr(item.contents || '')}" id="i_content_grocery_g_${storeIndex}_${itemIndex}" placeholder="Contents/Description" style="padding: 5px; font-size: 12px;">
                         <input type="number" value="${item.price}" id="i_price_grocery_g_${storeIndex}_${itemIndex}" placeholder="Price" style="padding: 5px; font-size: 12px;">
                         <input type="number" value="${item.salePrice || 0}" id="i_sale_grocery_g_${storeIndex}_${itemIndex}" placeholder="Sale Price" style="padding: 5px; font-size: 12px;">
                         <input type="checkbox" id="i_onsale_grocery_g_${storeIndex}_${itemIndex}" ${item.onSale ? 'checked' : ''}>
@@ -1877,7 +1831,6 @@
             navigate('admin');
         }
 
-        // --- BULK UPLOAD & ITEM LOGIC ---
         async function processSheetData(rows, cat, type, storeIndex) {
             if (!rows || rows.length < 2) {
                 alert("No data found or missing headers. Make sure you copy the headers too.");
@@ -1902,6 +1855,7 @@
                 subcat: headers.findIndex(h => h.includes('subcat') || h.includes('subcategory') || h.includes('sub-category')),
                 size: headers.findIndex(h => h.includes('size') || h.includes('weight') || h.includes('volume')),
                 flavor: headers.findIndex(h => h.includes('flavor') || h.includes('type')),
+                contents: headers.findIndex(h => h.includes('contents') || h.includes('description') || h.includes('meal contents') || h.includes('includes')),
                 price: headers.findIndex(h => h.includes('price') || h.includes('cost')),
                 onSale: headers.findIndex(h => h.includes('onsale') || h.includes('sale')),
                 salePrice: headers.findIndex(h => h.includes('saleprice') || h.includes('specialprice')),
@@ -1922,7 +1876,8 @@
                 const name = String(row[idx.name] || '').trim();
                 if(name && name.toLowerCase() !== 'name') {
                     const sizeStr = idx.size !== -1 ? String(row[idx.size] || '').trim() : '';
-                    const existingIndex = store.menu.findIndex(m => m.name.toLowerCase() === name.toLowerCase() && (m.size || '').toLowerCase() === sizeStr.toLowerCase());
+                    const flavorStr = idx.flavor !== -1 ? String(row[idx.flavor] || '').trim() : '';
+                    const existingIndex = store.menu.findIndex(m => m.name.toLowerCase() === name.toLowerCase() && (m.size || '').toLowerCase() === sizeStr.toLowerCase() && (m.flavor || '').toLowerCase() === flavorStr.toLowerCase());
                     
                     const itemData = {
                         id: existingIndex !== -1 ? store.menu[existingIndex].id : 'm' + Date.now() + Math.floor(Math.random() * 100000),
@@ -1930,7 +1885,8 @@
                         category: idx.category !== -1 ? String(row[idx.category] || 'General').trim() : 'General',
                         subCategory: idx.subcat !== -1 ? String(row[idx.subcat] || 'General').trim() : 'General',
                         size: sizeStr,
-                        flavor: idx.flavor !== -1 ? String(row[idx.flavor] || '').trim() : '',
+                        flavor: flavorStr,
+                        contents: idx.contents !== -1 ? String(row[idx.contents] || '').trim() : '',
                         mealOptions: idx.mealOptions !== -1 ? String(row[idx.mealOptions] || '').trim() : '',
                         extras: idx.extras !== -1 ? String(row[idx.extras] || '').trim() : '',
                         price: parseFloat(String(idx.price !== -1 ? row[idx.price] : '0').replace(/[^0-9.]/g, '')) || 0,
@@ -2057,15 +2013,17 @@
             const name = document.getElementById(`menu_name_${cat}_${type ? type : 'g'}_${storeIndex}`).value;
             const subCat = document.getElementById(`menu_subcat_${cat}_${type ? type : 'g'}_${storeIndex}`).value || 'General';
             const size = document.getElementById(`menu_size_${cat}_${type ? type : 'g'}_${storeIndex}`).value || '';
+            const flavor = document.getElementById(`menu_flavor_${cat}_${type ? type : 'g'}_${storeIndex}`).value || '';
+            const contents = document.getElementById(`menu_content_${cat}_${type ? type : 'g'}_${storeIndex}`).value || '';
             const price = parseFloat(document.getElementById(`menu_price_${cat}_${type ? type : 'g'}_${storeIndex}`).value);
             if(!name || !price) { alert('Enter item name and price'); return; }
             
-            if(store.menu.some(m => m.name.toLowerCase() === name.toLowerCase() && (m.size || '').toLowerCase() === size.toLowerCase())) {
-                alert('Duplicate product detected! An item with this name and size already exists. Please edit the existing item instead.');
+            if(store.menu.some(m => m.name.toLowerCase() === name.toLowerCase() && (m.size || '').toLowerCase() === size.toLowerCase() && (m.flavor || '').toLowerCase() === flavor.toLowerCase())) {
+                alert('Duplicate product detected! An item with this name, size, and flavor already exists. Please edit the existing item instead.');
                 return;
             }
 
-            store.menu.push({ id: 'm' + Date.now().toString(), name, size, price, category: 'General', subCategory: subCat, flavor: '', mealOptions: '', extras: '', onSale: false, salePrice: 0, img: null });
+            store.menu.push({ id: 'm' + Date.now().toString(), name, size, flavor, contents, price, category: 'General', subCategory: subCat, mealOptions: '', extras: '', onSale: false, salePrice: 0, img: null });
             await saveConfig();
             renderRoute();
         }
@@ -2087,6 +2045,7 @@
                 item.subCategory = document.getElementById(`i_subcat_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value;
                 item.size = document.getElementById(`i_size_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value;
                 item.flavor = document.getElementById(`i_flav_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value;
+                item.contents = document.getElementById(`i_content_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value;
                 item.price = parseFloat(document.getElementById(`i_price_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value);
                 item.salePrice = parseFloat(document.getElementById(`i_sale_${cat}_${type ? type : 'g'}_${storeIndex}_${itemIndex}`).value);
                 if(cat === 'takeaway') {
